@@ -21,30 +21,29 @@
     <div id="app">
         <v-app>
             <v-content>
-                <v-container>
+                <v-container fill-height>
                     <div align="center">
-                        <v-row justify="center">
-                            <v-form>
+                        <v-form>
+                            <v-row justify="center" align="center">
                                 <v-col cols="12">
                                     <v-img src="./assets/unilag.svg" contain height="300" width="300"></v-img>
                                 </v-col>
                                 <v-col cols="12">
                                     <span>Welcome to the University of Lagos chatting platform</span>
                                 </v-col>
-                                <v-col cols="12">
-                                    <v-text-field v-model="email" :rules="emailRules" rounded filled required
-                                        label="Email Address">
+                                <v-col cols="12" sm="4">
+                                    <v-text-field v-model="email" width="100" :rules="emailRules" rounded filled
+                                        required label="Email Address">
+                                    </v-text-field>
+
+                                    <v-text-field full-width="false" rounded filled required label="Password">
                                     </v-text-field>
                                 </v-col>
                                 <v-col cols="12">
-                                    <v-text-field rounded filled required label="Password">
-                                    </v-text-field>
-                                </v-col>
-                                <v-col text-align="center" cols="12">
                                     <v-btn>Log in</v-button>
                                 </v-col>
-                            </v-form>
-                        </v-row>
+                            </v-row>
+                        </v-form>
                     </div>
                 </v-container>
             </v-content>
