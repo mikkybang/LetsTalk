@@ -1,15 +1,10 @@
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
 
 <head>
     <meta charset="utf-8">
-    <meta name="description" content="Web Chat">
-    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
-    <meta itemprop="description" content="Client-side WebRTC code samples">
-    <meta itemprop="name" content="Home Chat">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta id="theme-color" name="theme-color" content="#ffffff">
+    <meta name="description" content="login">
 
     <base target="_blank">
 
@@ -26,7 +21,32 @@
     <div id="app">
         <v-app>
             <v-content>
-                <v-container>This is the proposed login page</v-container>
+                <v-container>
+                    <div align="center">
+                        <v-row justify="center">
+                            <v-form>
+                                <v-col cols="12">
+                                    <v-img src="./assets/unilag.svg" contain height="300" width="300"></v-img>
+                                </v-col>
+                                <v-col cols="12">
+                                    <span>Welcome to the University of Lagos chatting platform</span>
+                                </v-col>
+                                <v-col cols="12">
+                                    <v-text-field v-model="email" :rules="emailRules" rounded filled required
+                                        label="Email Address">
+                                    </v-text-field>
+                                </v-col>
+                                <v-col cols="12">
+                                    <v-text-field rounded filled required label="Password">
+                                    </v-text-field>
+                                </v-col>
+                                <v-col text-align="center" cols="12">
+                                    <v-btn>Log in</v-button>
+                                </v-col>
+                            </v-form>
+                        </v-row>
+                    </div>
+                </v-container>
             </v-content>
         </v-app>
     </div>
@@ -36,6 +56,13 @@
     <script>
         new Vue({
             el: '#app',
+            data: {
+                email: '',
+                emailRules: [
+                    v => !!v || 'email address is required for sign in',
+                    v => /.+@.+\..+/.test(v) || 'email address must be valid',
+                ]
+            },
             vuetify: new Vuetify(),
         })
     </script>
