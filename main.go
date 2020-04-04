@@ -5,10 +5,13 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+
 	"github.com/metaclips/FinalYearProject/controller"
+	"github.com/metaclips/FinalYearProject/model"
 )
 
 func main() {
+	model.InitDB()
 	router := httprouter.New()
 
 	router.GET("/", controller.HomePage)

@@ -11,14 +11,11 @@ import (
 )
 
 var db *mongo.Client
-var ctx context.Context
-var cancel func()
 
-func init() {
+func InitDB() {
 	var err error
 
-	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
-	db, err = mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	db, err = mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
 
 	if err != nil {
 		log.Fatalln(err)
@@ -27,7 +24,7 @@ func init() {
 	// Ping mongo database if up
 	go func() {
 		for {
-			if err := db.Ping(ctx, readpref.Primary()); err != nil {
+			if err := db.Ping(context.TODO(), readpref.Primary()); err != nil {
 				log.Fatalln(err)
 			}
 			time.Sleep(time.Second * 5)
