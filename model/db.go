@@ -5,29 +5,40 @@ import (
 	"log"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/metaclips/FinalYearProject/values"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-var db *mongo.Client
+var (
+	db   *mongo.Database
+	UUID uuid.UUID
+)
 
 func InitDB() {
-	var err error
-
-	db, err = mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
-
+	mongoDB, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
 	if err != nil {
 		log.Fatalln(err)
 	}
 
+	db = mongoDB.Database(values.DatabaseName)
+
 	// Ping mongo database if up
-	go func() {
+	go func(mongoDB *mongo.Client) {
 		for {
-			if err := db.Ping(context.TODO(), readpref.Primary()); err != nil {
+			if err := mongoDB.Ping(context.TODO(), readpref.Primary()); err != nil {
 				log.Fatalln(err)
 			}
 			time.Sleep(time.Second * 5)
 		}
-	}()
+	}(mongoDB)
+
+	UUID, err = uuid.NewUUID()
+	if err != nil {
+		log.Fatalln("could not initiate uuid, err: ", err)
+	}
+
+	
 }
