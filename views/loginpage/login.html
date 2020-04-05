@@ -6,15 +6,12 @@
     <meta charset="utf-8">
     <meta name="description" content="login">
 
-    <base target="_blank">
-
     <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
 
     <title>Home</title>
-    <!-- <link rel="icon" sizes="192x192" href="../../../images/webrtc-icon-192x192.png"> -->
 </head>
 
 <body>
@@ -24,28 +21,32 @@
                 <v-container fill-height>
                     <v-spacer></v-spacer>
                     <div align="center">
-                        <v-form>
+                        <form action="(%.Login%)" method="POST">
                             <v-row justify="center" align="center">
                                 <v-col cols="12">
-                                    <v-img src="./assets/unilag.svg" contain height="300" width="300"></v-img>
+                                    <v-img src="/assets/unilag.svg" contain height="300" width="300"></v-img>
                                 </v-col>
                                 <v-col cols="12">
                                     <span>Welcome to the University of Lagos chatting platform</span>
                                 </v-col>
                                 <v-col cols="12" sm="4">
                                     <v-text-field v-model="email" width="100" type="text" full-width="false"
-                                        :rules="emailRules" rounded filled required placeholder="Email Address">
+                                        :rules="emailRules" name="email" rounded filled required
+                                        placeholder="Email Address">
                                     </v-text-field>
 
                                     <v-text-field full-width="false" type="password" rounded filled required
-                                        placeholder="Password">
+                                        name="password" placeholder="Password">
                                     </v-text-field>
+                                    (%if .SigninError%)
+                                    <v-alert dense text type="error">invalid signin details</v-alert>
+                                    (%end%)
                                 </v-col>
                                 <v-col cols="12">
-                                    <v-btn>Log in</v-button>
+                                    <v-btn type="Submit">Log in</v-button>
                                 </v-col>
                             </v-row>
-                        </v-form>
+                        </form>
                     </div>
                     <v-spacer></v-spacer>
                 </v-container>

@@ -11,6 +11,14 @@ const (
 	PNG
 )
 
+type CookieDetail struct {
+	Email      string
+	Collection string
+	CookieName string
+	Path       string
+	Data       map[string]interface{}
+}
+
 type StudentID struct {
 	Email        string `bson:"_id" json:"email"`
 	Name         string `bson:"name" json:"name"`
@@ -21,6 +29,22 @@ type StudentID struct {
 	Faculty      string `bson:"faculty" json:"faculty"`
 	Department   string `bson:"department" json:"department"`
 	MatricNo     string `bson:"matricNo" json:"matricNo"`
+	UUID         string `bson:"uuid" json:"uuid"`
+}
+
+type Admin struct {
+	StaffDetails Staff `bson:",inline"`
+	Super        bool  `bson:"super" json:"super"`
+}
+
+type Staff struct {
+	Email         string `bson:"_id" json:"email"`
+	Name          string `bson:"name" json:"name"`
+	Password      []byte `bson:"password" json:"password"`
+	Level         int    `bson:"level" json:"level"`
+	Department    string `bson:"department" json:"department"`
+	TeachingStaff bool   `bson:"teachingStaff" json:"teachingStaff"`
+	UUID          string `bson:"uuid" json:"uuid"`
 }
 
 type Chats struct {
