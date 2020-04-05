@@ -40,5 +40,4 @@ func InitDB() {
 		log.Fatalln("could not initiate uuid, err: ", err)
 	}
 
-	
 }
