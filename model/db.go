@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"log"
+	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -18,7 +19,8 @@ var (
 )
 
 func InitDB() {
-	mongoDB, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
+	dbHost := os.Getenv("db_host")
+	mongoDB, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dbHost))
 	if err != nil {
 		log.Fatalln(err)
 	}

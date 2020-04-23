@@ -82,7 +82,8 @@ func AdminPage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	// compare database UUID with cookie UUID
-	tmpl, terr := template.New("admin.html").Delims("(%", "%)").ParseFiles("views/admin/admin.html")
+	tmpl, terr := template.New("admin.html").Delims("(%", "%)").ParseFiles("views/admin/admin.html", "views/admin/components/tabs.vue",
+		"views/admin/components/adduser.vue", "views/admin/components/block.vue", "views/admin/components/messagescan.vue")
 	if terr != nil {
 		log.Fatalln(terr)
 	}
