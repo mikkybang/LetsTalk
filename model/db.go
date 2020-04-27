@@ -14,8 +14,9 @@ import (
 )
 
 var (
-	db   *mongo.Database
-	UUID uuid.UUID
+	db          *mongo.Database
+	UUID        uuid.UUID
+	defaultCost = 10
 )
 
 func InitDB() {

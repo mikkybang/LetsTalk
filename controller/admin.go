@@ -31,7 +31,7 @@ func AdminLoginPOST(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 		"Login":       "/admin/login/",
 	}
 
-	admin := model.Admin{StaffDetails: model.Staff{Email: email}}
+	admin := model.Admin{StaffDetails: model.User{Email: email}}
 	if err := admin.CheckAdminDetails(password); err != nil {
 		data["SigninError"] = true
 		data["ErrorDetail"] = "Invalid signin details"
@@ -59,7 +59,7 @@ func AdminLoginPOST(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 
 func AdminLoginGET(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	cookie := model.CookieDetail{CookieName: values.AdminCookieName, Collection: values.AdminCollectionName}
-	if err := cookie.CheckCookie(r); err == nil {
+	if err := cookie.CheckCookie(r, w); err == nil {
 		http.Redirect(w, r, "/admin/", 302)
 		return
 	}
@@ -76,16 +76,58 @@ func AdminLoginGET(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 
 func AdminPage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	cookie := model.CookieDetail{CookieName: values.AdminCookieName, Collection: values.AdminCollectionName}
-	if err := cookie.CheckCookie(r); err != nil {
+	if err := cookie.CheckCookie(r, w); err != nil {
 		http.Redirect(w, r, "/admin/login/", 302)
 		return
+	}
+
+	data := map[string]interface{}{
+		"UploadSuccess": false,
 	}
 
 	// compare database UUID with cookie UUID
 	tmpl, terr := template.New("admin.html").Delims("(%", "%)").ParseFiles("views/admin/admin.html", "views/admin/components/tabs.vue",
 		"views/admin/components/adduser.vue", "views/admin/components/block.vue", "views/admin/components/messagescan.vue")
 	if terr != nil {
-		log.Fatalln(terr)
+		log.Println("could not load template in AdminPage function", terr)
+		return
 	}
-	tmpl.Execute(w, nil)
+	if err := tmpl.Execute(w, data); err != nil {
+		log.Println("could not execute template in AdminPage function", err)
+	}
+}
+
+func UploadUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	cookie := model.CookieDetail{CookieName: values.AdminCookieName, Collection: values.AdminCollectionName}
+	err := cookie.CheckCookie(r, w)
+	if err != nil {
+		http.Redirect(w, r, "/adnin/login", 302)
+		return
+	}
+
+	r.ParseForm()
+	email := r.FormValue("email")
+	name := r.FormValue("name")
+	dateOfBirth := r.FormValue("DOB")
+	usersClass := r.FormValue("usersClass")
+	faculty := r.FormValue("faculty")
+
+	user := model.User{Email: email, Name: name, DOB: dateOfBirth, Class: usersClass, Faculty: faculty}
+	err = model.UploadUser(user, r)
+
+	data := map[string]interface{}{
+		"UploadSuccess": true,
+	}
+	if err != nil {
+		data["UploadSuccess"] = false
+	}
+
+	tmpl, terr := template.New("admin.html").Delims("(%", "%)").ParseFiles("views/admin/admin.html", "views/admin/components/tabs.vue",
+		"views/admin/components/adduser.vue", "views/admin/components/block.vue", "views/admin/components/messagescan.vue")
+	if terr != nil {
+		log.Println("could not load template in UploadUser function", terr)
+	}
+	if err := tmpl.Execute(w, data); err != nil {
+		log.Println("could not execute template in UploadUser function", err)
+	}
 }

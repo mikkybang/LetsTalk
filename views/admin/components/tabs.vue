@@ -3,7 +3,7 @@
   <v-card>
     <v-row>
       <v-col cols="12">
-        <v-img class="white--text align-end" width="400" height="400" src="/assets/unilag.svg" />
+        <v-img class="white--text align-end" width="200" height="200" src="/assets/unilag.svg" />
       </v-col>
 
       <v-col cols="12">
@@ -46,12 +46,45 @@
 (%define "tabsData"%)
     data(){
         return{
-           
+            tabs: '',
+            addUserOption: 'Add single user',
+            addUserOptions: ['Add from file', 'Add single user'],
+            date: new Date().toISOString().substr(0, 10),
+            dateFormatted: this.formatDate(new Date().toISOString().substr(0, 10)),
+            datePickerMenu: false,
+
+            usersClass: 'student',
+            usersClasses: ['student','staff'],
+            faculty: '',
+            faculties: ['Engineering', 'Faculty B', 'Faculty C'],
+            staffFaculty: ['Teaching', 'Non-Teaching'],
+            email: '',
+            emailRules: [
+                v => !!v || 'email address is required for sign in',
+                v => /.+@.+\..+/.test(v) || 'email address must be valid',
+            ],
         }
     },
 
     methods:{
-       
-    }
+        parseDate (date) {
+            if (!date) return null
+
+            const [month, day, year] = date.split('/')
+            return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+        },
+
+        formatDate (date) {
+            if (!date) return null
+
+            const [year, month, day] = date.split('-')
+            return `${month}/${day}/${year}`
+        },
+    },
+    watch: {
+      date (val) {
+        this.dateFormatted = this.formatDate(this.date)
+      },
+    },
 
 (%end%)

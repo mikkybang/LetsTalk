@@ -44,7 +44,7 @@ func (b CookieDetail) CreateCookie(w http.ResponseWriter) error {
 	return nil
 }
 
-func (b *CookieDetail) CheckCookie(r *http.Request) error {
+func (b *CookieDetail) CheckCookie(r *http.Request, w http.ResponseWriter) error {
 	cookie, err := r.Cookie(b.CookieName)
 	if err != nil {
 		return err
@@ -52,10 +52,19 @@ func (b *CookieDetail) CheckCookie(r *http.Request) error {
 
 	var data map[string]interface{}
 	if err := cookieHandler.Decode(b.CookieName, cookie.Value, &data); err != nil {
+		// Reset cookies if cookie validation fails.
+		http.SetCookie(w, &http.Cookie{
+			Name:    b.CookieName,
+			Expires: time.Now(),
+		})
 		return err
 	}
 
-	result := db.Collection(b.Collection).FindOne(context.TODO(), map[string]interface{}{"_id": data["Email"].(string)})
+	email, ok := data["Email"].(string)
+	if !ok {
+		email = ""
+	}
+	result := db.Collection(b.Collection).FindOne(context.TODO(), map[string]interface{}{"_id": email})
 	if err := result.Err(); err != nil {
 		return err
 	}

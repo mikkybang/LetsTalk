@@ -23,6 +23,7 @@ func main() {
 	router.GET("/admin/", controller.AdminPage)
 
 	router.POST("/admin/login/", controller.AdminLoginPOST)
+	router.POST("/admin/upload", controller.UploadUser)
 
 	router.ServeFiles("/assets/*filepath", http.Dir("./views/assets"))
 	if err := http.ListenAndServe(":8080", router); err != nil {

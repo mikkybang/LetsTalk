@@ -19,32 +19,21 @@ type CookieDetail struct {
 	Data       map[string]interface{}
 }
 
-type StudentID struct {
+type User struct {
 	Email        string `bson:"_id" json:"email"`
 	Name         string `bson:"name" json:"name"`
-	Age          int    `bson:"age" json:"age"`
+	DOB          string `bson:"age" json:"age"`
+	Class        string `bson:"class" json:"class"`
 	ParentEmail  string `bson:"parentEmail" json:"parentEmail"`
 	ParentNumber string `bson:"parentNumber" json:"parentNumber"`
 	Password     []byte `bson:"password" json:"password"`
 	Faculty      string `bson:"faculty" json:"faculty"`
-	Department   string `bson:"department" json:"department"`
-	MatricNo     string `bson:"matricNo" json:"matricNo"`
 	UUID         string `bson:"uuid" json:"uuid"`
 }
 
 type Admin struct {
-	StaffDetails Staff `bson:",inline"`
-	Super        bool  `bson:"super" json:"super"`
-}
-
-type Staff struct {
-	Email         string `bson:"_id" json:"email"`
-	Name          string `bson:"name" json:"name"`
-	Password      []byte `bson:"password" json:"password"`
-	Level         int    `bson:"level" json:"level"`
-	Department    string `bson:"department" json:"department"`
-	TeachingStaff bool   `bson:"teachingStaff" json:"teachingStaff"`
-	UUID          string `bson:"uuid" json:"uuid"`
+	StaffDetails User `bson:",inline"`
+	Super        bool `bson:"super" json:"super"`
 }
 
 type Chats struct {
