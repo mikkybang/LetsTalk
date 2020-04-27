@@ -23,6 +23,10 @@
             <v-col cols="12">
               <v-alert type="success">User successfully uploaded</v-alert>
             </v-col>(%end%)
+            (%if .Error%)
+            <v-col cols="12">
+              <v-alert type="success">Could not upload user</v-alert>
+            </v-col>(%end%)
             <form action="/admin/upload" method="POST">
               <v-col cols="12">
                 <v-text-field

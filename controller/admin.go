@@ -29,6 +29,7 @@ func AdminLoginPOST(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 	data := map[string]interface{}{
 		"SigninError": false,
 		"Login":       "/admin/login/",
+		"Admin":       true,
 	}
 
 	admin := model.Admin{StaffDetails: model.User{Email: email}}
@@ -48,7 +49,6 @@ func AdminLoginPOST(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 		CookieName: values.AdminCookieName,
 		Path:       "/admin",
 		Data: map[string]interface{}{
-			"UUID":  admin.StaffDetails.UUID,
 			"Super": admin.Super,
 			"Email": admin.StaffDetails.Email,
 		},
@@ -67,6 +67,7 @@ func AdminLoginGET(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	data := map[string]interface{}{
 		"SigninError": false,
 		"Login":       "/admin/login/",
+		"Admin":       true,
 	}
 
 	if err := loginTmpl.ExecuteTemplate(w, "login.html", data); err != nil {
@@ -85,7 +86,6 @@ func AdminPage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		"UploadSuccess": false,
 	}
 
-	// compare database UUID with cookie UUID
 	tmpl, terr := template.New("admin.html").Delims("(%", "%)").ParseFiles("views/admin/admin.html", "views/admin/components/tabs.vue",
 		"views/admin/components/adduser.vue", "views/admin/components/block.vue", "views/admin/components/messagescan.vue")
 	if terr != nil {
@@ -117,9 +117,11 @@ func UploadUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	data := map[string]interface{}{
 		"UploadSuccess": true,
+		"Error":         false,
 	}
 	if err != nil {
 		data["UploadSuccess"] = false
+		data["Error"] = true
 	}
 
 	tmpl, terr := template.New("admin.html").Delims("(%", "%)").ParseFiles("views/admin/admin.html", "views/admin/components/tabs.vue",
