@@ -1,10 +1,9 @@
 package values
 
 const (
-	DatabaseName           = "unilagDatabase"
-	AdminCollectionName    = "administrators"
-	StudentsCollectionName = "students"
-	StaffsCollectionName   = "staffs"
+	DatabaseName        = "unilagDatabase"
+	AdminCollectionName = "administrators"
+	UsersCollectionName = "students"
 
 	AdminCookieName = "Admin"
 )
