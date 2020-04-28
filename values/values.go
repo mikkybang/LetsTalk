@@ -3,7 +3,8 @@ package values
 const (
 	DatabaseName        = "unilagDatabase"
 	AdminCollectionName = "administrators"
-	UsersCollectionName = "students"
+	UsersCollectionName = "users"
 
 	AdminCookieName = "Admin"
+	UserCookieName  = "User"
 )

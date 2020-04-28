@@ -18,11 +18,12 @@ func main() {
 	router := httprouter.New()
 
 	router.GET("/", controller.HomePage)
-	router.GET("/login/", controller.LoginPage)
-	router.GET("/admin/login/", controller.AdminLoginGET)
-	router.GET("/admin/", controller.AdminPage)
+	router.GET("/login", controller.HomePageLoginGet)
+	router.GET("/admin/login", controller.AdminLoginGET)
+	router.GET("/admin", controller.AdminPage)
 
-	router.POST("/admin/login/", controller.AdminLoginPOST)
+	router.POST("/login", controller.HomePageLoginPost)
+	router.POST("/admin/login", controller.AdminLoginPOST)
 	router.POST("/admin/upload", controller.UploadUser)
 
 	router.ServeFiles("/assets/*filepath", http.Dir("./views/assets"))

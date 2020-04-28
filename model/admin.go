@@ -28,6 +28,7 @@ func (b *Admin) CheckAdminDetails(password string) error {
 }
 
 func UploadUser(user User, r *http.Request) error {
+	user.Name = strings.Title(user.Name)
 	if names := strings.Split(user.Name, " "); len(names) > 1 {
 		var err error
 		user.Password, err = bcrypt.GenerateFromPassword([]byte(names[0]), defaultCost)
