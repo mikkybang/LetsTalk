@@ -1,6 +1,6 @@
 (%define "chattingComponent"%)
 <template>
-  <v-container style="height: 80vh; " fluid>
+  <v-container style="height: 100vh;" fluid>
     <v-row no-gutters>
       <v-col cols="12">
         <v-row no-gutters>

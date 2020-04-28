@@ -1,6 +1,6 @@
 (%define "sidebar" %)
 <template>
-  <v-container fluid>
+  <v-container style="height: 100vh; max-width: 300px" fluid>
     <v-row justify="center" align="center">
       <v-col cols="12">
         <v-img src="./assets/unilag.svg" align="left" contain height="100"></v-img>
@@ -22,31 +22,23 @@
           </v-btn>
         </v-col>
       </v-row>
-      <v-col cols="12"></v-col>
     </v-row>
 
-    <v-flex fluid style="height: 55vh; max-width: 300px" class="overflow-y-auto">
-      <v-row no-gutters>
-        <v-list tile dense three-line>
-          <v-list-item-group v-model="item" color="black">
-            <v-list-item v-for="i in 10" :key="i">
-              <v-list-item-avatar>
-                <v-icon large>mdi-account-circle</v-icon>
-              </v-list-item-avatar>
+    <v-flex fluid style="height: 60vh; max-width: 300px" class="overflow-y-auto">
+      <v-list tile dense three-line>
+        <v-list-item-group v-model="item" color="black">
+          <v-list-item v-for="i in 10" :key="i">
+            <v-list-item-avatar>
+              <v-icon large>mdi-account-circle</v-icon>
+            </v-list-item-avatar>
 
-              <v-list-item-content>
-                <v-list-item-title>matric@live.unilag.edu.ng</v-list-item-title>
-                <v-list-item-subtitle>Text Here</v-list-item-subtitle>
-              </v-list-item-content>
-            </v-list-item>
-          </v-list-item-group>
-        </v-list>
-      </v-row>
-    </v-flex>
-  </v-container>
-</template>
-        </v-col>
-      </v-row>
+            <v-list-item-content>
+              <v-list-item-title>matric@live.unilag.edu.ng</v-list-item-title>
+              <v-list-item-subtitle>Text Here</v-list-item-subtitle>
+            </v-list-item-content>
+          </v-list-item>
+        </v-list-item-group>
+      </v-list>
     </v-flex>
   </v-container>
 </template>
