@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/metaclips/FinalYearProject/values"
@@ -32,4 +33,32 @@ func (b User) CreateUserLogin(password string, w http.ResponseWriter) error {
 		}}.CreateCookie(w)
 
 	return err
+}
+
+func (b Message) SaveMessageContent() ([]string, error) {
+	var messages Chats
+	result := db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{
+		"_id": b.RoomID,
+	})
+	err := result.Decode(&messages)
+	if err != nil {
+		return nil, err
+	}
+	var userExists bool
+	// Check if user is registered to the room
+	for _, user := range messages.RegisteredUsers {
+		if b.User == user {
+			userExists = true
+		}
+	}
+	if userExists == false {
+		return nil, errors.New("Invalid user")
+	}
+
+	messages.Messages = append(messages.Messages, b)
+	_, err = db.Collection(values.RoomsCollectionName).UpdateOne(context.TODO(), bson.M{
+		"_id": b.RoomID,
+	}, messages)
+
+	return messages.RegisteredUsers, err
 }

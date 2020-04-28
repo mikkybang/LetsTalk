@@ -16,8 +16,10 @@ func main() {
 	gob.Register(time.Time{})
 	model.InitDB()
 	router := httprouter.New()
+	go model.HubConstruct.Run()
 
 	router.GET("/", controller.HomePage)
+	router.GET("/ws", controller.ServeWs)
 	router.GET("/login", controller.HomePageLoginGet)
 	router.GET("/admin/login", controller.AdminLoginGET)
 	router.GET("/admin", controller.AdminPage)
