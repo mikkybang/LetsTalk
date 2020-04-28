@@ -54,7 +54,9 @@ func InitDB() {
 		log.Fatalln("error while getting all room names ", err)
 	}
 	var roomChats []Chats
-	err = result.Decode(&roomChats)
+	result.Decode(&roomChats)
+	// todo: fix this issue especially if it's a new db
+	// err = result.Decode(&roomChats)
 	// todo: since nothing has been added to the database....
 	// if err != nil {
 	// 	log.Fatalln("error converting room users interface ", err)
@@ -70,7 +72,8 @@ func InitDB() {
 	}
 
 	var users []User
-	err = result.Decode(&users)
+	result.Decode(&users)
+	// err = result.Decode(&users)
 	// if err != nil {
 	// 	log.Fatalln("error converting room users interface ", err)
 	// }

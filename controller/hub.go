@@ -27,7 +27,7 @@ func ServeWs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 	c := &model.Connection{Send: make(chan []byte, 256), WS: ws}
 
-	s := model.Subscription{c, cookie.Email}
+	s := model.Subscription{Conn: c, User: cookie.Email}
 	model.HubConstruct.Register <- s
 	go s.WritePump()
 	s.ReadPump(cookie.Email)

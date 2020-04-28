@@ -27,7 +27,7 @@ type User struct {
 	DOB   string `bson:"age" json:"age"`
 	Class string `bson:"class" json:"class"`
 	// ID should either users matric or email stripping @....
-	ID           string   `bson:"matric" json:"matric"`
+	ID           string   `bson:"userID" json:"userID"`
 	ParentEmail  string   `bson:"parentEmail" json:"parentEmail"`
 	ParentNumber string   `bson:"parentNumber" json:"parentNumber"`
 	Password     []byte   `bson:"password" json:"password"`
