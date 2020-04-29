@@ -8,7 +8,7 @@
 
       <v-col md="auto">
         <v-menu bottom offset-y>
-          <template v-slot:activator="{ on }">
+          <template v-slot:activator="{ getUsers,on }">
             <v-text-field
               v-on="on"
               v-model="searchText"
@@ -20,7 +20,7 @@
           </template>
           <v-list>
             <v-list-item v-for="(user,i) in users " :key="i" @click="() => {}">
-              <v-list-item-title>Item {{ user }}</v-list-item-title>
+              <v-list-item-title>{{ user }}</v-list-item-title>
             </v-list-item>
           </v-list>
         </v-menu>
@@ -63,19 +63,30 @@
 (%define "sidebarData"%)
   data: () => ({
     showSearch: false,
+    users: [],
     searchText: '',
+    id: "(%.Email%)",
+    uuid: "(%.UUID%)",
     item: 0,
   }),
 
-  computed: {
-    // a computed getter
-    users: function () {
-      // `this` points to the vm instance
-      if (this.searchText.length > 3){
+  method: {
+    getUsers: function () {
+      if (this.searchText.length > 6){
         this.showSearch = true
-        return [1,2,3]
+        var url = location.protocol + "//"+ document.location.host +"/search/" + this.id + "/" + this.uuid + "/" + this.searchText
+        console.log(url)
+        axios.get(url)
+          .then((response) => {
+            var obj = JSON.parse(JSON.stringify(response.data));
+            console.log(obj);
+            console.log(obj.Users);
+            this.users = obj.Users;
+        });
+      } else {
+            this.users = []
       }
-        return []
+      return this.users
     }
   }
 (%end%)

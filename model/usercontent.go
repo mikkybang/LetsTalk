@@ -36,9 +36,9 @@ func (b User) CreateUserLogin(password string, w http.ResponseWriter) error {
 	return err
 }
 
-func (b User) ValidateUser(id, uniqueID string) error {
+func (b User) ValidateUser(email, uniqueID string) error {
 	result := db.Collection(values.UsersCollectionName).FindOne(context.TODO(), bson.M{
-		"userID": b.ID,
+		"_id": email,
 	})
 	err := result.Decode(&b)
 	if err != nil {
@@ -54,7 +54,10 @@ func (b User) ValidateUser(id, uniqueID string) error {
 func GetUser(key string) (names []string) {
 	names = make([]string, 0)
 	for email := range values.Users {
-		if strings.Contains(key, email) {
+		if email == "" {
+			continue
+		}
+		if strings.Contains(email, key) {
 			names = append(names, email)
 		}
 	}

@@ -32,7 +32,7 @@ type User struct {
 	ParentNumber string   `bson:"parentNumber" json:"parentNumber"`
 	Password     []byte   `bson:"password" json:"password"`
 	Faculty      string   `bson:"faculty" json:"faculty"`
-	UUID         string   `bson:"uuid" json:"uuid"`
+	UUID         string   `bson:"loginUUID" json:"uuid"`
 	RoomsJoined  []string `bson:"roooms" json:"rooms"`
 }
 

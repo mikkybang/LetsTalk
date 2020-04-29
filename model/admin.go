@@ -38,7 +38,7 @@ func UploadUser(user User, r *http.Request) error {
 	}
 	id := strings.Split(user.Email, "@")
 	if len(id) > 1 {
-		user.ID = id[1]
+		user.ID = id[0]
 	}
 
 	if user.Class == "student" {

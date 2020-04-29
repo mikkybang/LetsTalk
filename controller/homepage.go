@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"html/template"
 	"log"
 	"net/http"
@@ -18,6 +19,19 @@ func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
+	data := map[string]interface{}{
+		"Email": cookie.Email,
+	}
+
+	uuid, ok := cookie.Data["UUID"]
+	if ok {
+		data["UUID"] = uuid
+	} else {
+		http.Error(w, "Could not retrieve UUID", 404)
+		log.Println("Could not retrieve UUID in homepage")
+		return
+	}
+
 	// use (%%) instead of {{}} for templates
 	tmpl, terr := template.New("home.html").Delims("(%", "%)").ParseFiles("views/homepage/home.html",
 		"views/homepage/components/SideBar.vue", "views/homepage/components/ChattingComponent.vue")
@@ -25,7 +39,7 @@ func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		log.Fatalln(terr)
 	}
 
-	if err := tmpl.ExecuteTemplate(w, "home.html", nil); err != nil {
+	if err := tmpl.ExecuteTemplate(w, "home.html", data); err != nil {
 		log.Println(err)
 	}
 }
@@ -75,4 +89,37 @@ func HomePageLoginPost(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	}
 
 	http.Redirect(w, r, "/", 302)
+}
+
+// todo: Use API instead..
+func SearchUser(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+	id := params.ByName("ID")
+	uniqueID := params.ByName("UUID")
+	key := params.ByName("Key")
+	if id == "" {
+		log.Println("No id was specified while searching for user")
+		http.Error(w, "Not found", 404)
+		return
+	}
+
+	// todo: do we need to still validate???
+	// Are details confidential???
+	err := model.User{}.ValidateUser(id, uniqueID)
+	if err != nil {
+		log.Println("No id was specified while searching for user")
+		http.Error(w, "Not found", 404)
+		return
+	}
+
+	users := model.GetUser(key)
+	data := map[string]interface{}{
+		"Users": users,
+	}
+	bytes, err := json.MarshalIndent(&data, "", "\t")
+	_, err = w.Write(bytes)
+	if err != nil {
+		http.Error(w, "error sending information", 400)
+		return
+	}
 }

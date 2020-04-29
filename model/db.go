@@ -2,8 +2,10 @@ package model
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -54,13 +56,14 @@ func InitDB() {
 		log.Fatalln("error while getting all room names ", err)
 	}
 	var roomChats []Chats
-	result.Decode(&roomChats)
+	//	result.Decode(&roomChats)
 	// todo: fix this issue especially if it's a new db
-	// err = result.Decode(&roomChats)
+	err = result.All(context.TODO(), &roomChats)
 	// todo: since nothing has been added to the database....
-	// if err != nil {
-	// 	log.Fatalln("error converting room users interface ", err)
-	// }
+	if err != nil {
+		log.Fatalln("error converting room users interface ", err)
+	}
+	fmt.Println(roomChats)
 
 	for _, chat := range roomChats {
 		values.RoomUsers[chat.RoomID] = chat.RegisteredUsers
@@ -72,13 +75,19 @@ func InitDB() {
 	}
 
 	var users []User
-	result.Decode(&users)
-	// err = result.Decode(&users)
-	// if err != nil {
-	// 	log.Fatalln("error converting room users interface ", err)
-	// }
+	// result.Decode(&users)
+	err = result.All(context.TODO(), &users)
+	if err != nil {
+		log.Fatalln("error converting room users interface ", err)
+	}
 
 	for _, user := range users {
+		if user.ID == "" {
+			if emails := strings.Split(user.Email, "@"); len(emails) > 1 {
+				values.Users[emails[0]] = user.Name
+				continue
+			}
+		}
 		values.Users[user.ID] = user.Name
 	}
 }

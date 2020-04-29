@@ -50,8 +50,7 @@ func (b *CookieDetail) CheckCookie(r *http.Request, w http.ResponseWriter) error
 		return err
 	}
 
-	var data map[string]interface{}
-	if err := cookieHandler.Decode(b.CookieName, cookie.Value, &data); err != nil {
+	if err := cookieHandler.Decode(b.CookieName, cookie.Value, &b.Data); err != nil {
 		// Reset cookies if cookie validation fails.
 		http.SetCookie(w, &http.Cookie{
 			Name:    b.CookieName,
@@ -60,10 +59,11 @@ func (b *CookieDetail) CheckCookie(r *http.Request, w http.ResponseWriter) error
 		return err
 	}
 
-	email, ok := data["Email"].(string)
+	email, ok := b.Data["Email"].(string)
 	if !ok {
 		email = ""
 	}
+	b.Email = email
 	result := db.Collection(b.Collection).FindOne(context.TODO(), map[string]interface{}{"_id": email})
 	if err := result.Err(); err != nil {
 		return err
@@ -72,7 +72,8 @@ func (b *CookieDetail) CheckCookie(r *http.Request, w http.ResponseWriter) error
 	var ff map[string]interface{}
 	result.Decode(&ff)
 
-	if ff["loginUUID"].(string) != data["UUID"] {
+	// todo: fix this so there wont be a crash
+	if ff["loginUUID"].(string) != b.Data["UUID"].(string) {
 		return errors.New("invalid uuid")
 	}
 
