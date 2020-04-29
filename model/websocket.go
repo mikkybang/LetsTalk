@@ -32,12 +32,12 @@ var HubConstruct = Hub{
 	Broadcast:  make(chan WSMessage),
 	Register:   make(chan Subscription),
 	UnRegister: make(chan Subscription),
+	Users:      make(map[string]map[*Connection]bool),
 }
 
 func (h *Hub) Run() {
 	for {
 		select {
-		//todo: register online users here
 		case s := <-h.Register:
 			connections := h.Users[s.User]
 			if connections == nil {
@@ -107,8 +107,21 @@ func (s Subscription) ReadPump(user string) {
 		// todo: add support to remove messages.
 		// todo: users should choose if to join chat.
 		case Joined:
+			if e.Email != user {
+				return
+			}
+			users, err := e.JoinOrExitRoom()
+			if err != nil {
+				return
+			}
+			// todo: fix this
+			// Normally users requested should be asked to join or NOT..
+			// Broadcast room exit/join to other users..
+			for _, user := range users {
+				m := WSMessage{msg, user}
+				HubConstruct.Broadcast <- m
+			}
 			fmt.Println(e)
-			return
 		case Message:
 			if user != e.User {
 				return

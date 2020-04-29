@@ -92,3 +92,37 @@ func (b Message) SaveMessageContent() ([]string, error) {
 
 	return messages.RegisteredUsers, err
 }
+
+func (b Joined) JoinOrExitRoom() ([]string, error) {
+	var messages Chats
+	var broadcastToUsers []string
+	result := db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{
+		"_id": b.RoomID,
+	})
+	if err := result.Err(); err != nil {
+		return nil, err
+	}
+
+	if err := result.Decode(&messages); err != nil {
+		return nil, err
+	}
+	broadcastToUsers = messages.RegisteredUsers
+	if b.Joined {
+		messages.RegisteredUsers = append(messages.RegisteredUsers, b.Email)
+	} else {
+		users := make([]string, 0)
+		for _, user := range messages.RegisteredUsers {
+			if user == b.Email {
+				continue
+			}
+			users = append(users, user)
+		}
+		messages.RegisteredUsers = users
+	}
+
+	_, err := db.Collection(values.RoomsCollectionName).UpdateOne(context.TODO(), bson.M{
+		"_id": b.RoomID,
+	}, messages)
+
+	return broadcastToUsers, err
+}

@@ -57,6 +57,7 @@ type Message struct {
 
 type Joined struct {
 	RoomID string `json:"roomID"`
+	Email  string `json:"email"`
 	Joined bool   `json:"joined"`
 }
 

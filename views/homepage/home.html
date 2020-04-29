@@ -52,11 +52,27 @@
             template: `(% template "chattingComponent" %)`,
         })
 
-        new Vue({
+        var vueComponent = new Vue({
             el: '#app',
             vuetify: new Vuetify(),
 
         })
+    </script>
+
+    <script>
+        var socket = new WebSocket("ws://" + document.location.host + "/ws");
+        socket.onmessage = function (e) {
+            if (e.data.length > 0) {
+
+            };
+        };
+        socket.onopen = function () {
+            console.log("websocket opened");
+        };
+
+        socket.onclose = function () {
+            console.log("websocket closed");
+        }
     </script>
 </body>
 
