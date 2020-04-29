@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/gob"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -27,7 +28,9 @@ func main() {
 	router.POST("/admin/upload", controller.UploadUser)
 
 	router.ServeFiles("/assets/*filepath", http.Dir("./views/assets"))
+	fmt.Println("Webserver UP")
 	if err := http.ListenAndServe(":8080", router); err != nil {
 		log.Fatalln(err)
 	}
+	fmt.Println("Webserver DOWN")
 }
