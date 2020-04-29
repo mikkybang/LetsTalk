@@ -7,17 +7,33 @@
       </v-col>
 
       <v-col md="auto">
-        <v-text-field rounded filled clearable placeholder="search for contacts"></v-text-field>
+        <v-menu bottom offset-y>
+          <template v-slot:activator="{ on }">
+            <v-text-field
+              v-on="on"
+              v-model="searchText"
+              rounded
+              filled
+              clearable
+              placeholder="search for contacts"
+            ></v-text-field>
+          </template>
+          <v-list>
+            <v-list-item v-for="(user,i) in users " :key="i" @click="() => {}">
+              <v-list-item-title>Item {{ user }}</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
       </v-col>
 
       <v-row justify="center" align="center">
         <v-col md="auto">
-          <v-btn flat outlined height="50" width="50">
+          <v-btn outlined height="50" width="50">
             <v-icon>mdi-phone</v-icon>
           </v-btn>
         </v-col>
         <v-col md="auto" offset-md="1">
-          <v-btn flat outlined height="50" width="50">
+          <v-btn outlined height="50" width="50">
             <v-icon>mdi-bell</v-icon>
           </v-btn>
         </v-col>
@@ -46,6 +62,20 @@
 
 (%define "sidebarData"%)
   data: () => ({
+    showSearch: false,
+    searchText: '',
     item: 0,
-  })
+  }),
+
+  computed: {
+    // a computed getter
+    users: function () {
+      // `this` points to the vm instance
+      if (this.searchText.length > 3){
+        this.showSearch = true
+        return [1,2,3]
+      }
+        return []
+    }
+  }
 (%end%)

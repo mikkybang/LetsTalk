@@ -11,14 +11,14 @@
             </h2>
           </v-col>
 
-          <v-btn fab outline flat depressed>
+          <v-btn fab outlined depressed>
             <v-icon>mdi-account-multiple-plus-outline</v-icon>
           </v-btn>
           <v-col md="auto" align="right">
-            <v-btn fab outline flat depressed>
+            <v-btn fab outlined depressed>
               <v-icon>mdi-video-outline</v-icon>
             </v-btn>
-            <v-btn fab outline flat depressed>
+            <v-btn fab outlined depressed>
               <v-icon>mdi-phone</v-icon>
             </v-btn>
           </v-col>
@@ -86,11 +86,11 @@
       </v-container>
 
       <v-row no-gutters>
-        <v-btn fab outline flat depressed>
+        <v-btn fab outlined depressed>
           <v-icon>mdi-microphone-settings</v-icon>
         </v-btn>
 
-        <v-btn fab outline flat depressed>
+        <v-btn fab outlined depressed>
           <v-icon>mdi-paperclip</v-icon>
         </v-btn>
 
