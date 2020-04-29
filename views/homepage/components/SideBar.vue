@@ -8,7 +8,7 @@
 
       <v-col md="auto">
         <v-menu bottom offset-y>
-          <template v-slot:activator="{ getUsers,on }">
+          <template v-slot:activator="{ on }">
             <v-text-field
               v-on="on"
               v-model="searchText"
@@ -16,6 +16,7 @@
               filled
               clearable
               placeholder="search for contacts"
+              @change="getUsers"
             ></v-text-field>
           </template>
           <v-list>
@@ -42,7 +43,7 @@
 
     <v-flex fluid style="height: 60vh; max-width: 300px" class="overflow-y-auto">
       <v-list tile dense three-line>
-        <v-list-item-group v-model="item" color="black">
+        <v-list-item-group color="black">
           <v-list-item v-for="i in 10" :key="i">
             <v-list-item-avatar>
               <v-icon large>mdi-account-circle</v-icon>
@@ -68,10 +69,12 @@
     id: "(%.Email%)",
     uuid: "(%.UUID%)",
     item: 0,
+    
   }),
 
-  method: {
+  computed: {
     getUsers: function () {
+      var users = []
       if (this.searchText.length > 6){
         this.showSearch = true
         var url = location.protocol + "//"+ document.location.host +"/search/" + this.id + "/" + this.uuid + "/" + this.searchText
@@ -81,12 +84,11 @@
             var obj = JSON.parse(JSON.stringify(response.data));
             console.log(obj);
             console.log(obj.Users);
-            this.users = obj.Users;
+           this.users = obj.Users;
         });
       } else {
             this.users = []
       }
-      return this.users
     }
   }
 (%end%)
