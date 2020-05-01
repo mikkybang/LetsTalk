@@ -27,7 +27,7 @@
                 <v-container style="height: 100vh;" fluid>
                     <v-row no-gutters>
                         <v-col cols="2">
-                            <side-bar />
+                            <side-bar :users="users" :chats="chats" :uuid="uuid" />
                         </v-col>
                         <v-divider vertical></v-divider>
                         <v-col>
@@ -46,21 +46,52 @@
     <script>
         Vue.component('side-bar', {
             template: `(% template "sidebar" .%)`,
-            (% template "sidebarData".%),
+            data: function () {
+                return {
+                    searchText: '',
+                    id: ''.concat('(%.Email %)'),
+                    uuid: ''.concat("(%.UUID %)"),
+                }
+            },
+
+            computed: {
+                getUsers: function () {
+                    if (this.searchText.length > 6) {
+                        var url = location.protocol + "//" + document.location.host + "/search/" + this.id + "/" + this.uuid + "/" + this.searchText
+                        console.log(url)
+                        axios.get(url)
+                            .then((response) => {
+                                var obj = JSON.parse(JSON.stringify(response.data));
+                                console.log(obj);
+                                console.log(obj.Users);
+                                this.users = obj.Users;
+                            });
+                    } else {
+                        this.users = [];
+                    }
+                }
+            },
         })
+
         Vue.component('chatting-component', {
             template: `(% template "chattingComponent" %)`,
         })
 
         var vueComponent = new Vue({
             el: '#app',
-            vuetify: new Vuetify(),
 
+            data: {
+                users: [],
+                searchText: '',
+                chats: [1, 2],
+                currentChatContent: [],
+            },
+
+            vuetify: new Vuetify(),
         })
     </script>
-
     <script>
-        var socket = new WebSocket("ws://" + document.location.host + "/ws");
+        socket = new WebSocket("ws://" + document.location.host + "/ws");
         socket.onmessage = function (e) {
             if (e.data.length > 0) {
 

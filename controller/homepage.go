@@ -19,17 +19,15 @@ func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	data := map[string]interface{}{
-		"Email": cookie.Email,
-	}
-
-	uuid, ok := cookie.Data["UUID"]
-	if ok {
-		data["UUID"] = uuid
-	} else {
+	uuid, ok := cookie.Data["UUID"].(string)
+	if !ok {
 		http.Error(w, "Could not retrieve UUID", 404)
 		log.Println("Could not retrieve UUID in homepage")
 		return
+	}
+	data := map[string]interface{}{
+		"Email": cookie.Email,
+		"UUID":  uuid,
 	}
 
 	// use (%%) instead of {{}} for templates
@@ -39,7 +37,7 @@ func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		log.Fatalln(terr)
 	}
 
-	if err := tmpl.ExecuteTemplate(w, "home.html", data); err != nil {
+	if err := tmpl.Execute(w, data); err != nil {
 		log.Println(err)
 	}
 }
@@ -56,7 +54,7 @@ func HomePageLoginGet(w http.ResponseWriter, r *http.Request, _ httprouter.Param
 		log.Fatalln(terr)
 	}
 
-	if err := tmpl.ExecuteTemplate(w, "login.html", data); err != nil {
+	if err := tmpl.Execute(w, data); err != nil {
 		log.Println(err)
 	}
 }
@@ -82,7 +80,7 @@ func HomePageLoginPost(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 			log.Fatalln(terr)
 		}
 
-		if err := tmpl.ExecuteTemplate(w, "login.html", data); err != nil {
+		if err := tmpl.Execute(w, data); err != nil {
 			log.Println(err)
 		}
 		return

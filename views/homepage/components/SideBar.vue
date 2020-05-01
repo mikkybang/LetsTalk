@@ -6,7 +6,7 @@
         <v-img src="./assets/unilag.svg" align="left" contain height="100"></v-img>
       </v-col>
 
-      <v-col md="auto">
+      <v-col cols="12">
         <v-menu bottom offset-y>
           <template v-slot:activator="{ on }">
             <v-text-field
@@ -44,14 +44,14 @@
     <v-flex fluid style="height: 60vh; max-width: 300px" class="overflow-y-auto">
       <v-list tile dense three-line>
         <v-list-item-group color="black">
-          <v-list-item v-for="i in 10" :key="i">
+          <v-list-item v-for="(chat, i) in chats" :key="i">
             <v-list-item-avatar>
               <v-icon large>mdi-account-circle</v-icon>
             </v-list-item-avatar>
 
             <v-list-item-content>
               <v-list-item-title>matric@live.unilag.edu.ng</v-list-item-title>
-              <v-list-item-subtitle>Text Here</v-list-item-subtitle>
+              <v-list-item-subtitle>{{chat}}</v-list-item-subtitle>
             </v-list-item-content>
           </v-list-item>
         </v-list-item-group>
@@ -59,36 +59,4 @@
     </v-flex>
   </v-container>
 </template>
-(%end%)
-
-(%define "sidebarData"%)
-  data: () => ({
-    showSearch: false,
-    users: [],
-    searchText: '',
-    id: "(%.Email%)",
-    uuid: "(%.UUID%)",
-    item: 0,
-    
-  }),
-
-  computed: {
-    getUsers: function () {
-      var users = []
-      if (this.searchText.length > 6){
-        this.showSearch = true
-        var url = location.protocol + "//"+ document.location.host +"/search/" + this.id + "/" + this.uuid + "/" + this.searchText
-        console.log(url)
-        axios.get(url)
-          .then((response) => {
-            var obj = JSON.parse(JSON.stringify(response.data));
-            console.log(obj);
-            console.log(obj.Users);
-           this.users = obj.Users;
-        });
-      } else {
-            this.users = []
-      }
-    }
-  }
 (%end%)

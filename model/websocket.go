@@ -76,6 +76,7 @@ func (h *Hub) Run() {
 // ReadPump pumps messages from the websocket connection to the hub.
 func (s Subscription) ReadPump(user string) {
 	c := s.Conn
+
 	defer func() {
 		HubConstruct.UnRegister <- s
 		c.WS.Close()
@@ -87,6 +88,7 @@ func (s Subscription) ReadPump(user string) {
 
 	for {
 		_, msg, err := c.WS.ReadMessage()
+		fmt.Println(string(msg))
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
 				log.Printf("error: %v\n", err)

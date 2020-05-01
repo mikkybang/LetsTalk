@@ -1,6 +1,6 @@
 module github.com/metaclips/FinalYearProject
 
-go 1.13
+go 1.14
 
 require (
 	github.com/google/uuid v1.1.1
@@ -12,6 +12,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stretchr/testify v1.5.1 // indirect
 	go.mongodb.org/mongo-driver v1.3.2
-	golang.org/x/crypto v0.0.0-20200422194213-44a606286825
+	golang.org/x/crypto v0.0.0-20200429183012-4b2356b1ed79
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 )
