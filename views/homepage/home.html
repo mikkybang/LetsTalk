@@ -27,7 +27,7 @@
                 <v-container style="height: 100vh;" fluid>
                     <v-row no-gutters>
                         <v-col cols="2">
-                            <side-bar :users="users" :chats="chats" :uuid="uuid" />
+                            <side-bar :chats="chats" />
                         </v-col>
                         <v-divider vertical></v-divider>
                         <v-col>
@@ -45,12 +45,15 @@
 
     <script>
         Vue.component('side-bar', {
-            template: `(% template "sidebar" .%)`,
+            props: {
+                chats: Array,
+            },
             data: function () {
                 return {
                     searchText: '',
                     id: ''.concat('(%.Email %)'),
                     uuid: ''.concat("(%.UUID %)"),
+                    users: [],
                 }
             },
 
@@ -71,6 +74,7 @@
                     }
                 }
             },
+            template: `(% template "sidebar" .%)`,
         })
 
         Vue.component('chatting-component', {
@@ -81,8 +85,6 @@
             el: '#app',
 
             data: {
-                users: [],
-                searchText: '',
                 chats: [1, 2],
                 currentChatContent: [],
             },

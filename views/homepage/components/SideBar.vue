@@ -16,13 +16,16 @@
               filled
               clearable
               placeholder="search for contacts"
-              @change="getUsers"
+              :change="getUsers"
             ></v-text-field>
           </template>
+
           <v-list>
-            <v-list-item v-for="(user,i) in users " :key="i" @click="() => {}">
-              <v-list-item-title>{{ user }}</v-list-item-title>
-            </v-list-item>
+            <v-flex fluid style="max-height: 300px" class="overflow-y-auto">
+              <v-list-item v-for="(user,i) in users " :key="i" @click="() => {}">
+                <v-list-item-title>{{ user }}</v-list-item-title>
+              </v-list-item>
+            </v-flex>
           </v-list>
         </v-menu>
       </v-col>

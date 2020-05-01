@@ -102,7 +102,7 @@ func SearchUser(w http.ResponseWriter, r *http.Request, params httprouter.Params
 	}
 
 	// todo: do we need to still validate???
-	// Are details confidential???
+	// Are matric number meant to be confidential???
 	err := model.User{}.ValidateUser(id, uniqueID)
 	if err != nil {
 		log.Println("No id was specified while searching for user")
