@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/metaclips/FinalYearProject/values"
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/crypto/bcrypt"
@@ -75,6 +76,7 @@ func (b Message) SaveMessageContent() ([]string, error) {
 		return nil, err
 	}
 	var userExists bool
+	// todo: checking all users really isn't required.
 	// Check if user is registered to the room
 	for _, user := range messages.RegisteredUsers {
 		if b.User == user {
@@ -125,4 +127,77 @@ func (b Joined) JoinOrExitRoom() ([]string, error) {
 	}, messages)
 
 	return broadcastToUsers, err
+}
+
+func (b NewRoomRequest) CreateNewRoom() (string, error) {
+	var chats Chats
+	message := Message{
+		Message: b.Email + " Joined",
+		Type:    getContentType(values.INFO),
+	}
+
+	chats.Messages = append(chats.Messages, message)
+	chats.RoomID = uuid.New().String()
+	chats.RoomName = b.RoomName
+	_, err := db.Collection(values.RoomsCollectionName).InsertOne(context.TODO(), chats)
+	if err != nil {
+		return "", err
+	}
+	user := User{Email: b.Email}
+	if err := user.AddUserToRoom(chats.RoomID, chats.RoomName); err != nil {
+		return "", err
+	}
+
+	return chats.RoomID, nil
+}
+
+func (b User) AddUserToRoom(roomID, roomName string) error {
+	result := db.Collection(values.UsersCollectionName).FindOne(context.TODO(), bson.M{
+		"_id": b.Email,
+	})
+	if err := result.Decode(&b); err != nil {
+		return err
+	}
+
+	var roomJoined = RoomsJoined{RoomID: roomID, RoomName: roomName}
+	b.RoomsJoined = append(b.RoomsJoined, roomJoined)
+
+	_, err := db.Collection(values.UsersCollectionName).UpdateOne(context.TODO(), map[string]interface{}{"_id": b.Email},
+		bson.M{"$set": bson.M{"roomsJoined": b.RoomsJoined}})
+
+	return err
+}
+
+func GetAllMessageInRoom(roomID string) ([]Message, error) {
+	result := db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{"_id": roomID})
+
+	var chat Chats
+	if err := result.Decode(&chat); err != nil {
+		return nil, err
+	}
+	return chat.Messages, nil
+}
+
+func GetAllUserRooms(email string) ([]RoomsJoined, error) {
+	var user User
+	result := db.Collection(values.UsersCollectionName).FindOne(context.TODO(), bson.M{
+		"_id": email,
+	})
+
+	if err := result.Decode(&user); err != nil {
+		return nil, err
+	}
+
+	return user.RoomsJoined, nil
+}
+
+func getContentType(contentType int) string {
+	switch contentType {
+	case values.INFO:
+		return "info"
+	case values.TXT:
+		return "txt"
+	}
+
+	return ""
 }

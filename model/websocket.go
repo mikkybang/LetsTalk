@@ -84,7 +84,12 @@ func (s Subscription) ReadPump(user string) {
 
 	c.WS.SetReadLimit(maxMessageSize)
 	c.WS.SetReadDeadline(time.Now().Add(pongWait))
-	c.WS.SetPongHandler(func(string) error { c.WS.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	c.WS.SetPongHandler(
+		func(string) error {
+			c.WS.SetReadDeadline(time.Now().Add(pongWait))
+			return nil
+		},
+	)
 
 	for {
 		_, msg, err := c.WS.ReadMessage()
@@ -96,26 +101,75 @@ func (s Subscription) ReadPump(user string) {
 			break
 		}
 
-		var data interface{}
-		err = json.Unmarshal(msg, data)
+		var data map[string]interface{}
+		err = json.Unmarshal(msg, &data)
 		if err != nil {
 			// todo: handle marshal error better.
 			return
 		}
+		msgType, ok := data["msgType"].(string)
+		if !ok {
+			log.Println("User did not send a valid message type", user, data)
+			return
+		}
 
-		switch e := data.(type) {
+		switch msgType {
+		// Usin .(type) casting instead to convert data to required struct
+		// doesnt seem to work as json UnMarshal converts data to a map
+		// todo: any better way to cast
 		// todo: add support to remove message.
 		// todo: treat errors better.
 		// todo: add support to remove messages.
 		// todo: users should choose if to join chat.
-		case Joined:
-			if e.Email != user {
+		case "NewRoomCreated":
+			var convertedType NewRoomRequest
+			if err := json.Unmarshal(msg, &convertedType); err != nil {
+				log.Println("Could not convert to required New Room Request struct")
 				return
 			}
-			users, err := e.JoinOrExitRoom()
+
+			roomID, err := convertedType.CreateNewRoom()
+			if err != nil {
+				log.Println("Unable to create a new room for user:", convertedType.Email, "err:", err.Error())
+				return
+			}
+
+			// Broadcast a joined message.
+			userJoinedMessage := Joined{
+				RoomID:      roomID,
+				Email:       convertedType.Email,
+				Joined:      true,
+				RoomName:    convertedType.RoomName,
+				MessageType: "UserJoined",
+			}
+			jsonByte, err := json.Marshal(userJoinedMessage)
+			if err != nil {
+				log.Println("Could not marshal to jsonByte while creating room", err.Error())
+				return
+			}
+			m := WSMessage{jsonByte, convertedType.Email}
+			HubConstruct.Broadcast <- m
+
+		case "JoinedRoom":
+			var convertedType Joined
+			if err := json.Unmarshal(msg, &convertedType); err != nil {
+				log.Println("Could not convert to required Join Room Request struct")
+				return
+			}
+
+			if convertedType.Email != user {
+				return
+			}
+			users, err := convertedType.JoinOrExitRoom()
 			if err != nil {
 				return
 			}
+
+			convertedType.MessageType = "UserJoined"
+			if !convertedType.Joined {
+				convertedType.MessageType = "UserLeft"
+			}
+
 			// todo: fix this
 			// Normally users requested should be asked to join or NOT..
 			// Broadcast room exit/join to other users..
@@ -123,14 +177,43 @@ func (s Subscription) ReadPump(user string) {
 				m := WSMessage{msg, user}
 				HubConstruct.Broadcast <- m
 			}
-			fmt.Println(e)
-		case Message:
-			if user != e.User {
+
+		case "RequestAllMessages":
+			roomID, ok := data["roomID"].(string)
+			if ok {
+				messages, err := GetAllMessageInRoom(roomID)
+				if err != nil {
+					log.Println("could not get all messages in room, err:", err)
+					return
+				}
+				mapContent := map[string]interface{}{
+					"messages": messages,
+					"msgType":  "RequestAllMessages",
+				}
+
+				jsonContent, err := json.Marshal(mapContent)
+				if err != nil {
+					log.Println("could not marshal images, err:", err)
+					return
+				}
+
+				m := WSMessage{jsonContent, user}
+				HubConstruct.Broadcast <- m
+			}
+
+		case "NewMessage":
+			var convertedType Message
+			if err := json.Unmarshal(msg, &convertedType); err != nil {
+				log.Println("Could not convert to required New Message struct")
+				return
+			}
+
+			if user != convertedType.User {
 				return
 			}
 
 			// We read content to multiple users on the current chat.
-			registeredUsers, err := e.SaveMessageContent()
+			registeredUsers, err := convertedType.SaveMessageContent()
 			if err != nil {
 				log.Println("Error saving msg to db", err, user)
 				return
@@ -140,7 +223,7 @@ func (s Subscription) ReadPump(user string) {
 				HubConstruct.Broadcast <- m
 			}
 		default:
-			log.Println("Could not convert required type", e)
+			log.Println("Could not convert required type", msgType)
 		}
 	}
 }

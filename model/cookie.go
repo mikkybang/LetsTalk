@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/securecookie"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -20,7 +21,7 @@ var cookieHandler = securecookie.New(hashKey, blockKey)
 func (b CookieDetail) CreateCookie(w http.ResponseWriter) error {
 	exitTime := time.Now().Add(time.Hour * 2)
 	b.Data["exitTime"] = exitTime.Local()
-	b.Data["UUID"] = UUID.String()
+	b.Data["UUID"] = uuid.New().String()
 
 	_, err := db.Collection(b.Collection).UpdateOne(context.TODO(), map[string]interface{}{"_id": b.Email},
 		bson.M{"$set": bson.M{"loginUUID": b.Data["UUID"], "expires": exitTime}})

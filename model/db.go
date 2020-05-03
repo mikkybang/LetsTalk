@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/metaclips/FinalYearProject/values"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -18,7 +17,6 @@ import (
 
 var (
 	db          *mongo.Database
-	UUID        uuid.UUID
 	defaultCost = 10
 )
 
@@ -41,11 +39,6 @@ func InitDB() {
 			time.Sleep(time.Second * 5)
 		}
 	}(mongoDB)
-
-	UUID, err = uuid.NewUUID()
-	if err != nil {
-		log.Fatalln("could not initiate uuid, err: ", err)
-	}
 
 	values.RoomUsers = make(map[string][]string)
 	values.Users = make(map[string]string)

@@ -25,17 +25,21 @@ func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		log.Println("Could not retrieve UUID in homepage")
 		return
 	}
+
+	usersRooms, err := model.GetAllUserRooms(cookie.Email)
+	if err != nil {
+		log.Println("Could not fetch users room", cookie.Email)
+	}
+
 	data := map[string]interface{}{
-		"Email": cookie.Email,
-		"UUID":  uuid,
+		"Email":      cookie.Email,
+		"UUID":       uuid,
+		"UsersRooms": usersRooms,
 	}
 
 	// use (%%) instead of {{}} for templates
-	tmpl, terr := template.New("home.html").Delims("(%", "%)").ParseFiles("views/homepage/home.html",
-		"views/homepage/components/SideBar.vue", "views/homepage/components/ChattingComponent.vue")
-	if terr != nil {
-		log.Fatalln(terr)
-	}
+	tmpl := template.Must(template.New("home.html").Delims("(%", "%)").ParseFiles("views/homepage/home.html",
+		"views/homepage/components/SideBar.vue", "views/homepage/components/ChattingComponent.vue"))
 
 	if err := tmpl.Execute(w, data); err != nil {
 		log.Println(err)
@@ -112,7 +116,7 @@ func SearchUser(w http.ResponseWriter, r *http.Request, params httprouter.Params
 
 	users := model.GetUser(key)
 	data := map[string]interface{}{
-		"Users": users,
+		"AllRegisteredUsers": users,
 	}
 	bytes, err := json.MarshalIndent(&data, "", "\t")
 	_, err = w.Write(bytes)
