@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/metaclips/FinalYearProject/values"
 )
 
 const (
@@ -211,6 +212,7 @@ func (s Subscription) ReadPump(user string) {
 			if user != convertedType.User {
 				return
 			}
+			convertedType.Time = time.Now().Format(values.TimeLayout)
 
 			// We read content to multiple users on the current chat.
 			registeredUsers, err := convertedType.SaveMessageContent()
