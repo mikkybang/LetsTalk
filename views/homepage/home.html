@@ -29,7 +29,7 @@
                         <v-divider vertical></v-divider>
                         <v-col>
                             <chatting-component :currentchatcontentsloaded=" currentChatContentsNotLoaded"
-                                :currentchatcontent="currentChatContent" />
+                                :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID" />
                         </v-col>
                     </v-row>
                 </v-container>
@@ -51,9 +51,8 @@
             data: function () {
                 return {
                     createRoomDialog: false,
-
                     createNewRoomName: '',
-                    id: ''.concat('(%.Email %)'),
+                    userID: ''.concat('(%.Email %)'),
                     uuid: ''.concat("(%.UUID %)"),
                 }
             },
@@ -61,12 +60,13 @@
             methods: {
                 createRoom: function () {
                     console.log("Works" + this.searchText);
-                    var jsonString = { "email": this.id, "msgType": "NewRoomCreated", "roomName": this.roomName };
+                    var jsonString = { "email": this.userID, "msgType": "NewRoomCreated", "roomName": this.roomName };
                     jsonString = JSON.stringify(jsonString);
                     socket.send(jsonString);
                     this.createRoomDialog = false;
                     this.roomName = '';
                 },
+
                 loadChatContent: function (chatID) {
                     this.$emit("update-current-chat-contents-loaded", chatID);
                 },
@@ -79,6 +79,8 @@
             props: {
                 currentchatcontentsloaded: Boolean,
                 currentchatcontent: Array,
+                currentviewedroomid: String,
+
             },
 
             data: function () {
@@ -116,6 +118,7 @@
             data: {
                 chats: [],
                 currentChatContentsNotLoaded: false,
+                currentViewedRoomID: '',
                 chatspreview: {},
                 currentChatContent: [],
             },
@@ -125,6 +128,7 @@
                     this.currentChatContentsNotLoaded = true
                     var message = { 'msgType': 'RequestAllMessages', "roomID": roomID }
                     socket.send(JSON.stringify(message))
+                    this.currentViewedRoomID = roomID
                 },
             },
 
