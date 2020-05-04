@@ -3,15 +3,14 @@
   <v-container style="height: 100vh;" fluid>
     <v-row no-gutters>
       <v-col cols="12">
-        <v-row no-gutters>
-          <v-col>
-            <v-col md="12"></v-col>
+        <v-row>
+          <v-col cols="8">
             <h2>
-              <b>Name Here (Matric@live.unilag.edu.ng)</b>
+              <b>{{currentviewedroomname}}</b>
             </h2>
           </v-col>
 
-          <v-col md="auto" align="right">
+          <v-col cols="4" align="right">
             <v-btn fab outlined depressed>
               <v-icon>mdi-account-multiple-plus-outline</v-icon>
             </v-btn>
@@ -24,7 +23,6 @@
           </v-col>
         </v-row>
         <v-divider></v-divider>
-        <v-col cols="12"></v-col>
       </v-col>
 
       <v-container fluid style="height: 80vh; " class="overflow-auto">
@@ -59,7 +57,7 @@
               <div v-else-if="chat['user']==='((%.Email%))'" align="right">
                 <v-card outlined class="d-inline-block mx-auto">
                   <v-card-title class="text--secondary">
-                    <h6>11:44PM 12/04/2020</h6>
+                    <h6>{{chat['user']}} {{chat['time']}}</h6>
                     <v-spacer></v-spacer>
                     <v-card-actions>
                       <v-menu absolute bottom>
@@ -77,8 +75,8 @@
                       </v-menu>
                     </v-card-actions>
                   </v-card-title>
-                  <v-card-text class="flex">
-                    <span>Hello there my name is michael</span>
+                  <v-card-text>
+                    <span>{{chat['message']}}</span>
                   </v-card-text>
                 </v-card>
               </div>
@@ -86,7 +84,7 @@
               <div v-else align="left">
                 <v-card outlined class="d-inline-block mx-auto">
                   <v-card-title class="text--secondary">
-                    <h6>Matric 11:44PM 12/04/2020</h6>
+                    <h6>{{chat['user']}} {{chat['time']}}</h6>
                     <v-spacer></v-spacer>
                     <v-card-actions>
                       <v-menu absolute bottom left>
@@ -104,8 +102,8 @@
                       </v-menu>
                     </v-card-actions>
                   </v-card-title>
-                  <v-card-text class="flex">
-                    <span>Hi there</span>
+                  <v-card-text>
+                    <span>{{chat['message']}}</span>
                   </v-card-text>
                 </v-card>
               </div>

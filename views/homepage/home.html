@@ -29,7 +29,8 @@
                         <v-divider vertical></v-divider>
                         <v-col>
                             <chatting-component :currentchatcontentsloaded=" currentChatContentsNotLoaded"
-                                :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID" />
+                                :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
+                                :currentviewedroomname="currentViewedRoomName" />
                         </v-col>
                     </v-row>
                 </v-container>
@@ -60,11 +61,11 @@
             methods: {
                 createRoom: function () {
                     console.log("Works" + this.searchText);
-                    var jsonString = { "email": this.userID, "msgType": "NewRoomCreated", "roomName": this.roomName };
+                    var jsonString = { "email": this.userID, "msgType": "NewRoomCreated", "roomName": this.createNewRoomName };
                     jsonString = JSON.stringify(jsonString);
                     socket.send(jsonString);
                     this.createRoomDialog = false;
-                    this.roomName = '';
+                    this.createNewRoomName = '';
                 },
 
                 loadChatContent: function (chatID) {
@@ -80,7 +81,7 @@
                 currentchatcontentsloaded: Boolean,
                 currentchatcontent: Array,
                 currentviewedroomid: String,
-
+                currentviewedroomname: String,
             },
 
             data: function () {
@@ -119,6 +120,7 @@
                 chats: [],
                 currentChatContentsNotLoaded: false,
                 currentViewedRoomID: '',
+                currentViewedRoomName: '',
                 chatspreview: {},
                 currentChatContent: [],
             },
@@ -159,6 +161,11 @@
                     // console.log(vueComponent.chats);
                     vueComponent.chats.push(roomID)
                     vueComponent.chatspreview[roomID] = { "message": message, "roomName": roomName }
+
+                    // this is omitted. why? Because user should instead click on the chat list to view
+                    // todo: user should be requested to join, on joining a request all message should be sent.
+                    //  vueComponent.currentChatContent = [{ "user": '((%.Email%))', "type": "info", "message": message }]
+                    //  vueComponent.roomName = roomName
                 } else {
                     delete vueComponent.chats[jsonString['roomID']];
                 }
@@ -168,8 +175,9 @@
                 if (messageArray === null) {
                     return
                 }
+
                 vueComponent.currentChatContent = messageArray
-                console.log(messageArray)
+                vueComponent.currentViewedRoomName = jsonString['roomName']
                 vueComponent.currentChatContentsNotLoaded = false
             }
         };

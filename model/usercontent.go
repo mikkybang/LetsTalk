@@ -168,14 +168,14 @@ func (b User) AddUserToRoom(roomID, roomName string) error {
 	return err
 }
 
-func GetAllMessageInRoom(roomID string) ([]Message, error) {
+func GetAllMessageInRoom(roomID string) ([]Message, string, error) {
 	result := db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{"_id": roomID})
 
 	var chat Chats
 	if err := result.Decode(&chat); err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return chat.Messages, nil
+	return chat.Messages, chat.RoomName, nil
 }
 
 func GetAllUserRooms(email string) ([]RoomsJoined, error) {

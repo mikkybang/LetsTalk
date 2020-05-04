@@ -182,7 +182,7 @@ func (s Subscription) ReadPump(user string) {
 		case "RequestAllMessages":
 			roomID, ok := data["roomID"].(string)
 			if ok {
-				messages, err := GetAllMessageInRoom(roomID)
+				messages, roomName, err := GetAllMessageInRoom(roomID)
 				if err != nil {
 					log.Println("could not get all messages in room, err:", err)
 					return
@@ -190,6 +190,7 @@ func (s Subscription) ReadPump(user string) {
 				mapContent := map[string]interface{}{
 					"messages": messages,
 					"msgType":  "RequestAllMessages",
+					"roomName": roomName,
 				}
 
 				jsonContent, err := json.Marshal(mapContent)
@@ -214,14 +215,16 @@ func (s Subscription) ReadPump(user string) {
 			}
 			convertedType.Time = time.Now().Format(values.TimeLayout)
 
-			// We read content to multiple users on the current chat.
+			// Send message to all users.
+			// Message is sent back to you as confirmation
+			// it is delivered and saved to DB.
 			registeredUsers, err := convertedType.SaveMessageContent()
 			if err != nil {
 				log.Println("Error saving msg to db", err, user)
 				return
 			}
-			for _, user := range registeredUsers {
-				m := WSMessage{msg, user}
+			for _, registeredUser := range registeredUsers {
+				m := WSMessage{msg, registeredUser}
 				HubConstruct.Broadcast <- m
 			}
 		default:
