@@ -25,11 +25,19 @@ type User struct {
 	Faculty      string        `bson:"faculty" json:"faculty"`
 	UUID         string        `bson:"loginUUID" json:"uuid"`
 	RoomsJoined  []RoomsJoined `bson:"roomsJoined" json:"roomsJoined"`
+	JoinRequest  []JoinRequest `bson:"joinRequest" json:"joinRequest"`
 }
 
 type RoomsJoined struct {
 	RoomID   string `bson:"rooomID" json:"roomID"`
 	RoomName string `bson:"rooomName" json:"roomName"`
+}
+
+type JoinRequest struct {
+	RoomID             string `bson:"_id" json:"roomID"`
+	RoomName           string `bson:"roomName" json:"roomName"`
+	RequestingUserName string `bson:"requestingUserName" json:"requestingUserName"`
+	RequestingUserID   string `bson:"requestingUserID" json:"requestingUserID"`
 }
 
 type Admin struct {

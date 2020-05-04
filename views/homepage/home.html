@@ -24,7 +24,8 @@
                     <v-row no-gutters>
                         <v-col cols="auto">
                             <side-bar :chats="chats" :chatspreview="chatspreview"
-                                @update-current-chat-contents-loaded="loadChatContent" />
+                                @update-current-chat-contents-loaded="loadChatContent"
+                                :notificationcount="notificationCount" />
                         </v-col>
                         <v-divider vertical></v-divider>
                         <v-col>
@@ -47,11 +48,13 @@
             props: {
                 chats: Array,
                 chatspreview: {},
+                notificationcount: Number,
             },
 
             data: function () {
                 return {
                     createRoomDialog: false,
+                    openMessageDialog: false,
                     createNewRoomName: '',
                     userID: ''.concat('(%.Email %)'),
                     uuid: ''.concat("(%.UUID %)"),
@@ -86,28 +89,50 @@
 
             data: function () {
                 return {
+                    addUserDialog: false,
+                    addedUsers: [],
+                    usersFound: [],
                     searchUserTextValue: '',
-                    allRegisteredUsers: [],
+                    searchText: '',
+                    uuid: ''.concat("(%.UUID %)"),
+                    userID: ''.concat('(%.Email %)'),
+                    userName: ''.concat('(%.Name %)'),
                     selected: [],
                 }
             },
 
-            computed: {
+            methods: {
                 getUsers: function () {
-                    if (this.searchText.length > 6) {
-                        var url = location.protocol + "//" + document.location.host + "/search/" + this.id + "/" + this.uuid + "/" + this.searchText
-                        console.log(url)
-                        axios.get(url)
-                            .then((response) => {
-                                var obj = JSON.parse(JSON.stringify(response.data));
-                                console.log(obj);
-                                console.log(obj.Users);
-                                this.allRegisteredUsers = obj.AllRegisteredUsers;
-                            });
-                    } else {
-                        this.allRegisteredUsers = [];
-                    }
+                    var url = location.protocol + "//" + document.location.host + "/search/" + this.userID + "/" + this.uuid + "/" + this.searchText
+                    console.log(url)
+                    axios.get(url)
+                        .then((response) => {
+                            var obj = JSON.parse(JSON.stringify(response.data));
+                            console.log(obj);
+                            console.log(obj.Users);
+                            this.usersFound = obj.UsersFound;
+                        });
                 },
+                closeSearchDialog: function () {
+                    this.searchText = ''
+                    this.addUserDialog = false
+                },
+                requestUsersToJoinRoom: function () {
+                    if (this.addedUsers.length === 0) {
+                        return
+                    }
+                    var message = {
+                        "msgType": 'RequestUsersToJoinRoom',
+                        "users": this.usersFound,
+                        "roomID": this.currentviewedroomid,
+                        "roomName": this.currentviewedroomname,
+                        "requestingUserName": this.userName,
+                        "requestingUserID": this.userID,
+                    }
+                    message = JSON.stringify(message)
+                    socket.send(message)
+                    this.closeSearchDialog()
+                }
             },
 
             template: `(% template "chattingComponent" %)`,
@@ -118,6 +143,8 @@
 
             data: {
                 chats: [],
+                notifications: [],
+                notificationCount: 0,
                 currentChatContentsNotLoaded: false,
                 currentViewedRoomID: '',
                 currentViewedRoomName: '',
@@ -179,6 +206,13 @@
                 vueComponent.currentChatContent = messageArray
                 vueComponent.currentViewedRoomName = jsonString['roomName']
                 vueComponent.currentChatContentsNotLoaded = false
+
+            } else if (jsonString['msgType'] === "RequestUsersToJoinRoom") {
+                if (jsonString['roomID'] === vueComponent.currentViewedRoomID) {
+                    vueComponent.currentChatContent.push({ "type": "info", "message": jsonString['userRequested'] + " Requested to join room by" + jsonString['requester'] })
+                } else if (jsonString['userRequested'] === '(%.Email %)') {
+                    vueComponent.notificationCount++
+                }
             }
         };
 

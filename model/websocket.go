@@ -151,6 +151,50 @@ func (s Subscription) ReadPump(user string) {
 			m := WSMessage{jsonByte, convertedType.Email}
 			HubConstruct.Broadcast <- m
 
+		case "RequestUsersToJoinRoom":
+			users, ok := data["users"].([]interface{})
+			if ok {
+				var convertedType JoinRequest
+				if err := json.Unmarshal(msg, &convertedType); err != nil {
+					log.Println("Could not convert to required Joined Request struct")
+					return
+				}
+
+				for i := range users {
+					user, ok := users[i].(string)
+					if ok {
+						roomRegisteredUser, err := convertedType.RequestUserToJoinRoom(user)
+						if err != nil {
+							log.Println("Error while requesting to room", err)
+							continue
+						}
+
+						mapContent := map[string]interface{}{
+							"requester":     convertedType.RequestingUserID,
+							"userRequested": user,
+							"roomID":        convertedType.RoomID,
+							"msgType":       "RequestUsersToJoinRoom",
+						}
+
+						jsonContent, err := json.Marshal(mapContent)
+						if err != nil {
+							log.Println("could not marshal to RequestUsersToJoinRoom, err:", err)
+							return
+						}
+
+						// Send back RequestUsersToJoinRoom signal to everyone
+						for _, roomRegisteredUser := range roomRegisteredUser {
+							m := WSMessage{jsonContent, roomRegisteredUser}
+							HubConstruct.Broadcast <- m
+						}
+						m := WSMessage{jsonContent, user}
+						HubConstruct.Broadcast <- m
+					}
+				}
+
+			} else {
+				log.Println("could not convert users details to a []string")
+			}
 		case "JoinedRoom":
 			var convertedType Joined
 			if err := json.Unmarshal(msg, &convertedType); err != nil {
@@ -161,7 +205,7 @@ func (s Subscription) ReadPump(user string) {
 			if convertedType.Email != user {
 				return
 			}
-			users, err := convertedType.JoinOrExitRoom()
+			users, err := convertedType.JoinRoom()
 			if err != nil {
 				return
 			}

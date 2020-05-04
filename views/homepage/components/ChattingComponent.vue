@@ -11,9 +11,45 @@
           </v-col>
 
           <v-col cols="4" align="right">
-            <v-btn fab outlined depressed>
-              <v-icon>mdi-account-multiple-plus-outline</v-icon>
-            </v-btn>
+            <v-dialog scrollable v-model="addUserDialog" width="600px">
+              <template v-slot:activator="{ on }">
+                <v-btn fab outlined depressed v-on="on">
+                  <v-icon>mdi-account-multiple-plus-outline</v-icon>
+                </v-btn>
+              </template>
+
+              <v-card>
+                <v-card-title>Add Users</v-card-title>
+                <v-divider></v-divider>
+                <v-card-text style="height: 500px;">
+                  <v-row>
+                    <v-col cols="12">
+                      <v-text-field
+                        placeholder="Search Users"
+                        rounded
+                        v-model="searchText"
+                        outlined
+                        append-icon="mdi-magnify"
+                        @click:append="getUsers"
+                      ></v-text-field>
+                    </v-col>
+                    <v-col cols="12">
+                      <v-checkbox
+                        v-for="(user,i) in usersFound"
+                        :key="i"
+                        :label="user"
+                        v-model="addedUsers"
+                      ></v-checkbox>
+                    </v-col>
+                  </v-row>
+                </v-card-text>
+                <v-card-actions>
+                  <v-spacer></v-spacer>
+                  <v-btn color="green darken-1" text @click="requestUsersToJoinRoom">Add User(s)</v-btn>
+                  <v-btn color="green darken-1" text @click="closeSearchDialog">Close</v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
             <v-btn fab outlined depressed>
               <v-icon>mdi-video-outline</v-icon>
             </v-btn>

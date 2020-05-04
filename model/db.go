@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/metaclips/FinalYearProject/values"
@@ -75,12 +74,6 @@ func InitDB() {
 	}
 
 	for _, user := range users {
-		if user.ID == "" {
-			if emails := strings.Split(user.Email, "@"); len(emails) > 1 {
-				values.Users[emails[0]] = user.Name
-				continue
-			}
-		}
-		values.Users[user.ID] = user.Name
+		values.Users[user.Email] = user.Name
 	}
 }

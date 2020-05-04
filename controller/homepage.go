@@ -35,6 +35,7 @@ func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		"Email":      cookie.Email,
 		"UUID":       uuid,
 		"UsersRooms": usersRooms,
+		"Name":       values.Users[cookie.Email],
 	}
 
 	// use (%%) instead of {{}} for templates
@@ -114,9 +115,9 @@ func SearchUser(w http.ResponseWriter, r *http.Request, params httprouter.Params
 		return
 	}
 
-	users := model.GetUser(key)
+	users := model.GetUser(key, id)
 	data := map[string]interface{}{
-		"AllRegisteredUsers": users,
+		"UsersFound": users,
 	}
 	bytes, err := json.MarshalIndent(&data, "", "\t")
 	_, err = w.Write(bytes)
