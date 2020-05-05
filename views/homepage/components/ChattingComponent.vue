@@ -38,6 +38,7 @@
                         v-for="(user,i) in usersFound"
                         :key="i"
                         :label="user"
+                        :value="user"
                         v-model="addedUsers"
                       ></v-checkbox>
                     </v-col>
