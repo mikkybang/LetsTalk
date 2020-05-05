@@ -152,22 +152,23 @@ func (b Joined) JoinRoom() ([]string, error) {
 	result = db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{
 		"_id": b.RoomID,
 	})
-	if err := result.Err(); err != nil {
-		return nil, err
-	}
 
 	var messages Chats
 	if err := result.Decode(&messages); err != nil {
 		return nil, err
 	}
 
-	if b.Joined {
-		messages.RegisteredUsers = append(messages.RegisteredUsers, b.Email)
+	message := Message{
+		Message: b.Email + " Joined",
+		Type:    getContentType(values.INFO),
 	}
+
+	messages.RegisteredUsers = append(messages.RegisteredUsers, b.Email)
+	messages.Messages = append(messages.Messages, message)
 
 	_, err = db.Collection(values.RoomsCollectionName).UpdateOne(context.TODO(), bson.M{
 		"_id": b.RoomID,
-	}, bson.M{"$set": bson.M{"registeredUsers": messages.RegisteredUsers}})
+	}, bson.M{"$set": bson.M{"registeredUsers": messages.RegisteredUsers, "messages": messages.Messages}})
 
 	return messages.RegisteredUsers, err
 }
@@ -272,20 +273,21 @@ func GetAllMessageInRoom(roomID string) ([]Message, string, error) {
 	if err := result.Decode(&chat); err != nil {
 		return nil, "", err
 	}
+
 	return chat.Messages, chat.RoomName, nil
 }
 
-func GetAllUserRooms(email string) ([]RoomsJoined, error) {
+func GetAllUserRooms(email string) (User, error) {
 	var user User
 	result := db.Collection(values.UsersCollectionName).FindOne(context.TODO(), bson.M{
 		"_id": email,
 	})
 
 	if err := result.Decode(&user); err != nil {
-		return nil, err
+		return User{}, err
 	}
 
-	return user.RoomsJoined, nil
+	return user, nil
 }
 
 func getContentType(contentType int) string {

@@ -47,11 +47,26 @@
               <v-icon large>mdi-email</v-icon>
             </v-badge>
 
-            <v-dialog v-model="openMessageDialog" width="600px">
+            <v-dialog scrollable v-model="openMessageDialog" width="600px">
               <v-card>
                 <v-card-title>Messages</v-card-title>
-                <v-card-text>
-                  <span>You have no messages</span>
+                <v-divider></v-divider>
+                <v-card-text style="max-height: 500px;">
+                  <v-container>
+                    <span v-if="notificationcount==0">No Message</span>
+                    <v-row>
+                      <v-col v-for="(notification,i) in notifications" :key="i" cols="12">
+                        <span>{{notification.requestingUserName}} ({{notification.requestingUserID}}) wants to add you to a room ({{notification.roomName}})</span>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                          color="green darken-1"
+                          @click="acceptJoinRequest(notification.roomID,notification.roomName,i)"
+                          text
+                        >Accept</v-btn>
+                        <v-btn color="green darken-1" text>Decline</v-btn>
+                      </v-col>
+                    </v-row>
+                  </v-container>
                 </v-card-text>
               </v-card>
             </v-dialog>
@@ -64,7 +79,7 @@
       <v-expansion-panel>
         <v-expansion-panel-header>Chats</v-expansion-panel-header>
         <v-expansion-panel-content>
-          <v-flex style="height: 60vh; max-width: 400px" class="overflow-y-auto">
+          <v-flex style="height: 60vh; max-width: 300px" class="overflow-y-auto">
             <v-list tile dense three-line>
               <v-list-item-group color="black">
                 <v-list-item v-for="(chatID,i) in chats" :key="i" @click="loadChatContent(chatID)">

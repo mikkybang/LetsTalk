@@ -20,12 +20,13 @@
     <div id="app">
         <v-app>
             <v-content>
-                <v-container style="height: 100vh;" fluid>
-                    <v-row no-gutters>
-                        <v-col cols="auto">
+                <v-container fluid>
+                    <v-row>
+                        <v-col md="auto">
                             <side-bar :chats="chats" :chatspreview="chatspreview"
                                 @update-current-chat-contents-loaded="loadChatContent"
-                                :notificationcount="notificationCount" />
+                                @remove-notification="removeNotification" :notificationcount="notificationCount"
+                                :notifications="notifications" />
                         </v-col>
                         <v-divider vertical></v-divider>
                         <v-col>
@@ -49,6 +50,7 @@
                 chats: Array,
                 chatspreview: {},
                 notificationcount: Number,
+                notifications: Array,
             },
 
             data: function () {
@@ -74,6 +76,20 @@
                 loadChatContent: function (chatID) {
                     this.$emit("update-current-chat-contents-loaded", chatID);
                 },
+
+                acceptJoinRequest: function (roomID, roomName, notificationIndex) {
+                    var message = {
+                        "joined": true,
+                        "roomID": roomID,
+                        "roomName": roomName,
+                        "msgType": "UserJoinedRoom",
+                        "email": '(%.Email %)',
+                    }
+
+                    socket.send(JSON.stringify(message))
+                    this.openMessageDialog = false
+                    this.$emit("remove-notification", notificationIndex);
+                }
             },
 
             template: `(% template "sidebar" .%)`,
@@ -113,10 +129,13 @@
                             this.usersFound = obj.UsersFound;
                         });
                 },
+
                 closeSearchDialog: function () {
                     this.searchText = ''
                     this.addUserDialog = false
+                    this.addedUsers = []
                 },
+
                 requestUsersToJoinRoom: function () {
                     if (this.addedUsers.length === 0) {
                         return
@@ -159,6 +178,11 @@
                     socket.send(JSON.stringify(message))
                     this.currentViewedRoomID = roomID
                 },
+
+                removeNotification: function (notificationIndex) {
+                    this.notificationCount--
+                    this.notifications.splice(notificationIndex, 1)
+                }
             },
 
             vuetify: new Vuetify(),
@@ -170,31 +194,39 @@
 
         socket.onmessage = function (e) {
             var jsonString = JSON.parse(e.data);
-            if (jsonString['msgType'] === "UserJoined") {
+            if (jsonString['msgType'] === "UserJoinedRoom") {
                 if (jsonString['joined'] === true) {
                     console.log('Joined room');
-                    var message = jsonString['user'];
+                    var message = jsonString['email'];
                     message = message + " Joined";
-                    if (jsonString['user'] === this.id) {
+                    if (jsonString['user'] === '(%.Email %)') {
                         message = "You Joined";
                     }
 
                     // var content = { "type": "info", "message": message };
                     var roomID = jsonString['roomID'];
                     var roomName = jsonString['roomName'];
-
                     // vueComponent.chats[roomID] = [];
                     // vueComponent.chats[roomID].push(content);
                     // console.log(vueComponent.chats);
                     vueComponent.chats.push(roomID)
                     vueComponent.chatspreview[roomID] = { "message": message, "roomName": roomName }
 
+                    // Update current chat if in view.
+                    if (vueComponent.currentViewedRoomID === roomID) {
+                        vueComponent.currentChatContent.push({ "type": "info", "message": jsonString['userRequested'] + " Joined the room" })
+                    }
+
                     // this is omitted. why? Because user should instead click on the chat list to view
                     // todo: user should be requested to join, on joining a request all message should be sent.
                     //  vueComponent.currentChatContent = [{ "user": '((%.Email%))', "type": "info", "message": message }]
                     //  vueComponent.roomName = roomName
                 } else {
-                    delete vueComponent.chats[jsonString['roomID']];
+                    for (var i = 0; i < vueComponent.chats.length; i++) {
+                        if (vueComponent.chats[i] === jsonString['roomID']) {
+                            vueComponent.chats.splice(i, 1)
+                        }
+                    }
                 }
 
             } else if (jsonString['msgType'] === "RequestAllMessages") {
@@ -209,20 +241,43 @@
 
             } else if (jsonString['msgType'] === "RequestUsersToJoinRoom") {
                 if (jsonString['roomID'] === vueComponent.currentViewedRoomID) {
-                    vueComponent.currentChatContent.push({ "type": "info", "message": jsonString['userRequested'] + " Requested to join room by" + jsonString['requester'] })
+                    vueComponent.currentChatContent.push({ "type": "info", "message": jsonString['userRequested'] + " Requested to join room by" + jsonString['requesterID'] })
+
                 } else if (jsonString['userRequested'] === '(%.Email %)') {
+                    var message = {
+                        "requestingUserName": jsonString['requesterID'],
+                        "requestingUserID": jsonString['requesterName'],
+                        "roomName": jsonString['roomName'],
+                        "roomID": jsonString['roomID'],
+                    }
+                    vueComponent.notifications.push(message)
+
                     vueComponent.notificationCount++
                 }
+
+                vueComponent.chatspreview[jsonString['roomID']] = { "message": jsonString['userRequested'] + " Requested to join the room by " + jsonString['requesterID'], "roomName": jsonString['roomName'] }
+                Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
             }
         };
 
         socket.onopen = function () {
+            // If we have to reconnect websocket, we might need to move this away from here
             (% range.UsersRooms %)
             var roomID = ''.concat("(% .RoomID  %)")
             vueComponent.chatspreview[roomID] = { "message": "", "roomName": "(%.RoomName %)" };
             vueComponent.chats.push(''.concat("(% .RoomID  %)"))
                 (% end %)
+
             console.log("websocket opened");
+
+            (% range.Requests %)
+            var message = {
+                "requestingUserName": '(%.RequestingUserName%)', "requestingUserID": '(%.RequestingUserID%)',
+                "roomName": '(%.RoomName%)', "roomID": '(%.RoomID%)',
+            }
+            vueComponent.notifications.push(message)
+            vueComponent.notificationCount++
+            (% end %)
         };
 
         socket.onclose = function () {

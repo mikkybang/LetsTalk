@@ -141,7 +141,7 @@ func (s Subscription) ReadPump(user string) {
 				Email:       convertedType.Email,
 				Joined:      true,
 				RoomName:    convertedType.RoomName,
-				MessageType: "UserJoined",
+				MessageType: "UserJoinedRoom",
 			}
 			jsonByte, err := json.Marshal(userJoinedMessage)
 			if err != nil {
@@ -170,9 +170,11 @@ func (s Subscription) ReadPump(user string) {
 						}
 
 						mapContent := map[string]interface{}{
-							"requester":     convertedType.RequestingUserID,
+							"requesterID":   convertedType.RequestingUserID,
+							"requesterName": convertedType.RequestingUserName,
 							"userRequested": user,
 							"roomID":        convertedType.RoomID,
+							"roomName":      convertedType.RoomName,
 							"msgType":       "RequestUsersToJoinRoom",
 						}
 
@@ -195,7 +197,7 @@ func (s Subscription) ReadPump(user string) {
 			} else {
 				log.Println("could not convert users details to a []string")
 			}
-		case "JoinedRoom":
+		case "UserJoinedRoom":
 			var convertedType Joined
 			if err := json.Unmarshal(msg, &convertedType); err != nil {
 				log.Println("Could not convert to required Join Room Request struct")
@@ -210,14 +212,6 @@ func (s Subscription) ReadPump(user string) {
 				return
 			}
 
-			convertedType.MessageType = "UserJoined"
-			if !convertedType.Joined {
-				convertedType.MessageType = "UserLeft"
-			}
-
-			// todo: fix this
-			// Normally users requested should be asked to join or NOT..
-			// Broadcast room exit/join to other users..
 			for _, user := range users {
 				m := WSMessage{msg, user}
 				HubConstruct.Broadcast <- m
