@@ -1,11 +1,3 @@
 A chatting application using Pion webRTC for text, video, voice and file transfer. Written in Golang.
 
-To build website. Install the Go programming compiler <a href="https://golang.org/dl/">here</a>
-
-> Set mongodb db_host environment variable
-
-> go run github.com/metaclips/FinalYearProject
-
-Run executable
-
-Navigate to 127.0.0.1:8080 on web browser
+This is a research project.
