@@ -113,9 +113,6 @@ func (s Subscription) ReadPump(user string) {
 		}
 
 		switch msgType {
-		// Usin .(type) casting instead to convert data to required struct
-		// doesnt seem to work as json UnMarshal converts data to a map
-		// todo: any better way to cast
 		// todo: add support to remove message.
 		// todo: treat errors better.
 		// todo: add support to remove messages.
@@ -124,13 +121,13 @@ func (s Subscription) ReadPump(user string) {
 			var convertedType NewRoomRequest
 			if err := json.Unmarshal(msg, &convertedType); err != nil {
 				log.Println("Could not convert to required New Room Request struct")
-				return
+				continue
 			}
 
 			roomID, err := convertedType.CreateNewRoom()
 			if err != nil {
 				log.Println("Unable to create a new room for user:", convertedType.Email, "err:", err.Error())
-				return
+				continue
 			}
 
 			// Broadcast a joined message.
@@ -144,7 +141,7 @@ func (s Subscription) ReadPump(user string) {
 			jsonByte, err := json.Marshal(userJoinedMessage)
 			if err != nil {
 				log.Println("Could not marshal to jsonByte while creating room", err.Error())
-				return
+				continue
 			}
 			m := WSMessage{jsonByte, convertedType.Email}
 			HubConstruct.Broadcast <- m
@@ -155,7 +152,7 @@ func (s Subscription) ReadPump(user string) {
 				var convertedType JoinRequest
 				if err := json.Unmarshal(msg, &convertedType); err != nil {
 					log.Println("Could not convert to required Joined Request struct")
-					return
+					continue
 				}
 
 				for i := range users {
@@ -179,7 +176,7 @@ func (s Subscription) ReadPump(user string) {
 						jsonContent, err := json.Marshal(mapContent)
 						if err != nil {
 							log.Println("could not marshal to RequestUsersToJoinRoom, err:", err)
-							return
+							continue
 						}
 
 						// Send back RequestUsersToJoinRoom signal to everyone
@@ -199,15 +196,16 @@ func (s Subscription) ReadPump(user string) {
 			var convertedType Joined
 			if err := json.Unmarshal(msg, &convertedType); err != nil {
 				log.Println("Could not convert to required Join Room Request struct")
-				return
+				continue
 			}
 
 			if convertedType.Email != user {
-				return
+				continue
 			}
 			users, err := convertedType.JoinRoom()
 			if err != nil {
-				return
+				log.Println("could not join room", err)
+				continue
 			}
 
 			for _, user := range users {
@@ -221,7 +219,7 @@ func (s Subscription) ReadPump(user string) {
 				messages, roomName, err := GetAllMessageInRoom(roomID)
 				if err != nil {
 					log.Println("could not get all messages in room, err:", err)
-					return
+					continue
 				}
 				mapContent := map[string]interface{}{
 					"messages": messages,
@@ -232,7 +230,7 @@ func (s Subscription) ReadPump(user string) {
 				jsonContent, err := json.Marshal(mapContent)
 				if err != nil {
 					log.Println("could not marshal images, err:", err)
-					return
+					continue
 				}
 
 				m := WSMessage{jsonContent, user}
@@ -243,11 +241,11 @@ func (s Subscription) ReadPump(user string) {
 			var convertedType Message
 			if err := json.Unmarshal(msg, &convertedType); err != nil {
 				log.Println("Could not convert to required New Message struct")
-				return
+				continue
 			}
 
 			if user != convertedType.UserID {
-				return
+				continue
 			}
 			convertedType.Time = time.Now().Format(values.TimeLayout)
 			// Send message to all users.
@@ -256,7 +254,7 @@ func (s Subscription) ReadPump(user string) {
 			registeredUsers, err := convertedType.SaveMessageContent()
 			if err != nil {
 				log.Println("Error saving msg to db", err, user)
-				return
+				continue
 			}
 
 			jsonContent, err := json.Marshal(convertedType)

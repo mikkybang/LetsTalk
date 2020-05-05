@@ -121,6 +121,10 @@ func SearchUser(w http.ResponseWriter, r *http.Request, params httprouter.Params
 		"UsersFound": users,
 	}
 	bytes, err := json.MarshalIndent(&data, "", "\t")
+	if err != nil {
+		http.Error(w, "error marshalling on get users", 400)
+		return
+	}
 	_, err = w.Write(bytes)
 	if err != nil {
 		http.Error(w, "error sending information", 400)

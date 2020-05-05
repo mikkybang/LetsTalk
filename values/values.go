@@ -1,5 +1,7 @@
 package values
 
+type MessageType int
+
 const (
 	DatabaseName        = "unilagDatabase"
 	AdminCollectionName = "administrators"
@@ -10,7 +12,7 @@ const (
 	UserCookieName  = "User"
 	TimeLayout      = "Monday, 02-Jan-06 15:04:05"
 	// Files are saved as base64 format to database then if queried,
-	TXT = iota
+	TXT MessageType = iota
 	INFO
 	MP3
 	EXE

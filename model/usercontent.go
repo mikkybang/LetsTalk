@@ -292,7 +292,7 @@ func GetAllUserRooms(email string) (User, error) {
 	return user, nil
 }
 
-func getContentType(contentType int) string {
+func getContentType(contentType values.MessageType) string {
 	switch contentType {
 	case values.INFO:
 		return "info"
