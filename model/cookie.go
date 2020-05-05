@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/securecookie"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -20,7 +21,7 @@ var cookieHandler = securecookie.New(hashKey, blockKey)
 func (b CookieDetail) CreateCookie(w http.ResponseWriter) error {
 	exitTime := time.Now().Add(time.Hour * 2)
 	b.Data["exitTime"] = exitTime.Local()
-	b.Data["UUID"] = UUID.String()
+	b.Data["UUID"] = uuid.New().String()
 
 	_, err := db.Collection(b.Collection).UpdateOne(context.TODO(), map[string]interface{}{"_id": b.Email},
 		bson.M{"$set": bson.M{"loginUUID": b.Data["UUID"], "expires": exitTime}})
@@ -50,8 +51,7 @@ func (b *CookieDetail) CheckCookie(r *http.Request, w http.ResponseWriter) error
 		return err
 	}
 
-	var data map[string]interface{}
-	if err := cookieHandler.Decode(b.CookieName, cookie.Value, &data); err != nil {
+	if err := cookieHandler.Decode(b.CookieName, cookie.Value, &b.Data); err != nil {
 		// Reset cookies if cookie validation fails.
 		http.SetCookie(w, &http.Cookie{
 			Name:    b.CookieName,
@@ -60,19 +60,23 @@ func (b *CookieDetail) CheckCookie(r *http.Request, w http.ResponseWriter) error
 		return err
 	}
 
-	email, ok := data["Email"].(string)
+	email, ok := b.Data["Email"].(string)
 	if !ok {
 		email = ""
 	}
+	b.Email = email
 	result := db.Collection(b.Collection).FindOne(context.TODO(), map[string]interface{}{"_id": email})
 	if err := result.Err(); err != nil {
 		return err
 	}
 
-	var ff map[string]interface{}
-	result.Decode(&ff)
+	var data map[string]interface{}
+	if err = result.Decode(&data); err != nil {
+		return err
+	}
 
-	if ff["loginUUID"].(string) != data["UUID"] {
+	// todo: fix this so there wont be a crash
+	if data["loginUUID"] != b.Data["UUID"] {
 		return errors.New("invalid uuid")
 	}
 

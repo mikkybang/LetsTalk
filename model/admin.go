@@ -36,11 +36,17 @@ func UploadUser(user User, r *http.Request) error {
 			return err
 		}
 	}
+	id := strings.Split(user.Email, "@")
+	if len(id) > 1 {
+		user.ID = id[0]
+	}
+
 	if user.Class == "student" {
 		user.ParentEmail = r.FormValue("parentEmail")
 		user.ParentNumber = r.FormValue("parentNumber")
 	}
 
+	values.Users[user.Email] = user.Name
 	_, err := db.Collection(values.UsersCollectionName).InsertOne(context.TODO(), user)
 	return err
 }

@@ -37,7 +37,7 @@ func AdminLoginPOST(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 		data["SigninError"] = true
 		data["ErrorDetail"] = "Invalid signin details"
 
-		if err := loginTmpl.ExecuteTemplate(w, "login.html", data); err != nil {
+		if err := loginTmpl.Execute(w, data); err != nil {
 			log.Println(err)
 		}
 		return
@@ -70,7 +70,7 @@ func AdminLoginGET(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 		"Admin":       true,
 	}
 
-	if err := loginTmpl.ExecuteTemplate(w, "login.html", data); err != nil {
+	if err := loginTmpl.Execute(w, data); err != nil {
 		log.Println(err)
 	}
 }

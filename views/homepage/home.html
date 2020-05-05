@@ -5,12 +5,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="description" content="Web Chat">
-    <meta itemprop="description" content="Client-side WebRTC code samples">
+    <meta itemprop="description" content="University Of Lagos Web Chat">
     <meta itemprop="name" content="Home Chat">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta id="theme-color" name="theme-color" content="#ffffff">
-
-    <base target="_blank">
 
     <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
@@ -26,12 +22,17 @@
             <v-content>
                 <v-container fluid>
                     <v-row no-gutters>
-                        <v-col md="2">
-                            <side-bar />
+                        <v-col cols="2">
+                            <side-bar :chats="chats" :chatspreview="chatspreview"
+                                @update-current-chat-contents-loaded="loadChatContent"
+                                @remove-notification="removeNotification" :notificationcount="notificationCount"
+                                :notifications="notifications" />
                         </v-col>
                         <v-divider vertical></v-divider>
-                        <v-col>
-                            <chatting-component />
+                        <v-col md="mx-auto">
+                            <chatting-component :currentchatcontentsloaded=" currentChatContentsNotLoaded"
+                                :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
+                                :currentviewedroomname="currentViewedRoomName" />
                         </v-col>
                     </v-row>
                 </v-container>
@@ -41,21 +42,283 @@
 
     <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 
     <script>
         Vue.component('side-bar', {
+            props: {
+                chats: Array,
+                chatspreview: {},
+                notificationcount: Number,
+                notifications: Array,
+            },
+
+            data: function () {
+                return {
+                    createRoomDialog: false,
+                    openMessageDialog: false,
+                    createNewRoomName: '',
+                    userID: ''.concat('(%.Email %)'),
+                    uuid: ''.concat("(%.UUID %)"),
+                }
+            },
+
+            methods: {
+                createRoom: function () {
+                    console.log("Works" + this.searchText);
+                    var jsonString = { "email": this.userID, "msgType": "NewRoomCreated", "roomName": this.createNewRoomName };
+                    jsonString = JSON.stringify(jsonString);
+                    socket.send(jsonString);
+                    this.createRoomDialog = false;
+                    this.createNewRoomName = '';
+                },
+
+                loadChatContent: function (chatID) {
+                    this.$emit("update-current-chat-contents-loaded", chatID);
+                },
+
+                acceptJoinRequest: function (roomID, roomName, notificationIndex) {
+                    var message = {
+                        "joined": true,
+                        "roomID": roomID,
+                        "roomName": roomName,
+                        "msgType": "UserJoinedRoom",
+                        "email": '(%.Email %)',
+                    }
+
+                    socket.send(JSON.stringify(message))
+                    this.openMessageDialog = false
+                    this.$emit("remove-notification", notificationIndex);
+                }
+            },
+
             template: `(% template "sidebar" .%)`,
-            (% template "sidebarData" %),
         })
+
         Vue.component('chatting-component', {
-            template: `(% template "chattingComponent" %)`,
+            props: {
+                currentchatcontentsloaded: Boolean,
+                currentchatcontent: Array,
+                currentviewedroomid: String,
+                currentviewedroomname: String,
+            },
+
+            data: function () {
+                return {
+                    addUserDialog: false,
+                    addedUsers: [],
+                    usersFound: [],
+                    selected: [],
+                    messageContent: '',
+                    searchUserTextValue: '',
+                    searchText: '',
+                    uuid: ''.concat("(%.UUID %)"),
+                    userID: ''.concat('(%.Email %)'),
+                    userName: ''.concat('(%.Name %)'),
+                }
+            },
+
+            methods: {
+                getUsers: function () {
+                    var url = location.protocol + "//" + document.location.host + "/search/" + this.userID + "/" + this.uuid + "/" + this.searchText
+                    console.log(url)
+                    axios.get(url)
+                        .then((response) => {
+                            var obj = JSON.parse(JSON.stringify(response.data));
+                            console.log(obj);
+                            console.log(obj.Users);
+                            this.usersFound = obj.UsersFound;
+                        });
+                },
+
+                closeSearchDialog: function () {
+                    this.searchText = ''
+                    this.addUserDialog = false
+                    this.addedUsers = []
+                    this.usersFound = []
+                },
+
+                requestUsersToJoinRoom: function () {
+                    if (this.addedUsers.length === 0) {
+                        return
+                    }
+                    var message = {
+                        "msgType": 'RequestUsersToJoinRoom',
+                        "users": this.addedUsers,
+                        "roomID": this.currentviewedroomid,
+                        "roomName": this.currentviewedroomname,
+                        "requestingUserName": this.userName,
+                        "requestingUserID": this.userID,
+                    }
+                    message = JSON.stringify(message)
+                    socket.send(message)
+                    this.closeSearchDialog()
+                },
+
+                sendMessage: function () {
+                    var message = {
+                        "msgType": "NewMessage",
+                        "roomID": this.currentviewedroomid, "message": this.messageContent,
+                        "userID": '(%.Email%)', "name": '(%.Name%)',
+                        "type": "txt",
+                    }
+
+                    socket.send(JSON.stringify(message))
+                    this.messageContent = ''
+                },
+            },
+
+            template: `(% template "chattingComponent". %)`,
         })
 
-        new Vue({
+        var vueComponent = new Vue({
             el: '#app',
-            vuetify: new Vuetify(),
+            data: {
+                chats: [],
+                notifications: [],
+                notificationCount: 0,
+                currentChatContentsNotLoaded: false,
+                currentViewedRoomID: '',
+                currentViewedRoomName: '',
+                chatspreview: {},
+                currentChatContent: [],
+            },
+            methods: {
+                loadChatContent: function (roomID) {
+                    this.currentChatContentsNotLoaded = true
+                    var message = { 'msgType': 'RequestAllMessages', "roomID": roomID }
+                    socket.send(JSON.stringify(message))
+                    this.currentViewedRoomID = roomID
+                },
 
+                removeNotification: function (notificationIndex) {
+                    this.notificationCount--
+                    this.notifications.splice(notificationIndex, 1)
+                }
+            },
+
+            vuetify: new Vuetify(),
         })
+    </script>
+
+    <script>
+        let audio = new Audio('./assets/notification.mp3');
+        var endpoint = "ws://"
+        if (document.location.protocol === "https:") {
+            endpoint = "wss://"
+        }
+        socket = new WebSocket(endpoint + document.location.host + "/ws");
+
+        socket.onmessage = function (e) {
+            var jsonString = JSON.parse(e.data);
+            var msgType = jsonString['msgType'];
+
+            if (msgType === "UserJoinedRoom") {
+                if (jsonString['joined'] === true) {
+                    console.log('Joined room');
+                    var message = jsonString['email'];
+                    message = message + " Joined";
+                    if (jsonString['email'] === '(%.Email %)') {
+                        message = "You Joined";
+                    }
+
+                    var roomID = jsonString['roomID'];
+                    var roomName = jsonString['roomName'];
+                    vueComponent.chatspreview[roomID] = { "message": message, "roomName": roomName }
+
+                    if (jsonString['email'] === '(%.Email %)') {
+                        vueComponent.chats.push(roomID)
+                    } else {
+                        Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
+                    }
+
+                    // Update current chat if in view.
+                    if (vueComponent.currentViewedRoomID === roomID) {
+                        vueComponent.currentChatContent.push({ "type": "info", "message": jsonString['email'] + " Joined the room" })
+                    }
+
+                } else {
+                    for (var i = 0; i < vueComponent.chats.length; i++) {
+                        if (vueComponent.chats[i] === jsonString['roomID']) {
+                            vueComponent.chats.splice(i, 1)
+                        }
+                    }
+                }
+
+                audio.play();
+            } else if (msgType === "RequestAllMessages") {
+                var messageArray = jsonString['messages']
+                if (messageArray === null) {
+                    return
+                }
+
+                vueComponent.currentChatContent = messageArray
+                vueComponent.currentViewedRoomName = jsonString['roomName']
+                vueComponent.currentChatContentsNotLoaded = false
+            } else if (msgType === "RequestUsersToJoinRoom") {
+                if (jsonString['userRequested'] === '(%.Email %)') {
+                    var message = {
+                        "requestingUserName": jsonString['requesterID'],
+                        "requestingUserID": jsonString['requesterName'],
+                        "roomName": jsonString['roomName'],
+                        "roomID": jsonString['roomID'],
+                    }
+
+                    vueComponent.notifications.push(message)
+                    vueComponent.notificationCount++
+
+                } else {
+                    if (jsonString['roomID'] === vueComponent.currentViewedRoomID) {
+                        vueComponent.currentChatContent.push({ "type": "info", "message": jsonString['userRequested'] + " Requested to join room by" + jsonString['requesterID'] })
+                    }
+                    vueComponent.chatspreview[jsonString['roomID']] = { "message": jsonString['userRequested'] + " Requested to join the room by " + jsonString['requesterID'], "roomName": jsonString['roomName'] }
+                    Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
+                }
+
+            } else if (msgType === "NewMessage") {
+                // Update chat content if room is in view.
+                // Update preview
+                var roomID = jsonString['roomID']
+                vueComponent.chatspreview[roomID].message = jsonString['message']
+                Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
+                if (roomID === vueComponent.currentViewedRoomID) {
+                    vueComponent.currentChatContent.push({
+                        "type": jsonString['type'],
+                        "message": jsonString['message'],
+                        "userID": jsonString['userID'],
+                        "time": jsonString['time'],
+                        "name": jsonString['name'],
+                    })
+                }
+
+                audio.play();
+            }
+        };
+
+        socket.onopen = function () {
+            // todo: below
+            // If we have to reconnect websocket, we might need to move this away from here
+            (% range.UsersRooms %)
+            var roomID = ''.concat("(% .RoomID  %)")
+            vueComponent.chatspreview[roomID] = { "message": "", "roomName": "(%.RoomName %)" };
+            vueComponent.chats.push(''.concat("(% .RoomID  %)"))
+                (% end %)
+
+            console.log("websocket opened");
+
+            (% range.Requests %)
+            var message = {
+                "requestingUserName": '(%.RequestingUserName%)', "requestingUserID": '(%.RequestingUserID%)',
+                "roomName": '(%.RoomName%)', "roomID": '(%.RoomID%)',
+            }
+            vueComponent.notifications.push(message)
+            vueComponent.notificationCount++
+            (% end %)
+        };
+
+        socket.onclose = function () {
+            console.log("websocket closed");
+        }
     </script>
 </body>
 

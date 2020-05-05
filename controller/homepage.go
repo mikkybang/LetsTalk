@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"html/template"
 	"log"
 	"net/http"
@@ -18,14 +19,31 @@ func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	// use (%%) instead of {{}} for templates
-	tmpl, terr := template.New("home.html").Delims("(%", "%)").ParseFiles("views/homepage/home.html",
-		"views/homepage/components/SideBar.vue", "views/homepage/components/ChattingComponent.vue")
-	if terr != nil {
-		log.Fatalln(terr)
+	uuid, ok := cookie.Data["UUID"].(string)
+	if !ok {
+		http.Error(w, "Could not retrieve UUID", 404)
+		log.Println("Could not retrieve UUID in homepage")
+		return
 	}
 
-	if err := tmpl.ExecuteTemplate(w, "home.html", nil); err != nil {
+	userInfo, err := model.GetAllUserRooms(cookie.Email)
+	if err != nil {
+		log.Println("Could not fetch users room", cookie.Email)
+	}
+
+	data := map[string]interface{}{
+		"Email":      cookie.Email,
+		"UUID":       uuid,
+		"UsersRooms": userInfo.RoomsJoined,
+		"Requests":   userInfo.JoinRequest,
+		"Name":       values.Users[cookie.Email],
+	}
+
+	// Use (%%) instead of {{}} for templates.
+	tmpl := template.Must(template.New("home.html").Delims("(%", "%)").ParseFiles("views/homepage/home.html",
+		"views/homepage/components/SideBar.vue", "views/homepage/components/ChattingComponent.vue"))
+
+	if err := tmpl.Execute(w, data); err != nil {
 		log.Println(err)
 	}
 }
@@ -42,7 +60,7 @@ func HomePageLoginGet(w http.ResponseWriter, r *http.Request, _ httprouter.Param
 		log.Fatalln(terr)
 	}
 
-	if err := tmpl.ExecuteTemplate(w, "login.html", data); err != nil {
+	if err := tmpl.Execute(w, data); err != nil {
 		log.Println(err)
 	}
 }
@@ -68,11 +86,48 @@ func HomePageLoginPost(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 			log.Fatalln(terr)
 		}
 
-		if err := tmpl.ExecuteTemplate(w, "login.html", data); err != nil {
+		if err := tmpl.Execute(w, data); err != nil {
 			log.Println(err)
 		}
 		return
 	}
 
 	http.Redirect(w, r, "/", 302)
+}
+
+// todo: Use API instead..
+func SearchUser(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+	id := params.ByName("ID")
+	uniqueID := params.ByName("UUID")
+	key := params.ByName("Key")
+	if id == "" {
+		log.Println("No id was specified while searching for user")
+		http.Error(w, "Not found", 404)
+		return
+	}
+
+	// todo: do we need to still validate???
+	// Are matric number meant to be confidential???
+	err := model.User{}.ValidateUser(id, uniqueID)
+	if err != nil {
+		log.Println("No id was specified while searching for user")
+		http.Error(w, "Not found", 404)
+		return
+	}
+
+	users := model.GetUser(key, id)
+	data := map[string]interface{}{
+		"UsersFound": users,
+	}
+	bytes, err := json.MarshalIndent(&data, "", "\t")
+	if err != nil {
+		http.Error(w, "error marshalling on get users", 400)
+		return
+	}
+	_, err = w.Write(bytes)
+	if err != nil {
+		http.Error(w, "error sending information", 400)
+		return
+	}
 }
