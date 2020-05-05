@@ -83,13 +83,15 @@ func (s Subscription) ReadPump(user string) {
 	}()
 
 	c.WS.SetReadLimit(maxMessageSize)
-	c.WS.SetReadDeadline(time.Now().Add(pongWait))
+	if err := c.WS.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
+		log.Println("Could not SetReadLimit in ReadPump", err)
+		return
+	}
+
 	c.WS.SetPongHandler(
 		func(string) error {
-			c.WS.SetReadDeadline(time.Now().Add(pongWait))
-			return nil
-		},
-	)
+			return c.WS.SetReadDeadline(time.Now().Add(pongWait))
+		})
 
 	for {
 		_, msg, err := c.WS.ReadMessage()
@@ -275,7 +277,11 @@ func (s Subscription) ReadPump(user string) {
 
 // write writes a message with the given message type and payload.
 func (c *Connection) write(mt int, payload []byte) error {
-	c.WS.SetWriteDeadline(time.Now().Add(writeWait))
+	if err := c.WS.SetWriteDeadline(time.Now().Add(writeWait)); err != nil {
+		log.Println("Could not SetWriteDeadline", err)
+		return err
+	}
+
 	return c.WS.WriteMessage(mt, payload)
 }
 
@@ -285,14 +291,19 @@ func (s *Subscription) WritePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
-		c.WS.Close()
+		if err := c.WS.Close(); err != nil {
+			log.Println("Could not close websocket successfully at writepump")
+			return
+		}
 	}()
 
 	for {
 		select {
 		case message, ok := <-c.Send:
 			if !ok {
-				c.write(websocket.CloseMessage, []byte{})
+				if err := c.write(websocket.CloseMessage, []byte{}); err != nil {
+					log.Println("Could not write close message to WS in WritePump", err)
+				}
 				return
 			}
 

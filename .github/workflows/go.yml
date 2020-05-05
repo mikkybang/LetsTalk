@@ -41,9 +41,11 @@ jobs:
         - name: Lint
           run: |
             export PATH=$PATH:~/go/bin
-            golangci-lint run --deadline=10m \
-            --disable-all --enable govet \
+            golangci-lint run \
+            --disable-all \
+            --enable govet \
             --enable staticcheck --enable gosimple \
             --enable unconvert --enable ineffassign \
             --enable structcheck --enable goimports \
-            --enable misspell --enable unparam --enable golint
+            --enable misspell  --enable golint \
+            --enable gosec

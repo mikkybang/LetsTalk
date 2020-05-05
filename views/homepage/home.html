@@ -202,6 +202,7 @@
     </script>
 
     <script>
+        let audio = new Audio('./assets/notification.mp3');
         var endpoint = "ws://"
         if (document.location.protocol === "https:") {
             endpoint = "wss://"
@@ -235,6 +236,7 @@
                     if (vueComponent.currentViewedRoomID === roomID) {
                         vueComponent.currentChatContent.push({ "type": "info", "message": jsonString['email'] + " Joined the room" })
                     }
+
                 } else {
                     for (var i = 0; i < vueComponent.chats.length; i++) {
                         if (vueComponent.chats[i] === jsonString['roomID']) {
@@ -242,6 +244,8 @@
                         }
                     }
                 }
+
+                audio.play();
             } else if (msgType === "RequestAllMessages") {
                 var messageArray = jsonString['messages']
                 if (messageArray === null) {
@@ -251,7 +255,6 @@
                 vueComponent.currentChatContent = messageArray
                 vueComponent.currentViewedRoomName = jsonString['roomName']
                 vueComponent.currentChatContentsNotLoaded = false
-
             } else if (msgType === "RequestUsersToJoinRoom") {
                 if (jsonString['userRequested'] === '(%.Email %)') {
                     var message = {
@@ -271,6 +274,7 @@
                     vueComponent.chatspreview[jsonString['roomID']] = { "message": jsonString['userRequested'] + " Requested to join the room by " + jsonString['requesterID'], "roomName": jsonString['roomName'] }
                     Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
                 }
+
             } else if (msgType === "NewMessage") {
                 // Update chat content if room is in view.
                 // Update preview
@@ -286,6 +290,8 @@
                         "name": jsonString['name'],
                     })
                 }
+
+                audio.play();
             }
         };
 

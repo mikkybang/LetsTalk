@@ -48,7 +48,6 @@ func InitDB() {
 		log.Fatalln("error while getting all room names ", err)
 	}
 	var roomChats []Chats
-	//	result.Decode(&roomChats)
 	// todo: fix this issue especially if it's a new db
 	err = result.All(context.TODO(), &roomChats)
 	// todo: since nothing has been added to the database....

@@ -70,11 +70,13 @@ func (b *CookieDetail) CheckCookie(r *http.Request, w http.ResponseWriter) error
 		return err
 	}
 
-	var ff map[string]interface{}
-	result.Decode(&ff)
+	var data map[string]interface{}
+	if err = result.Decode(&data); err != nil {
+		return err
+	}
 
 	// todo: fix this so there wont be a crash
-	if ff["loginUUID"].(string) != b.Data["UUID"].(string) {
+	if data["loginUUID"] != b.Data["UUID"] {
 		return errors.New("invalid uuid")
 	}
 
