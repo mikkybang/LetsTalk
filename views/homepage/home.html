@@ -213,10 +213,12 @@
                     vueComponent.chatspreview[roomID] = { "message": message, "roomName": roomName }
                     if (jsonString['email'] === '(%.Email %)') {
                         vueComponent.chats.push(roomID)
+                    } else {
+                        Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
                     }
                     // Update current chat if in view.
                     if (vueComponent.currentViewedRoomID === roomID) {
-                        vueComponent.currentChatContent.push({ "type": "info", "message": jsonString['userRequested'] + " Joined the room" })
+                        vueComponent.currentChatContent.push({ "type": "info", "message": jsonString['email'] + " Joined the room" })
                     }
 
                     // this is omitted. why? Because user should instead click on the chat list to view
