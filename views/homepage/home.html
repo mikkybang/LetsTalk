@@ -21,15 +21,15 @@
         <v-app>
             <v-content>
                 <v-container fluid>
-                    <v-row>
-                        <v-col md="auto">
+                    <v-row no-gutters>
+                        <v-col cols="2">
                             <side-bar :chats="chats" :chatspreview="chatspreview"
                                 @update-current-chat-contents-loaded="loadChatContent"
                                 @remove-notification="removeNotification" :notificationcount="notificationCount"
                                 :notifications="notifications" />
                         </v-col>
                         <v-divider vertical></v-divider>
-                        <v-col>
+                        <v-col md="mx-auto">
                             <chatting-component :currentchatcontentsloaded=" currentChatContentsNotLoaded"
                                 :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
                                 :currentviewedroomname="currentViewedRoomName" />
@@ -204,27 +204,20 @@
                         message = "You Joined";
                     }
 
-                    // var content = { "type": "info", "message": message };
                     var roomID = jsonString['roomID'];
                     var roomName = jsonString['roomName'];
-                    // vueComponent.chats[roomID] = [];
-                    // vueComponent.chats[roomID].push(content);
-                    // console.log(vueComponent.chats);
                     vueComponent.chatspreview[roomID] = { "message": message, "roomName": roomName }
+
                     if (jsonString['email'] === '(%.Email %)') {
                         vueComponent.chats.push(roomID)
                     } else {
                         Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
                     }
+
                     // Update current chat if in view.
                     if (vueComponent.currentViewedRoomID === roomID) {
                         vueComponent.currentChatContent.push({ "type": "info", "message": jsonString['email'] + " Joined the room" })
                     }
-
-                    // this is omitted. why? Because user should instead click on the chat list to view
-                    // todo: user should be requested to join, on joining a request all message should be sent.
-                    //  vueComponent.currentChatContent = [{ "user": '((%.Email%))', "type": "info", "message": message }]
-                    //  vueComponent.roomName = roomName
                 } else {
                     for (var i = 0; i < vueComponent.chats.length; i++) {
                         if (vueComponent.chats[i] === jsonString['roomID']) {
@@ -265,6 +258,7 @@
         };
 
         socket.onopen = function () {
+            // todo: below
             // If we have to reconnect websocket, we might need to move this away from here
             (% range.UsersRooms %)
             var roomID = ''.concat("(% .RoomID  %)")

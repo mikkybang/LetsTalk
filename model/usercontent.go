@@ -143,8 +143,10 @@ func (b Joined) JoinRoom() ([]string, error) {
 		return nil, errors.New("No join request was initially made to the user" + user.Name)
 	}
 
+	user.RoomsJoined = append(user.RoomsJoined, RoomsJoined{RoomID: b.RoomID, RoomName: b.RoomName})
+
 	_, err = db.Collection(values.UsersCollectionName).UpdateOne(context.TODO(), map[string]interface{}{"_id": b.Email},
-		bson.M{"$set": bson.M{"joinRequest": user.JoinRequest}})
+		bson.M{"$set": bson.M{"joinRequest": user.JoinRequest, "roomsJoined": user.RoomsJoined}})
 	if err != nil {
 		return nil, err
 	}

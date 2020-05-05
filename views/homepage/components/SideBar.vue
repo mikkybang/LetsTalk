@@ -1,14 +1,14 @@
 (%define "sidebar" %)
 <template>
-  <v-container>
-    <v-row style="height: 30vh; max-width: 400px" justify="center" align="center">
+  <v-container fluid>
+    <v-row justify="center" align="center">
       <v-col cols="12">
-        <v-img src="./assets/unilag.svg" align="left" contain height="100"></v-img>
+        <v-img src="./assets/unilag.svg" align="center" contain height="150"></v-img>
       </v-col>
 
       <v-col cols="12">
         <v-row justify="center" align="center">
-          <v-col cols="auto">
+          <v-col md="auto">
             <v-dialog v-model="createRoomDialog" width="600px">
               <template v-slot:activator="{ on }">
                 <v-btn outlined height="50" width="50" v-on="on">
@@ -36,7 +36,7 @@
             </v-dialog>
           </v-col>
 
-          <v-col cols="auto">
+          <v-col md="auto">
             <v-badge
               @click.native="openMessageDialog=!openMessageDialog"
               :content="notificationcount"
