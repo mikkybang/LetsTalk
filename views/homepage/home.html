@@ -200,7 +200,7 @@
                     console.log('Joined room');
                     var message = jsonString['email'];
                     message = message + " Joined";
-                    if (jsonString['user'] === '(%.Email %)') {
+                    if (jsonString['email'] === '(%.Email %)') {
                         message = "You Joined";
                     }
 
@@ -210,9 +210,10 @@
                     // vueComponent.chats[roomID] = [];
                     // vueComponent.chats[roomID].push(content);
                     // console.log(vueComponent.chats);
-                    vueComponent.chats.push(roomID)
                     vueComponent.chatspreview[roomID] = { "message": message, "roomName": roomName }
-
+                    if (jsonString['email'] === '(%.Email %)') {
+                        vueComponent.chats.push(roomID)
+                    }
                     // Update current chat if in view.
                     if (vueComponent.currentViewedRoomID === roomID) {
                         vueComponent.currentChatContent.push({ "type": "info", "message": jsonString['userRequested'] + " Joined the room" })
@@ -241,10 +242,7 @@
                 vueComponent.currentChatContentsNotLoaded = false
 
             } else if (jsonString['msgType'] === "RequestUsersToJoinRoom") {
-                if (jsonString['roomID'] === vueComponent.currentViewedRoomID) {
-                    vueComponent.currentChatContent.push({ "type": "info", "message": jsonString['userRequested'] + " Requested to join room by" + jsonString['requesterID'] })
-
-                } else if (jsonString['userRequested'] === '(%.Email %)') {
+                if (jsonString['userRequested'] === '(%.Email %)') {
                     var message = {
                         "requestingUserName": jsonString['requesterID'],
                         "requestingUserID": jsonString['requesterName'],
@@ -254,10 +252,13 @@
                     vueComponent.notifications.push(message)
 
                     vueComponent.notificationCount++
+                } else {
+                    if (jsonString['roomID'] === vueComponent.currentViewedRoomID) {
+                        vueComponent.currentChatContent.push({ "type": "info", "message": jsonString['userRequested'] + " Requested to join room by" + jsonString['requesterID'] })
+                    }
+                    vueComponent.chatspreview[jsonString['roomID']] = { "message": jsonString['userRequested'] + " Requested to join the room by " + jsonString['requesterID'], "roomName": jsonString['roomName'] }
+                    Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
                 }
-
-                vueComponent.chatspreview[jsonString['roomID']] = { "message": jsonString['userRequested'] + " Requested to join the room by " + jsonString['requesterID'], "roomName": jsonString['roomName'] }
-                Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
             }
         };
 
