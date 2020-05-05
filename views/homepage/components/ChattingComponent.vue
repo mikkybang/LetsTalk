@@ -96,7 +96,7 @@
             <div v-else-if="chat['user']==='((%.Email%))'" align="right">
               <v-card outlined class="d-inline-block mx-auto">
                 <v-card-title class="text--secondary">
-                  <h6>{{chat['user']}} {{chat['time']}}</h6>
+                  <h6>{{chat['name']}} {{chat['time']}}</h6>
                   <v-spacer></v-spacer>
                   <v-card-actions>
                     <v-menu absolute bottom>
@@ -123,7 +123,7 @@
             <div v-else align="left">
               <v-card outlined class="d-inline-block mx-auto">
                 <v-card-title class="text--secondary">
-                  <h6>{{chat['user']}} {{chat['time']}}</h6>
+                  <h6>{{chat['name']}} {{chat['time']}}</h6>
                   <v-spacer></v-spacer>
                   <v-card-actions>
                     <v-menu absolute bottom left>
@@ -160,11 +160,21 @@
           <v-icon>mdi-paperclip</v-icon>
         </v-btn>
       </v-col>
+
       <v-col>
-        <v-textarea solo auto-grow rows="1" rounded clearable></v-textarea>
+        <v-textarea
+          v-model="messageContent"
+          @keyup.enter.exact="sendMessage"
+          solo
+          auto-grow
+          rows="1"
+          rounded
+          clearable
+        ></v-textarea>
       </v-col>
+
       <v-col cols="auto">
-        <v-btn fab depressed>
+        <v-btn @click="sendMessage" fab depressed>
           <v-icon>mdi-send</v-icon>
         </v-btn>
       </v-col>

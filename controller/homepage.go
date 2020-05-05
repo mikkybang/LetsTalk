@@ -39,7 +39,7 @@ func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		"Name":       values.Users[cookie.Email],
 	}
 
-	// use (%%) instead of {{}} for templates
+	// Use (%%) instead of {{}} for templates.
 	tmpl := template.Must(template.New("home.html").Delims("(%", "%)").ParseFiles("views/homepage/home.html",
 		"views/homepage/components/SideBar.vue", "views/homepage/components/ChattingComponent.vue"))
 

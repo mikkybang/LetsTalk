@@ -55,7 +55,8 @@ type Chats struct {
 type Message struct {
 	RoomID      string `bson:"-" json:"roomID"`
 	Message     string `bson:"message" json:"message"`
-	User        string `bson:"user" json:"user"`
+	UserID      string `bson:"userID" json:"userID"`
+	Name        string `bson:"name" json:"name"`
 	Index       int    `bson:"index" json:"index"`
 	Time        string `bson:"time" json:"time"`
 	Type        string `bson:"type" json:"type"`

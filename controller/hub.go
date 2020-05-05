@@ -17,7 +17,6 @@ func ServeWs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	// todo: add authentications
 	ws, err := model.Upgrader.Upgrade(w, r, nil)
 	// Get user ID from cookies.
 	log.Println("User", cookie.Email, "Connected")
@@ -29,6 +28,6 @@ func ServeWs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	s := model.Subscription{Conn: c, User: cookie.Email}
 	model.HubConstruct.Register <- s
-	go s.WritePump()
-	s.ReadPump(cookie.Email)
+	go s.ReadPump(cookie.Email)
+	s.WritePump()
 }

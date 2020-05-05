@@ -2,7 +2,6 @@ package model
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"time"
 
@@ -94,7 +93,6 @@ func (s Subscription) ReadPump(user string) {
 
 	for {
 		_, msg, err := c.WS.ReadMessage()
-		fmt.Println(string(msg))
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
 				log.Printf("error: %v\n", err)
@@ -248,7 +246,7 @@ func (s Subscription) ReadPump(user string) {
 				return
 			}
 
-			if user != convertedType.User {
+			if user != convertedType.UserID {
 				return
 			}
 			convertedType.Time = time.Now().Format(values.TimeLayout)
@@ -261,6 +259,7 @@ func (s Subscription) ReadPump(user string) {
 				log.Println("Error saving msg to db", err, user)
 				return
 			}
+
 			for _, registeredUser := range registeredUsers {
 				m := WSMessage{msg, registeredUser}
 				HubConstruct.Broadcast <- m
@@ -294,7 +293,6 @@ func (s *Subscription) WritePump() {
 				return
 			}
 
-			// Still send message to other clients...
 			if err := c.write(websocket.TextMessage, message); err != nil {
 				return
 			}

@@ -80,8 +80,9 @@ func (b Message) SaveMessageContent() ([]string, error) {
 	// todo: checking all users really isn't required.
 	// Check if user is registered to the room
 	for _, user := range messages.RegisteredUsers {
-		if b.User == user {
+		if b.UserID == user {
 			userExists = true
+			break
 		}
 	}
 	if !userExists {
