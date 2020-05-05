@@ -90,9 +90,8 @@ func (b Message) SaveMessageContent() ([]string, error) {
 	}
 
 	messages.Messages = append(messages.Messages, b)
-	_, err = db.Collection(values.RoomsCollectionName).UpdateOne(context.TODO(), bson.M{
-		"_id": b.RoomID,
-	}, messages)
+	_, err = db.Collection(values.RoomsCollectionName).UpdateOne(context.TODO(), bson.M{"_id": b.RoomID},
+		bson.M{"$set": bson.M{"messages": messages.Messages}})
 
 	return messages.RegisteredUsers, err
 }
@@ -146,7 +145,7 @@ func (b Joined) JoinRoom() ([]string, error) {
 
 	user.RoomsJoined = append(user.RoomsJoined, RoomsJoined{RoomID: b.RoomID, RoomName: b.RoomName})
 
-	_, err = db.Collection(values.UsersCollectionName).UpdateOne(context.TODO(), map[string]interface{}{"_id": b.Email},
+	_, err = db.Collection(values.UsersCollectionName).UpdateOne(context.TODO(), bson.M{"_id": b.Email},
 		bson.M{"$set": bson.M{"joinRequest": user.JoinRequest, "roomsJoined": user.RoomsJoined}})
 	if err != nil {
 		return nil, err
@@ -243,7 +242,7 @@ func (b User) UserJoinedRoom(roomID, roomName string, newRoom bool) error {
 	var roomJoined = RoomsJoined{RoomID: roomID, RoomName: roomName}
 	b.RoomsJoined = append(b.RoomsJoined, roomJoined)
 
-	_, err := db.Collection(values.UsersCollectionName).UpdateOne(context.TODO(), map[string]interface{}{"_id": b.Email},
+	_, err := db.Collection(values.UsersCollectionName).UpdateOne(context.TODO(), bson.M{"_id": b.Email},
 		bson.M{"$set": bson.M{"roomsJoined": b.RoomsJoined}})
 
 	if !newRoom {
@@ -261,7 +260,7 @@ func (b User) UserJoinedRoom(roomID, roomName string, newRoom bool) error {
 		}
 
 		chats.Messages = append(chats.Messages, message)
-		_, err = db.Collection(values.RoomsCollectionName).UpdateOne(context.TODO(), map[string]interface{}{"_id": roomID},
+		_, err = db.Collection(values.RoomsCollectionName).UpdateOne(context.TODO(), bson.M{"_id": roomID},
 			bson.M{"$set": bson.M{"messages": chats.Messages}})
 		return err
 	}

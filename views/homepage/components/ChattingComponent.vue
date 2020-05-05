@@ -93,7 +93,7 @@
               </v-card>
             </div>
 
-            <div v-else-if="chat['user']==='((%.Email%))'" align="right">
+            <div v-else-if="chat['userID']==='(%.Email%)'" align="right">
               <v-card outlined class="d-inline-block mx-auto">
                 <v-card-title class="text--secondary">
                   <h6>{{chat['name']}} {{chat['time']}}</h6>

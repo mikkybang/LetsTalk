@@ -250,7 +250,6 @@ func (s Subscription) ReadPump(user string) {
 				return
 			}
 			convertedType.Time = time.Now().Format(values.TimeLayout)
-
 			// Send message to all users.
 			// Message is sent back to you as confirmation
 			// it is delivered and saved to DB.
@@ -260,8 +259,14 @@ func (s Subscription) ReadPump(user string) {
 				return
 			}
 
+			jsonContent, err := json.Marshal(convertedType)
+			if err != nil {
+				log.Println("Error converted message to json contenr", err)
+				continue
+			}
+
 			for _, registeredUser := range registeredUsers {
-				m := WSMessage{msg, registeredUser}
+				m := WSMessage{jsonContent, registeredUser}
 				HubConstruct.Broadcast <- m
 			}
 		default:

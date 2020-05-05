@@ -168,7 +168,7 @@
                 },
             },
 
-            template: `(% template "chattingComponent" %)`,
+            template: `(% template "chattingComponent". %)`,
         })
 
         var vueComponent = new Vue({
@@ -202,7 +202,11 @@
     </script>
 
     <script>
-        socket = new WebSocket("ws://" + document.location.host + "/ws");
+        var endpoint = "ws://"
+        if (document.location.protocol === "https:") {
+            endpoint = "wss://"
+        }
+        socket = new WebSocket(endpoint + document.location.host + "/ws");
 
         socket.onmessage = function (e) {
             var jsonString = JSON.parse(e.data);
@@ -274,7 +278,13 @@
                 vueComponent.chatspreview[roomID].message = jsonString['message']
                 Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
                 if (roomID === vueComponent.currentViewedRoomID) {
-                    vueComponent.currentChatContent.push({ "type": jsonString['type'], "message": jsonString['message'] })
+                    vueComponent.currentChatContent.push({
+                        "type": jsonString['type'],
+                        "message": jsonString['message'],
+                        "userID": jsonString['userID'],
+                        "time": jsonString['time'],
+                        "name": jsonString['name'],
+                    })
                 }
             }
         };
