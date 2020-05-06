@@ -1,6 +1,6 @@
 (%define "sidebar" %)
 <template>
-  <v-container fluid>
+  <div>
     <v-row justify="center" align="center">
       <v-col cols="12">
         <v-img src="./assets/unilag.svg" align="center" contain height="150"></v-img>
@@ -9,12 +9,13 @@
       <v-col cols="12">
         <v-row justify="center" align="center">
           <v-col md="auto">
-            <v-dialog v-model="createRoomDialog" width="600px">
+            <v-dialog v-model="createRoomDialog">
               <template v-slot:activator="{ on }">
                 <v-btn outlined height="50" width="50" v-on="on">
                   <v-icon>mdi-plus</v-icon>
                 </v-btn>
               </template>
+
               <v-card>
                 <v-card-text>
                   <v-container fluid>
@@ -97,6 +98,6 @@
         </v-expansion-panel-content>
       </v-expansion-panel>
     </v-expansion-panels>
-  </v-container>
+  </div>
 </template>
 (%end%)

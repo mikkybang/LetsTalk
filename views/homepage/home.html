@@ -20,9 +20,13 @@
     <div id="app">
         <v-app>
             <v-content>
-                <v-container fluid>
+                <template v-if="$vuetify.breakpoint.smAndDown">
+                    <span>Still in development</span>
+                </template>
+
+                <template v-else>
                     <v-row no-gutters>
-                        <v-col cols="2">
+                        <v-col cols="auto">
                             <side-bar :chats="chats" :chatspreview="chatspreview"
                                 @update-current-chat-contents-loaded="loadChatContent"
                                 @remove-notification="removeNotification" :notificationcount="notificationCount"
@@ -35,7 +39,7 @@
                                 :currentviewedroomname="currentViewedRoomName" />
                         </v-col>
                     </v-row>
-                </v-container>
+                </template>
             </v-content>
         </v-app>
     </div>
@@ -215,7 +219,6 @@
 
             if (msgType === "UserJoinedRoom") {
                 if (jsonString['joined'] === true) {
-                    console.log('Joined room');
                     var message = jsonString['email'];
                     message = message + " Joined";
                     if (jsonString['email'] === '(%.Email %)') {
@@ -304,9 +307,7 @@
             vueComponent.chats.push(''.concat("(% .RoomID  %)"))
                 (% end %)
 
-            console.log("websocket opened");
-
-            (% range.Requests %)
+                (% range.Requests %)
             var message = {
                 "requestingUserName": '(%.RequestingUserName%)', "requestingUserID": '(%.RequestingUserID%)',
                 "roomName": '(%.RoomName%)', "roomID": '(%.RoomID%)',

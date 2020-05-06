@@ -1,67 +1,64 @@
 (%define "chattingComponent"%)
 <template>
-  <v-container fluid>
-    <v-row no-gutters>
-      <v-col cols="12">
-        <v-row>
-          <v-col cols="8">
-            <h2>
-              <b>{{currentviewedroomname}}</b>
-            </h2>
-          </v-col>
+  <div>
+    <v-container fluid>
+      <v-row no-gutters>
+        <v-col cols="mx-auto">
+          <h2>
+            <b>{{currentviewedroomname}}</b>
+          </h2>
+        </v-col>
+        <v-col cols="auto">
+          <v-dialog scrollable v-model="addUserDialog" width="600px">
+            <template v-slot:activator="{ on }">
+              <v-btn fab outlined depressed v-on="on">
+                <v-icon>mdi-account-multiple-plus-outline</v-icon>
+              </v-btn>
+            </template>
 
-          <v-col cols="4" align="right">
-            <v-dialog scrollable v-model="addUserDialog" width="600px">
-              <template v-slot:activator="{ on }">
-                <v-btn fab outlined depressed v-on="on">
-                  <v-icon>mdi-account-multiple-plus-outline</v-icon>
-                </v-btn>
-              </template>
+            <v-card>
+              <v-card-title>Add Users</v-card-title>
+              <v-divider></v-divider>
+              <v-card-text style="height: 500px;">
+                <v-row>
+                  <v-col cols="12">
+                    <v-text-field
+                      placeholder="Search Users"
+                      rounded
+                      v-model="searchText"
+                      outlined
+                      append-icon="mdi-magnify"
+                      @click:append="getUsers"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-checkbox
+                      v-for="(user,i) in usersFound"
+                      :key="i"
+                      :label="user"
+                      :value="user"
+                      v-model="addedUsers"
+                    ></v-checkbox>
+                  </v-col>
+                </v-row>
+              </v-card-text>
+              <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn color="green darken-1" text @click="requestUsersToJoinRoom">Add User(s)</v-btn>
+                <v-btn color="green darken-1" text @click="closeSearchDialog">Close</v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
 
-              <v-card>
-                <v-card-title>Add Users</v-card-title>
-                <v-divider></v-divider>
-                <v-card-text style="height: 500px;">
-                  <v-row>
-                    <v-col cols="12">
-                      <v-text-field
-                        placeholder="Search Users"
-                        rounded
-                        v-model="searchText"
-                        outlined
-                        append-icon="mdi-magnify"
-                        @click:append="getUsers"
-                      ></v-text-field>
-                    </v-col>
-                    <v-col cols="12">
-                      <v-checkbox
-                        v-for="(user,i) in usersFound"
-                        :key="i"
-                        :label="user"
-                        :value="user"
-                        v-model="addedUsers"
-                      ></v-checkbox>
-                    </v-col>
-                  </v-row>
-                </v-card-text>
-                <v-card-actions>
-                  <v-spacer></v-spacer>
-                  <v-btn color="green darken-1" text @click="requestUsersToJoinRoom">Add User(s)</v-btn>
-                  <v-btn color="green darken-1" text @click="closeSearchDialog">Close</v-btn>
-                </v-card-actions>
-              </v-card>
-            </v-dialog>
-
-            <v-btn fab outlined depressed>
-              <v-icon>mdi-video-outline</v-icon>
-            </v-btn>
-            <v-btn fab outlined depressed>
-              <v-icon>mdi-phone</v-icon>
-            </v-btn>
-          </v-col>
-        </v-row>
-      </v-col>
-    </v-row>
+          <v-btn fab outlined depressed>
+            <v-icon>mdi-video-outline</v-icon>
+          </v-btn>
+          <v-btn fab outlined depressed>
+            <v-icon>mdi-phone</v-icon>
+          </v-btn>
+        </v-col>
+      </v-row>
+    </v-container>
 
     <v-divider></v-divider>
     <v-container fluid style="height: 80vh; " class="overflow-auto">
@@ -151,34 +148,36 @@
       </div>
     </v-container>
 
-    <v-row>
-      <v-col cols="auto">
-        <v-btn fab depressed>
-          <v-icon>mdi-microphone-settings</v-icon>
-        </v-btn>
-        <v-btn fab depressed>
-          <v-icon>mdi-paperclip</v-icon>
-        </v-btn>
-      </v-col>
+    <v-container fluid>
+      <v-row>
+        <v-col cols="auto">
+          <v-btn fab depressed>
+            <v-icon>mdi-microphone-settings</v-icon>
+          </v-btn>
+          <v-btn fab depressed>
+            <v-icon>mdi-paperclip</v-icon>
+          </v-btn>
+        </v-col>
 
-      <v-col>
-        <v-textarea
-          v-model="messageContent"
-          @keyup.enter.exact="sendMessage"
-          solo
-          auto-grow
-          rows="1"
-          rounded
-          clearable
-        ></v-textarea>
-      </v-col>
+        <v-col>
+          <v-textarea
+            v-model="messageContent"
+            @keyup.enter.exact="sendMessage"
+            solo
+            auto-grow
+            rows="1"
+            rounded
+            clearable
+          ></v-textarea>
+        </v-col>
 
-      <v-col cols="auto">
-        <v-btn @click="sendMessage" fab depressed>
-          <v-icon>mdi-send</v-icon>
-        </v-btn>
-      </v-col>
-    </v-row>
-  </v-container>
+        <v-col cols="auto">
+          <v-btn @click="sendMessage" fab depressed>
+            <v-icon>mdi-send</v-icon>
+          </v-btn>
+        </v-col>
+      </v-row>
+    </v-container>
+  </div>
 </template>
 (%end%)
