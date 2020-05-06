@@ -1,6 +1,6 @@
 (%define "chattingComponent"%)
 <template>
-  <div>
+  <div v-if="removewelcomepage===true">
     <v-row>
       <v-col cols="12">
         <v-container fluid>
@@ -171,6 +171,16 @@
             clearable
           ></v-textarea>
         </v-container>
+      </v-col>
+    </v-row>
+  </div>
+  <div align="center" v-else>
+    <v-row>
+      <v-col cols="12">
+        <span>We should add something nice here</span>
+      </v-col>
+      <v-col cols="12">
+        <h4>Coming Soon</h4>
       </v-col>
     </v-row>
   </div>

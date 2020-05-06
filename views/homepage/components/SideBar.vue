@@ -13,13 +13,12 @@
       <v-col v-if="$vuetify.breakpoint.mdAndUp" cols="12">
         <v-row justify="center" align="center">
           <v-col md="auto">
-            <v-dialog v-model="createRoomDialog">
+            <v-dialog max-width="500px" v-model="createRoomDialog">
               <template v-slot:activator="{ on }">
                 <v-btn outlined height="50" width="50" v-on="on">
                   <v-icon>mdi-plus</v-icon>
                 </v-btn>
               </template>
-
               <v-card>
                 <v-card-text>
                   <v-container fluid>
@@ -28,7 +27,7 @@
                         <span>Create New Room</span>
                       </v-col>
                       <v-col cols="12">
-                        <v-text-field label="Specify Room Name" v-model="createNewRoomName"></v-text-field>
+                        <v-text-field label="Specify Room Name" v-model="newroomname"></v-text-field>
                       </v-col>
                       <v-col cols="12">
                         <v-spacer></v-spacer>
@@ -80,7 +79,7 @@
       </v-col>
     </v-row>
 
-    <v-expansion-panels>
+    <v-expansion-panels flat>
       <v-expansion-panel>
         <v-expansion-panel-header>Chats</v-expansion-panel-header>
         <v-expansion-panel-content>
