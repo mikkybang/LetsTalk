@@ -1,15 +1,19 @@
 (%define "sidebar" %)
 <template>
-  <v-container fluid>
-    <v-row justify="center" align="center">
+  <div>
+    <v-row style="max-width: 350px;" justify="center" align="center">
       <v-col cols="12">
         <v-img src="./assets/unilag.svg" align="center" contain height="150"></v-img>
       </v-col>
 
-      <v-col cols="12">
+      <v-col cols="12" align="center" justify="center">
+        <span>Welcome {{name}}</span>
+      </v-col>
+
+      <v-col v-if="$vuetify.breakpoint.mdAndUp" cols="12">
         <v-row justify="center" align="center">
           <v-col md="auto">
-            <v-dialog v-model="createRoomDialog" width="600px">
+            <v-dialog max-width="500px" v-model="createRoomDialog">
               <template v-slot:activator="{ on }">
                 <v-btn outlined height="50" width="50" v-on="on">
                   <v-icon>mdi-plus</v-icon>
@@ -23,7 +27,7 @@
                         <span>Create New Room</span>
                       </v-col>
                       <v-col cols="12">
-                        <v-text-field label="Specify Room Name" v-model="createNewRoomName"></v-text-field>
+                        <v-text-field label="Specify Room Name" v-model="newroomname"></v-text-field>
                       </v-col>
                       <v-col cols="12">
                         <v-spacer></v-spacer>
@@ -75,11 +79,11 @@
       </v-col>
     </v-row>
 
-    <v-expansion-panels>
+    <v-expansion-panels flat>
       <v-expansion-panel>
         <v-expansion-panel-header>Chats</v-expansion-panel-header>
         <v-expansion-panel-content>
-          <v-flex style="height: 60vh; max-width: 300px" class="overflow-y-auto">
+          <v-flex style="height: 55vh; max-width: 300px" class="overflow-y-auto">
             <v-list tile dense three-line>
               <v-list-item-group color="black">
                 <v-list-item v-for="(chatID,i) in chats" :key="i" @click="loadChatContent(chatID)">
@@ -97,6 +101,6 @@
         </v-expansion-panel-content>
       </v-expansion-panel>
     </v-expansion-panels>
-  </v-container>
+  </div>
 </template>
 (%end%)

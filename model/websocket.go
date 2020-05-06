@@ -285,7 +285,7 @@ func (c *Connection) write(mt int, payload []byte) error {
 	return c.WS.WriteMessage(mt, payload)
 }
 
-// writePump pumps messages from the hub to the websocket connection.
+// WritePump pumps messages from the hub to the websocket connection.
 func (s *Subscription) WritePump() {
 	c := s.Conn
 	ticker := time.NewTicker(pingPeriod)
