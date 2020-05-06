@@ -19,27 +19,61 @@
 <body>
     <div id="app">
         <v-app>
-            <v-content>
-                <template v-if="$vuetify.breakpoint.smAndDown">
-                    <span>Still in development</span>
-                </template>
+            <template v-if=" $vuetify.breakpoint.smAndDown">
+                <v-row style="height: 100vh;" no-gutters>
+                    <v-col cols="auto">
+                        <v-card height="100%">
+                            <v-navigation-drawer :mini-variant="mini" :expand-on-hover="expand" permanent>
+                                <v-list dense nav class="py-0">
+                                    <v-list-item two-line class="px-1">
+                                        <v-icon @click="drawer=true">mdi-menu</v-icon>
+                                    </v-list-item>
 
-                <template v-else>
-                    <v-row no-gutters>
-                        <v-col cols="auto">
-                            <side-bar :chats="chats" :chatspreview="chatspreview"
-                                @update-current-chat-contents-loaded="loadChatContent"
-                                @remove-notification="removeNotification" :notificationcount="notificationCount"
-                                :notifications="notifications" />
-                        </v-col>
-                        <v-divider vertical></v-divider>
-                        <v-col md="mx-auto">
-                            <chatting-component :currentchatcontentsloaded=" currentChatContentsNotLoaded"
-                                :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
-                                :currentviewedroomname="currentViewedRoomName" />
-                        </v-col>
-                    </v-row>
-                </template>
+                                    <v-divider></v-divider>
+
+                                    <v-list-item></v-list-item>
+
+                                    <v-list-item v-for="item in items" :key="item.title">
+                                        <v-badge overlap bottom color="red" :content="notificationCount"
+                                            :value="notificationCount">
+                                            <v-icon>{{ item.icon }}</v-icon>
+                                        </v-badge>
+                                    </v-list-item>
+                                </v-list>
+                            </v-navigation-drawer>
+                        </v-card>
+                    </v-col>
+                    <v-navigation-drawer v-model="drawer" absolute temporary>
+                        <side-bar :chats="chats" :chatspreview="chatspreview"
+                            @update-current-chat-contents-loaded="loadChatContent"
+                            @remove-notification="removeNotification" :notificationcount="notificationCount"
+                            :notifications="notifications" />
+                    </v-navigation-drawer>
+                    <v-col cols="mx-auto">
+                        <chatting-component :currentchatcontentsloaded=" currentChatContentsNotLoaded"
+                            :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
+                            :currentviewedroomname="currentViewedRoomName" />
+                    </v-col>
+                </v-row>
+            </template>
+
+            <template v-else>
+                <v-row no-gutters>
+                    <v-col cols="auto">
+                        <side-bar :chats="chats" :chatspreview="chatspreview"
+                            @update-current-chat-contents-loaded="loadChatContent"
+                            @remove-notification="removeNotification" :notificationcount="notificationCount"
+                            :notifications="notifications" />
+                    </v-col>
+                    <v-divider vertical></v-divider>
+                    <v-col>
+                        <chatting-component :currentchatcontentsloaded=" currentChatContentsNotLoaded"
+                            :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
+                            :currentviewedroomname="currentViewedRoomName" />
+                    </v-col>
+                </v-row>
+            </template>
+
             </v-content>
         </v-app>
     </div>
@@ -64,6 +98,7 @@
                     createNewRoomName: '',
                     userID: ''.concat('(%.Email %)'),
                     uuid: ''.concat("(%.UUID %)"),
+                    name: '(%.Name%)',
                 }
             },
 
@@ -160,6 +195,7 @@
                 },
 
                 sendMessage: function () {
+                    console.log("sending message")
                     var message = {
                         "msgType": "NewMessage",
                         "roomID": this.currentviewedroomid, "message": this.messageContent,
@@ -186,6 +222,15 @@
                 currentViewedRoomName: '',
                 chatspreview: {},
                 currentChatContent: [],
+
+                drawer: false,
+                expand: false,
+                items: [
+                    { title: 'Home', icon: 'mdi-email' },
+                    { title: 'My Account', icon: 'mdi-plus' },
+                    { title: 'Users', icon: 'mdi-account-group-outline' },
+                ],
+                mini: true,
             },
             methods: {
                 loadChatContent: function (roomID) {
@@ -293,7 +338,9 @@
                         "name": jsonString['name'],
                     })
                 }
-
+                if (jsonString["userID"] === '(%.Email%)') {
+                    return
+                }
                 audio.play();
             }
         };
