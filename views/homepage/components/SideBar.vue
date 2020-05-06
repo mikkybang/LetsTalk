@@ -1,12 +1,16 @@
 (%define "sidebar" %)
 <template>
-  <div>
-    <v-row justify="center" align="center">
+  <div height="90%">
+    <v-row style="max-width: 350px;" justify="center" align="center">
       <v-col cols="12">
         <v-img src="./assets/unilag.svg" align="center" contain height="150"></v-img>
       </v-col>
 
-      <v-col cols="12">
+      <v-col cols="12" align="center" justify="center">
+        <span>Welcome {{name}}</span>
+      </v-col>
+
+      <v-col v-if="$vuetify.breakpoint.mdAndUp" cols="12">
         <v-row justify="center" align="center">
           <v-col md="auto">
             <v-dialog v-model="createRoomDialog">
@@ -80,7 +84,7 @@
       <v-expansion-panel>
         <v-expansion-panel-header>Chats</v-expansion-panel-header>
         <v-expansion-panel-content>
-          <v-flex style="height: 60vh; max-width: 300px" class="overflow-y-auto">
+          <v-flex style="height: 70vh; max-width: 300px" class="overflow-y-auto">
             <v-list tile dense three-line>
               <v-list-item-group color="black">
                 <v-list-item v-for="(chatID,i) in chats" :key="i" @click="loadChatContent(chatID)">
