@@ -155,7 +155,6 @@
       <v-col cols="12">
         <v-container fluid>
           <v-textarea
-            height="10"
             v-model="messageContent"
             prepend-inner-icon="mdi-emoticon"
             prepend-icon="mdi-paperclip"
