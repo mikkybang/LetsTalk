@@ -21,7 +21,6 @@ var (
 )
 
 func InitDB() {
-	os.Setenv("db_host", "mongodb://localhost:27017")
 	dbHost := os.Getenv("db_host")
 	mongoDB, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dbHost))
 	if err != nil {
