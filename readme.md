@@ -26,7 +26,7 @@ Users also can not register to the platform. Registration is done by the adminis
 
 - [ ] Code optimization (Getting there)
 
-- [ ] Code optimization (Perfect. Relativey 🤪)
+- [ ] Code optimization (Perfect. Relatively 🤪)
 
 - [ ] File transfer over websocket for file < 1gb and over webRTC for > 1gb
 
@@ -82,6 +82,7 @@ See [go.mod](go.mod) for more information
  - Vuetify
 
 # Installation
+set db_host environment variable for mongobd
 ```bash
 git clone github.com/metaclips/LetsTalk
 cd LetsTalk
