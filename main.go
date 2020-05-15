@@ -9,8 +9,8 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
-	"github.com/metaclips/FinalYearProject/controller"
-	"github.com/metaclips/FinalYearProject/model"
+	"github.com/metaclips/LetsTalk/controller"
+	"github.com/metaclips/LetsTalk/model"
 )
 
 func main() {

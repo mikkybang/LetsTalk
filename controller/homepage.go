@@ -7,8 +7,8 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/metaclips/FinalYearProject/model"
-	"github.com/metaclips/FinalYearProject/values"
+	"github.com/metaclips/LetsTalk/model"
+	"github.com/metaclips/LetsTalk/values"
 )
 
 // ToDo: initially parse html template one time only

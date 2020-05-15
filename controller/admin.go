@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/metaclips/FinalYearProject/model"
-	"github.com/metaclips/FinalYearProject/values"
+	"github.com/metaclips/LetsTalk/model"
+	"github.com/metaclips/LetsTalk/values"
 
 	"github.com/julienschmidt/httprouter"
 )

@@ -6,7 +6,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/metaclips/FinalYearProject/values"
+
+	"github.com/metaclips/LetsTalk/values"
 )
 
 const (

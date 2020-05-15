@@ -7,7 +7,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/metaclips/FinalYearProject/values"
+	"github.com/metaclips/LetsTalk/values"
 
 	"go.mongodb.org/mongo-driver/bson"
 )

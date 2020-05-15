@@ -7,8 +7,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/metaclips/LetsTalk/values"
+
 	"github.com/google/uuid"
-	"github.com/metaclips/FinalYearProject/values"
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/crypto/bcrypt"
 )

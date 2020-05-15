@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/metaclips/FinalYearProject/model"
-	"github.com/metaclips/FinalYearProject/values"
+	"github.com/metaclips/LetsTalk/model"
+	"github.com/metaclips/LetsTalk/values"
 )
 
 // ServeWs handles websocket requests from the peer.
