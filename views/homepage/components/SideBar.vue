@@ -1,7 +1,7 @@
 (%define "sidebar" %)
 <template>
-  <div>
-    <v-row style="max-width: 350px;" justify="center" align="center">
+  <div style="max-width: 300px; height: 90%;">
+    <v-row justify="center" align="center">
       <v-col cols="12">
         <v-img src="./assets/unilag.svg" align="center" contain height="150"></v-img>
       </v-col>
@@ -83,7 +83,7 @@
       <v-expansion-panel>
         <v-expansion-panel-header>Chats</v-expansion-panel-header>
         <v-expansion-panel-content>
-          <v-flex style="height: 55vh; max-width: 300px" class="overflow-y-auto">
+          <v-flex style="height: 55vh;" class="overflow-y-auto">
             <v-list tile dense three-line>
               <v-list-item-group color="black">
                 <v-list-item v-for="(chatID,i) in chats" :key="i" @click="loadChatContent(chatID)">
