@@ -67,10 +67,10 @@ See [go.mod](go.mod) for more information
 
 
 # Installation
-set db_host environment variable for mongo database
 ```bash
 git clone https://github.com/metaclips/LetsTalk.git
 cd LetsTalk
+set db_host environment variable for mongo database
 go run .
 ```
 Admin(You) need to generate login details to use web chat platform. Default admin email and password is admin@email.com and admin 
