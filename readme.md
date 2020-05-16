@@ -19,13 +19,13 @@ Users also can not register to the platform. Registration is done by the adminis
 
 # v1.0.0 Milestone
 
-- [x] Text chat support using gorilla websocket
+- [x] Multiple room support for users using gorilla websocket
 
 - [x] Mobile UI
 
 - [x] Desktop UI
 
-- [ ] Code optimization (Ok)
+- [ ] Better code optimization (Ok)
 
 - [ ] Code optimization (Getting there)
 
@@ -52,14 +52,14 @@ Users also can not register to the platform. Registration is done by the adminis
 
 - Http2 support. Investigate more on server push.
 
-- Use github.com/cloudwebrtc/go-protoo for room handling.
+- Use github.com/cloudwebrtc/go-protoo for multiple room handling.
 
 - If necessary, remove gorilla websocket to reduce unneccessary overheads.
 
 - Environment variable support.
 
 
-# Stack
+# Dependencies
 
 ## Backend
 
@@ -85,7 +85,7 @@ See [go.mod](go.mod) for more information
 
 
 # Installation
-set db_host environment variable for mongobd
+set db_host environment variable for mongo database
 ```bash
 git clone https://github.com/metaclips/LetsTalk.git
 cd LetsTalk
