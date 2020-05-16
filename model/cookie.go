@@ -2,12 +2,12 @@ package model
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/securecookie"
+	"github.com/metaclips/LetsTalk/values"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -75,9 +75,8 @@ func (b *CookieDetail) CheckCookie(r *http.Request, w http.ResponseWriter) error
 		return err
 	}
 
-	// todo: fix this so there wont be a crash
 	if data["loginUUID"] != b.Data["UUID"] {
-		return errors.New("invalid uuid")
+		return values.ErrIncorrectUUID
 	}
 
 	// todo: also check for expiry time.

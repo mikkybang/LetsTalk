@@ -35,7 +35,7 @@ func AdminLoginPOST(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 	admin := model.Admin{StaffDetails: model.User{Email: email}}
 	if err := admin.CheckAdminDetails(password); err != nil {
 		data["SigninError"] = true
-		data["ErrorDetail"] = "Invalid signin details"
+		data["ErrorDetail"] = values.ErrInvalidDetails.Error()
 
 		if err := loginTmpl.Execute(w, data); err != nil {
 			log.Println(err)
@@ -88,6 +88,7 @@ func AdminPage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	tmpl, terr := template.New("admin.html").Delims("(%", "%)").ParseFiles("views/admin/admin.html", "views/admin/components/tabs.vue",
 		"views/admin/components/adduser.vue", "views/admin/components/block.vue", "views/admin/components/messagescan.vue")
+
 	if terr != nil {
 		log.Println("could not load template in AdminPage function", terr)
 		return
@@ -113,13 +114,13 @@ func UploadUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	faculty := r.FormValue("faculty")
 
 	user := model.User{Email: email, Name: name, DOB: dateOfBirth, Class: usersClass, Faculty: faculty}
-	err = model.UploadUser(user, r)
 
 	data := map[string]interface{}{
 		"UploadSuccess": true,
 		"Error":         false,
 	}
-	if err != nil {
+
+	if err := model.UploadUser(user, r); err != nil {
 		data["UploadSuccess"] = false
 		data["Error"] = true
 	}
@@ -129,6 +130,7 @@ func UploadUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if terr != nil {
 		log.Println("could not load template in UploadUser function", terr)
 	}
+
 	if err := tmpl.Execute(w, data); err != nil {
 		log.Println("could not execute template in UploadUser function", err)
 	}

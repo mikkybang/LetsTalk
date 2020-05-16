@@ -49,7 +49,7 @@ func (b User) ValidateUser(email, uniqueID string) error {
 	}
 
 	if b.UUID != uniqueID {
-		return errors.New("Incorrect UUID")
+		return values.ErrIncorrectUUID
 	}
 	return nil
 }
@@ -87,7 +87,7 @@ func (b Message) SaveMessageContent() ([]string, error) {
 		}
 	}
 	if !userExists {
-		return nil, errors.New("Invalid user")
+		return nil, values.ErrInvalidUser
 	}
 
 	messages.Messages = append(messages.Messages, b)
@@ -141,7 +141,7 @@ func (b Joined) JoinRoom() ([]string, error) {
 	}
 
 	if !joinRequestLegit {
-		return nil, errors.New("No join request was initially made to the user" + user.Name)
+		return nil, values.ErrIllicitJoinRequest
 	}
 
 	user.RoomsJoined = append(user.RoomsJoined, RoomsJoined{RoomID: b.RoomID, RoomName: b.RoomName})
@@ -194,7 +194,7 @@ func (b JoinRequest) RequestUserToJoinRoom(userToJoinEmail string) ([]string, er
 			requesterLegit = true
 			break
 		} else if registeredUser == userToJoinEmail {
-			return nil, errors.New("User already in room")
+			return nil, values.ErrUserExistInRoom
 		}
 	}
 	if !requesterLegit {

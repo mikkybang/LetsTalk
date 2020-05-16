@@ -5,11 +5,10 @@ import (
 	"net/http"
 	"strings"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/metaclips/LetsTalk/values"
-
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 func (b *Admin) CheckAdminDetails(password string) error {
@@ -27,11 +26,16 @@ func (b *Admin) CheckAdminDetails(password string) error {
 	return nil
 }
 
+func (b *Admin) CreateAdmin() error {
+	_, err := db.Collection(values.AdminCollectionName).InsertOne(context.TODO(), b)
+	return err
+}
+
 func UploadUser(user User, r *http.Request) error {
 	user.Name = strings.Title(user.Name)
 	if names := strings.Split(user.Name, " "); len(names) > 1 {
 		var err error
-		user.Password, err = bcrypt.GenerateFromPassword([]byte(names[0]), defaultCost)
+		user.Password, err = bcrypt.GenerateFromPassword([]byte(names[0]), values.DefaultCost)
 		if err != nil {
 			return err
 		}

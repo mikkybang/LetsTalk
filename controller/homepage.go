@@ -21,7 +21,7 @@ func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	uuid, ok := cookie.Data["UUID"].(string)
 	if !ok {
-		http.Error(w, "Could not retrieve UUID", 404)
+		http.Error(w, values.ErrRetrieveUUID.Error(), 404)
 		log.Println("Could not retrieve UUID in homepage")
 		return
 	}
@@ -122,12 +122,12 @@ func SearchUser(w http.ResponseWriter, r *http.Request, params httprouter.Params
 	}
 	bytes, err := json.MarshalIndent(&data, "", "\t")
 	if err != nil {
-		http.Error(w, "error marshalling on get users", 400)
+		http.Error(w, values.ErrMarshal.Error(), 400)
 		return
 	}
 	_, err = w.Write(bytes)
 	if err != nil {
-		http.Error(w, "error sending information", 400)
+		http.Error(w, values.ErrWrite.Error(), 400)
 		return
 	}
 }
