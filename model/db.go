@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/metaclips/LetsTalk/values"
+	"golang.org/x/crypto/bcrypt"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -52,6 +53,8 @@ func InitDB() {
 		}
 	}
 
+	createNewAdminIfNotExist()
+
 	var roomChats []Chats
 	var users []User
 
@@ -65,4 +68,22 @@ func InitDB() {
 	for _, user := range users {
 		values.Users[user.Email] = user.Name
 	}
+}
+
+func createNewAdminIfNotExist() {
+	password, err := bcrypt.GenerateFromPassword([]byte("admin"), values.DefaultCost)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	admin := Admin{
+		StaffDetails: User{
+			Email:    "admin@email.com",
+			Name:     "admin",
+			Password: password,
+		},
+		Super: true,
+	}
+
+	admin.CreateAdmin()
 }

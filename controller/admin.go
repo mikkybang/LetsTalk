@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/metaclips/LetsTalk/model"
 	"github.com/metaclips/LetsTalk/values"
@@ -112,6 +113,7 @@ func UploadUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	dateOfBirth := r.FormValue("DOB")
 	usersClass := r.FormValue("usersClass")
 	faculty := r.FormValue("faculty")
+	email = strings.ToLower(email)
 
 	user := model.User{Email: email, Name: name, DOB: dateOfBirth, Class: usersClass, Faculty: faculty}
 
@@ -120,7 +122,7 @@ func UploadUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		"Error":         false,
 	}
 
-	if err := model.UploadUser(user, r); err != nil {
+	if err := user.UploadUser(r); err != nil {
 		data["UploadSuccess"] = false
 		data["Error"] = true
 	}

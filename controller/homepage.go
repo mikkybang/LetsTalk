@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/metaclips/LetsTalk/model"
@@ -68,6 +69,7 @@ func HomePageLoginGet(w http.ResponseWriter, r *http.Request, _ httprouter.Param
 func HomePageLoginPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	r.ParseForm()
 	email := r.FormValue("email")
+	email = strings.ToLower(email)
 	password := r.FormValue("password")
 
 	err := model.User{
