@@ -7,12 +7,12 @@ A chatting application using Pion webRTC and gorilla websocket for text, video, 
 
 Lets Talk is a web chatting platform proposal for the University of Lagos unilag.edu.ng. Due to the covid-19 pandemic, neccesity of having an online chatting/learning platform between students and lecturers is vivid.
 
-Lets Talk supports multi-room chats between users, desktop sharing (during class sessions), file transfer (over websocket and RTC), video and voice calls.
+Lets Talk supports multi-room chats between users, desktop sharing (during class video sessions), file transfer (over websocket and RTC), video and voice calls.
 
 
 # Privacy Features
 
-For users of minor on the platform, a machine learning model is to be created to scan minors chats and report duly to the universities authority if any form of sexual harrasment is found. This would not breach privacy as only the model scans text and block faulting user/room. Machine learning isn't perfect so faulting user has the choice to fair hearing from administrators.
+For users of minor age on the platform, a machine learning model is to be created to scan minors chats and report duly to the universities authority if any form of sexual harrasment is found. This would not breach privacy as only the model scans texts and block faulting user/room. Machine learning isn't perfect so faulting users have the choice to fair hearing from administrators.
 
 Users also can not register to the platform. Registration is done by the administrator who generates login details for students using their students email address.
 
