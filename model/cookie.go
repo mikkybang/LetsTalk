@@ -11,10 +11,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+// todo: fix this
 var hashKey = []byte("f8e3d17d08d04ea3c27e61ddc0daf98d5ce911f69e50ad7e36da335354909f4e")
-
-// Block keys should be 16 bytes (AES-128) or 32 bytes (AES-256) long.
-// Shorter keys may weaken the encryption used.
 var blockKey = []byte{69, 96, 123, 60, 87, 130, 59, 101, 151, 171, 191, 53, 108, 112, 170, 26, 163, 68, 160, 193, 103, 182, 108, 4, 150, 91, 83, 11, 118, 13, 179, 219}
 var cookieHandler = securecookie.New(hashKey, blockKey)
 

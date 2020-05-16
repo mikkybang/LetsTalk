@@ -11,7 +11,7 @@ jobs:
         runs-on: ${{ matrix.platform }}
         steps:
         - name: Start MongoDB using Docker
-          run:  sudo docker run --name mongo -d -p 27017:27017 mongo
+          run:  docker run -d -p 27017-27019:27017-27019 --name mongo mongo
 
         - name: Install Go
           uses: actions/setup-go@v1
@@ -23,7 +23,7 @@ jobs:
 
         - name: Start tests
           env: 
-            DB_Action_Host: ${{ secrets.DB_Action_Host }}
+            db_host: ${{ secrets.db_host }}
           run: go test -race ./...
 
         - name: Install linter

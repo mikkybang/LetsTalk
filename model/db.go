@@ -28,7 +28,7 @@ func InitDB() {
 
 	db = mongoDB.Database(values.DatabaseName)
 
-	// Ping mongo database continuosly if up.
+	// Ping mongo database continuously if up.
 	go func(mongoDB *mongo.Client) {
 		for {
 			if err := mongoDB.Ping(context.TODO(), readpref.Primary()); err != nil {
