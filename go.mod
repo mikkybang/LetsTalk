@@ -1,4 +1,4 @@
-module github.com/metaclips/FinalYearProject
+module github.com/metaclips/LetsTalk
 
 go 1.14
 

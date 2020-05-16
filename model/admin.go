@@ -5,11 +5,10 @@ import (
 	"net/http"
 	"strings"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/metaclips/FinalYearProject/values"
-
-	"go.mongodb.org/mongo-driver/bson"
+	"github.com/metaclips/LetsTalk/values"
 )
 
 func (b *Admin) CheckAdminDetails(password string) error {
@@ -27,26 +26,32 @@ func (b *Admin) CheckAdminDetails(password string) error {
 	return nil
 }
 
-func UploadUser(user User, r *http.Request) error {
-	user.Name = strings.Title(user.Name)
-	if names := strings.Split(user.Name, " "); len(names) > 1 {
+func (b *Admin) CreateAdmin() error {
+	_, err := db.Collection(values.AdminCollectionName).InsertOne(context.TODO(), b)
+	return err
+}
+
+func (b User) UploadUser(r *http.Request) error {
+	b.Name = strings.Title(b.Name)
+	if names := strings.Split(b.Name, " "); len(names) > 1 {
 		var err error
-		user.Password, err = bcrypt.GenerateFromPassword([]byte(names[0]), defaultCost)
+		b.Password, err = bcrypt.GenerateFromPassword([]byte(names[0]), values.DefaultCost)
 		if err != nil {
 			return err
 		}
 	}
-	id := strings.Split(user.Email, "@")
+
+	id := strings.Split(b.Email, "@")
 	if len(id) > 1 {
-		user.ID = id[0]
+		b.ID = id[0]
 	}
 
-	if user.Class == "student" {
-		user.ParentEmail = r.FormValue("parentEmail")
-		user.ParentNumber = r.FormValue("parentNumber")
+	if b.Class == "student" {
+		b.ParentEmail = r.FormValue("parentEmail")
+		b.ParentNumber = r.FormValue("parentNumber")
 	}
 
-	values.Users[user.Email] = user.Name
-	_, err := db.Collection(values.UsersCollectionName).InsertOne(context.TODO(), user)
+	values.Users[b.Email] = b.Name
+	_, err := db.Collection(values.UsersCollectionName).InsertOne(context.TODO(), b)
 	return err
 }

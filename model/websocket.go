@@ -6,7 +6,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/metaclips/FinalYearProject/values"
+
+	"github.com/metaclips/LetsTalk/values"
 )
 
 const (
@@ -83,10 +84,7 @@ func (s Subscription) ReadPump(user string) {
 	}()
 
 	c.WS.SetReadLimit(maxMessageSize)
-	if err := c.WS.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
-		log.Println("Could not SetReadLimit in ReadPump", err)
-		return
-	}
+	c.WS.SetReadDeadline(time.Now().Add(pongWait))
 
 	c.WS.SetPongHandler(
 		func(string) error {
@@ -261,7 +259,7 @@ func (s Subscription) ReadPump(user string) {
 
 			jsonContent, err := json.Marshal(convertedType)
 			if err != nil {
-				log.Println("Error converted message to json contenr", err)
+				log.Println("Error converted message to json content", err)
 				continue
 			}
 
@@ -278,7 +276,6 @@ func (s Subscription) ReadPump(user string) {
 // write writes a message with the given message type and payload.
 func (c *Connection) write(mt int, payload []byte) error {
 	if err := c.WS.SetWriteDeadline(time.Now().Add(writeWait)); err != nil {
-		log.Println("Could not SetWriteDeadline", err)
 		return err
 	}
 
@@ -291,19 +288,14 @@ func (s *Subscription) WritePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
-		if err := c.WS.Close(); err != nil {
-			log.Println("Could not close websocket successfully at writepump")
-			return
-		}
+		c.WS.Close()
 	}()
 
 	for {
 		select {
 		case message, ok := <-c.Send:
 			if !ok {
-				if err := c.write(websocket.CloseMessage, []byte{}); err != nil {
-					log.Println("Could not write close message to WS in WritePump", err)
-				}
+				c.write(websocket.CloseMessage, []byte{})
 				return
 			}
 

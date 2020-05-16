@@ -19,119 +19,121 @@
 <body>
     <div id="app">
         <v-app>
-            <template v-if=" $vuetify.breakpoint.smAndDown">
-                <v-row no-gutters>
-                    <v-col cols="auto">
-                        <v-card height="100%">
-                            <v-navigation-drawer :mini-variant="mini" :expand-on-hover="expand" permanent>
-                                <v-list dense nav class="py-0">
-                                    <v-list-item two-line class="px-1">
-                                        <v-icon @click="drawer=true">mdi-menu</v-icon>
-                                    </v-list-item>
+            <v-content>
+                <template v-if=" $vuetify.breakpoint.smAndDown">
+                    <v-row style="height: 100%;" no-gutters>
+                        <v-col cols="auto">
+                            <v-card height="100%">
+                                <v-navigation-drawer :mini-variant="mini" :expand-on-hover="expand" permanent>
+                                    <v-list dense nav class="py-0">
+                                        <v-list-item two-line class="px-1">
+                                            <v-icon @click="drawer=true">mdi-menu</v-icon>
+                                        </v-list-item>
 
-                                    <v-divider></v-divider>
-                                    <v-list-item></v-list-item>
+                                        <v-divider></v-divider>
+                                        <v-list-item></v-list-item>
 
-                                    <v-list-item>
-                                        <v-badge overlap color="red" :content="notificationCount"
-                                            :value="notificationCount">
-                                            <v-icon @click="openMessageDialog=true">mdi-email</v-icon>
-                                        </v-badge>
-                                        <v-dialog scrollable v-model="openMessageDialog" width="600px">
-                                            <v-card>
-                                                <v-card-title>Messages</v-card-title>
-                                                <v-divider></v-divider>
-                                                <v-card-text style="max-height: 500px;">
-                                                    <v-container>
-                                                        <span v-if="notificationCount==0">No Message</span>
-                                                        <v-row>
-                                                            <v-col v-for="(notification,i) in notifications" :key="i"
-                                                                cols="12">
-                                                                <span>{{notification.requestingUserName}}
-                                                                    ({{notification.requestingUserID}}) wants to add you
-                                                                    to a room ({{notification.roomName}})</span>
-                                                                <v-spacer></v-spacer>
-                                                                <v-btn color="green darken-1"
-                                                                    @click="acceptJoinRequest(notification.roomID,notification.roomName,i)"
-                                                                    text>Accept</v-btn>
-                                                                <v-btn color="green darken-1" text>Decline</v-btn>
-                                                            </v-col>
-                                                        </v-row>
-                                                    </v-container>
-                                                </v-card-text>
-                                            </v-card>
-                                        </v-dialog>
-                                    </v-list-item>
+                                        <v-list-item>
+                                            <v-badge overlap color="red" :content="notificationCount"
+                                                :value="notificationCount">
+                                                <v-icon @click="openMessageDialog=true">mdi-email</v-icon>
+                                            </v-badge>
+                                            <v-dialog scrollable v-model="openMessageDialog" width="600px">
+                                                <v-card>
+                                                    <v-card-title>Messages</v-card-title>
+                                                    <v-divider></v-divider>
+                                                    <v-card-text style="max-height: 500px;">
+                                                        <v-container>
+                                                            <span v-if="notificationCount==0">No Message</span>
+                                                            <v-row>
+                                                                <v-col v-for="(notification,i) in notifications"
+                                                                    :key="i" cols="12">
+                                                                    <span>{{notification.requestingUserName}}
+                                                                        ({{notification.requestingUserID}}) wants to add
+                                                                        you
+                                                                        to a room ({{notification.roomName}})</span>
+                                                                    <v-spacer></v-spacer>
+                                                                    <v-btn color="green darken-1"
+                                                                        @click="acceptJoinRequest(notification.roomID,notification.roomName,i)"
+                                                                        text>Accept</v-btn>
+                                                                    <v-btn color="green darken-1" text>Decline</v-btn>
+                                                                </v-col>
+                                                            </v-row>
+                                                        </v-container>
+                                                    </v-card-text>
+                                                </v-card>
+                                            </v-dialog>
+                                        </v-list-item>
 
-                                    <v-list-item>
-                                        <v-badge overlap color="white" value=0>
-                                            <v-icon @click="createRoomDialog=true">mdi-plus</v-icon>
-                                        </v-badge>
-                                        <v-dialog v-model="createRoomDialog">
-                                            <v-card>
-                                                <v-card-text>
-                                                    <v-container fluid>
-                                                        <v-row>
-                                                            <v-col cols="12">
-                                                                <span>Create New Room</span>
-                                                            </v-col>
-                                                            <v-col cols="12">
-                                                                <v-text-field label="Specify Room Name"
-                                                                    v-model="newRoomName"></v-text-field>
-                                                            </v-col>
-                                                            <v-col cols="12">
-                                                                <v-spacer></v-spacer>
-                                                                <v-btn @click="createRoom" color="green darken-1" text>
-                                                                    Create Room</v-btn>
-                                                            </v-col>
-                                                        </v-row>
-                                                    </v-container>
-                                                </v-card-text>
-                                            </v-card>
-                                        </v-dialog>
-                                    </v-list-item>
+                                        <v-list-item>
+                                            <v-badge overlap color="white" value=0>
+                                                <v-icon @click="createRoomDialog=true">mdi-plus</v-icon>
+                                            </v-badge>
+                                            <v-dialog v-model="createRoomDialog">
+                                                <v-card>
+                                                    <v-card-text>
+                                                        <v-container fluid>
+                                                            <v-row>
+                                                                <v-col cols="12">
+                                                                    <span>Create New Room</span>
+                                                                </v-col>
+                                                                <v-col cols="12">
+                                                                    <v-text-field label="Specify Room Name"
+                                                                        v-model="newRoomName"></v-text-field>
+                                                                </v-col>
+                                                                <v-col cols="12">
+                                                                    <v-spacer></v-spacer>
+                                                                    <v-btn @click="createRoom" color="green darken-1"
+                                                                        text>
+                                                                        Create Room</v-btn>
+                                                                </v-col>
+                                                            </v-row>
+                                                        </v-container>
+                                                    </v-card-text>
+                                                </v-card>
+                                            </v-dialog>
+                                        </v-list-item>
 
-                                    <v-list-item>
-                                        <v-badge overlap color="red" :content="roomMessageCount"
-                                            :value="roomMessageCount">
-                                            <v-icon>mdi-account-group-outline</v-icon>
-                                        </v-badge>
-                                    </v-list-item>
-                                </v-list>
+                                        <v-list-item>
+                                            <v-badge overlap color="red" :content="roomMessageCount"
+                                                :value="roomMessageCount">
+                                                <v-icon>mdi-account-group-outline</v-icon>
+                                            </v-badge>
+                                        </v-list-item>
+                                    </v-list>
+                                </v-navigation-drawer>
+                            </v-card>
+                            <v-navigation-drawer v-model="drawer" absolute temporary>
+                                <side-bar :chats="chats" :chatspreview="chatspreview"
+                                    @update-current-chat-contents-loaded="loadChatContent" />
                             </v-navigation-drawer>
-                        </v-card>
-                    </v-col>
-                    <v-navigation-drawer v-model="drawer" absolute temporary>
-                        <side-bar :chats="chats" :chatspreview="chatspreview"
-                            @update-current-chat-contents-loaded="loadChatContent" />
-                    </v-navigation-drawer>
+                        </v-col>
 
-                    <v-col cols="mx-auto">
-                        <chatting-component :currentchatcontentsloaded="currentChatContentsNotLoaded"
-                            :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
-                            :currentviewedroomname="currentViewedRoomName" :removewelcomepage="removeWelcomePage" />
-                    </v-col>
-                </v-row>
-            </template>
+                        <v-col cols="mx-auto">
+                            <chatting-component :currentchatcontentsloaded="currentChatContentsNotLoaded"
+                                :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
+                                :currentviewedroomname="currentViewedRoomName" :removewelcomepage="removeWelcomePage" />
+                        </v-col>
+                    </v-row>
+                </template>
 
-            <template v-else>
-                <v-row no-gutters>
-                    <v-col cols="auto">
-                        <side-bar :chats="chats" :chatspreview="chatspreview"
-                            @update-current-chat-contents-loaded="loadChatContent"
-                            @accept-join-request="acceptJoinRequest" :notificationcount="notificationCount"
-                            :notifications="notifications" :newroomname="newRoomName"
-                            :createroomdialog="createRoomDialog" @create-room="createRoom" />
-                    </v-col>
-                    <v-divider vertical></v-divider>
-                    <v-col>
-                        <chatting-component :currentchatcontentsloaded=" currentChatContentsNotLoaded"
-                            :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
-                            :currentviewedroomname="currentViewedRoomName" :removewelcomepage="removeWelcomePage" />
-                    </v-col>
-                </v-row>
-            </template>
-
+                <template v-else>
+                    <v-row style="height: 100%;" no-gutters>
+                        <v-col cols="auto">
+                            <side-bar :chats="chats" :chatspreview="chatspreview"
+                                @update-current-chat-contents-loaded="loadChatContent"
+                                @accept-join-request="acceptJoinRequest" :notificationcount="notificationCount"
+                                :notifications="notifications" :newroomname="newRoomName"
+                                :createroomdialog="createRoomDialog" @create-room="createRoom" />
+                        </v-col>
+                        <v-divider vertical></v-divider>
+                        <v-col cols="mx-auto">
+                            <chatting-component :currentchatcontentsloaded=" currentChatContentsNotLoaded"
+                                :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
+                                :currentviewedroomname="currentViewedRoomName" :removewelcomepage="removeWelcomePage" />
+                        </v-col>
+                    </v-row>
+                </template>
             </v-content>
         </v-app>
     </div>
