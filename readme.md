@@ -25,12 +25,6 @@ Users also can not register to the platform. Registration is done by the adminis
 
 - [x] Desktop UI
 
-- [ ] Better code optimization (Ok)
-
-- [ ] Code optimization (Getting there)
-
-- [ ] Code optimization (Perfect. Relatively 🤪)
-
 - [ ] File transfer over websocket for file < 1gb and over webRTC for > 1gb
 
 - [ ] Desktop screen sharing support
@@ -41,22 +35,10 @@ Users also can not register to the platform. Registration is done by the adminis
 
 - [ ] Low bandwidth consumption using selective video call transfer
 
-- [ ] Test coverage....
 
 - [ ] Add logging system.
 
 - [ ] Admin portal
-
-
-# Future goals (This are all considered and might not be implemented)
-
-- Http2 support. Investigate more on server push.
-
-- Use github.com/cloudwebrtc/go-protoo for multiple room handling.
-
-- If necessary, remove gorilla websocket to reduce unneccessary overheads.
-
-- Environment variable support.
 
 
 # Dependencies
