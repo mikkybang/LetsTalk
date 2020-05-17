@@ -14,7 +14,7 @@ Lets Talk supports multi-room chats between users, desktop sharing (during class
 
 For users of minor age on the platform, a machine learning model is to be created to scan minors chats and report duly to the universities authority if any form of sexual harrasment is found. This would not breach privacy as only the model scans texts and block faulting user/room. Machine learning isn't perfect so faulting users have the choice to fair hearing from administrators.
 
-Users also can not register to the platform. Registration is done by the administrator who generates login details for students using their students email address.
+Users also can not register to the platform. Registration is done by the administrator who generates login details for students using their student email address.
 
 
 # v1.0.0 Milestone
