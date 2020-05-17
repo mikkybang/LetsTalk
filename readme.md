@@ -5,7 +5,7 @@ A chatting application using Pion webRTC and gorilla websocket for text, video, 
 
 # Preface
 
-Lets Talk is a web chatting platform proposal for the University of Lagos unilag.edu.ng. Due to the covid-19 pandemic, neccesity of having an online chatting/learning platform between students and lecturers is vivid.
+Lets Talk is a web chatting platform proposal for the University of Lagos (unilag.edu.ng). Due to the covid-19 pandemic, neccesity of having an online chatting/learning platform between students and lecturers is vivid.
 
 Lets Talk supports multi-room chats between users, desktop sharing (during class video sessions), file transfer (over websocket and RTC), video and voice calls.
 
