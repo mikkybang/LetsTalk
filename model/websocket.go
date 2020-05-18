@@ -225,6 +225,7 @@ func (s Subscription) ReadPump(user string) {
 					"messages": messages,
 					"msgType":  "RequestAllMessages",
 					"roomName": roomName,
+					"roomID":   roomID,
 				}
 
 				jsonContent, err := json.Marshal(mapContent)

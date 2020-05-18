@@ -65,7 +65,7 @@
         <v-dialog max-width="300px" persistent v-model="currentchatcontentsloaded">
           <v-card>
             <v-card-text>
-              <div class="text-center" align="center" justify="center">
+              <div align="center" justify="center">
                 <v-row>
                   <v-col cols="12">
                     <v-progress-circular indeterminate color="green"></v-progress-circular>
@@ -91,7 +91,7 @@
               <div align="right" v-else-if="chat['userID']==='(%.Email%)'">
                 <v-card tile shaped style="max-width: 70vw;" class="d-inline-block mx-auto">
                   <v-card-title class="text--secondary">
-                    <v-row align="center">
+                    <v-row>
                       <v-col cols="auto">
                         <h5>{{chat['name']}}</h5>
                       </v-col>
@@ -120,7 +120,7 @@
               <div v-else align="left">
                 <v-card tile shaped style="max-width: 70vw;" class="d-inline-block mx-auto">
                   <v-card-title class="text--secondary">
-                    <v-row align="mx-center">
+                    <v-row align="center">
                       <v-col cols="mx-auto">
                         <h5>{{chat['name']}}</h5>
                       </v-col>

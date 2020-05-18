@@ -96,8 +96,8 @@
 
                                         <v-list-item>
                                             <v-badge overlap color="red"
-                                                :content="Object.keys(unreadRoomMessageCount).length"
-                                                :value="Object.keys(unreadRoomMessageCount).length">
+                                                :content="Object.keys(onreadRoomMessageCount).length"
+                                                :value="Object.keys(onreadRoomMessageCount).length">
                                                 <v-icon>mdi-account-group-outline</v-icon>
                                             </v-badge>
                                         </v-list-item>
@@ -106,7 +106,8 @@
                             </v-card>
                             <v-navigation-drawer v-model="drawer" absolute temporary>
                                 <side-bar :chats="chats" :chatspreview="chatspreview"
-                                    @update-current-chat-contents-loaded="loadChatContent" />
+                                    @update-current-chat-contents-loaded="loadChatContent"
+                                    :onreadroommessagecount="onreadRoomMessageCount" />
                             </v-navigation-drawer>
                         </v-col>
 
@@ -124,7 +125,8 @@
                             <side-bar :chats="chats" :chatspreview="chatspreview"
                                 @update-current-chat-contents-loaded="loadChatContent"
                                 @accept-join-request="acceptJoinRequest" :messages="messages" :newroomname="newRoomName"
-                                :createroomdialog="createRoomDialog" @create-room="createRoom" />
+                                :createroomdialog="createRoomDialog" @create-room="createRoom"
+                                :onreadroommessagecount="onreadRoomMessageCount" />
                         </v-col>
                         <v-divider vertical></v-divider>
                         <v-col cols="mx-auto">
@@ -149,6 +151,7 @@
                 chatspreview: {},
                 messages: Array,
                 newroomname: String,
+                onreadroommessagecount: {},
             },
 
             data: function () {
@@ -260,7 +263,7 @@
             data: {
                 chats: [],
                 messages: [],
-                unreadRoomMessageCount: {},
+                onreadRoomMessageCount: {},
                 currentChatContentsNotLoaded: false,
                 createRoomDialog: false,
                 openMessageDialog: false,
@@ -278,6 +281,22 @@
             },
 
             methods: {
+                addToRoomNotification: function (roomID) {
+                    if (this.onreadRoomMessageCount[roomID] === undefined) {
+                        this.onreadRoomMessageCount[roomID] = 1
+                    } else {
+                        this.onreadRoomMessageCount[roomID]++
+                    }
+                },
+
+                removeFromRoomNotification: function (roomID) {
+                    if (this.onreadRoomMessageCount[roomID] === undefined || this.onreadRoomMessageCount[roomID] === null) {
+                        return
+                    }
+
+                    delete this.onreadRoomMessageCount[roomID]
+                },
+
                 loadChatContent: function (roomID) {
                     this.removeWelcomePage = true
                     this.currentChatContentsNotLoaded = true
@@ -330,6 +349,8 @@
             var msgType = jsonString['msgType'];
 
             if (msgType === "UserJoinedRoom") {
+                var roomID = jsonString['roomID'];
+
                 if (jsonString['joined'] === true) {
                     var message = jsonString['email'];
                     message = message + " Joined";
@@ -337,7 +358,6 @@
                         message = "You Joined";
                     }
 
-                    var roomID = jsonString['roomID'];
                     var roomName = jsonString['roomName'];
                     vueComponent.chatspreview[roomID] = { "message": message, "roomName": roomName }
 
@@ -354,13 +374,16 @@
 
                 } else {
                     for (var i = 0; i < vueComponent.chats.length; i++) {
-                        if (vueComponent.chats[i] === jsonString['roomID']) {
+                        if (vueComponent.chats[i] === roomID) {
                             vueComponent.chats.splice(i, 1)
                         }
                     }
                 }
 
+                vueComponent.addToRoomNotification(roomID)
+                Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
                 audio.play();
+
             } else if (msgType === "RequestAllMessages") {
                 var messageArray = jsonString['messages']
                 if (messageArray === null) {
@@ -370,6 +393,10 @@
                 vueComponent.currentChatContent = messageArray
                 vueComponent.currentViewedRoomName = jsonString['roomName']
                 vueComponent.currentChatContentsNotLoaded = false
+
+                vueComponent.removeFromRoomNotification(jsonString['roomID'])
+                Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
+
             } else if (msgType === "RequestUsersToJoinRoom") {
                 if (jsonString['userRequested'] === '(%.Email %)') {
                     var message = {
@@ -380,21 +407,23 @@
                     }
 
                     vueComponent.messages.push(message)
+                    vueComponent.addToRoomNotification(jsonString['roomID'])
 
                 } else {
                     if (jsonString['roomID'] === vueComponent.currentViewedRoomID) {
                         vueComponent.currentChatContent.push({ "type": "info", "message": jsonString['userRequested'] + " Requested to join room by" + jsonString['requesterID'] })
+                    } else {
+                        vueComponent.addToRoomNotification(jsonString['roomID'])
                     }
+
                     vueComponent.chatspreview[jsonString['roomID']] = { "message": jsonString['userRequested'] + " Requested to join the room by " + jsonString['requesterID'], "roomName": jsonString['roomName'] }
-                    Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
                 }
+                Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
 
             } else if (msgType === "NewMessage") {
-                // Update chat content if room is in view.
-                // Update preview
                 var roomID = jsonString['roomID']
                 vueComponent.chatspreview[roomID].message = jsonString['message']
-                Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
+
                 if (roomID === vueComponent.currentViewedRoomID) {
                     vueComponent.currentChatContent.push({
                         "type": jsonString['type'],
@@ -403,11 +432,16 @@
                         "time": jsonString['time'],
                         "name": jsonString['name'],
                     })
+
+                } else {
+                    vueComponent.addToRoomNotification(roomID)
                 }
+
                 if (jsonString["userID"] === '(%.Email%)') {
                     return
                 }
                 audio.play();
+                Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
             }
         };
 

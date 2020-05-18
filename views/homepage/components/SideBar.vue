@@ -1,7 +1,7 @@
 (%define "sidebar" %)
 <template>
   <div style="max-width: 300px; height: 90%;">
-    <v-row justify="center" align="center">
+    <v-row>
       <v-col cols="12">
         <v-img src="./assets/unilag.svg" align="center" contain height="150"></v-img>
       </v-col>
@@ -81,7 +81,19 @@
 
     <v-expansion-panels flat>
       <v-expansion-panel>
-        <v-expansion-panel-header>Chats</v-expansion-panel-header>
+        <v-expansion-panel-header>
+          <v-row>
+            <v-col align="center" justify="start" cols="mx-auto">Chats</v-col>
+            <v-col align="center" justify="end" cols="auto">
+              <v-badge
+                inline
+                color="red"
+                :content="Object.keys(onreadroommessagecount).length"
+                :value="Object.keys(onreadroommessagecount).length"
+              ></v-badge>
+            </v-col>
+          </v-row>
+        </v-expansion-panel-header>
         <v-expansion-panel-content>
           <v-flex style="height: 55vh;" class="overflow-y-auto">
             <v-list tile dense three-line>
@@ -91,7 +103,28 @@
                     <v-icon large>mdi-account-circle</v-icon>
                   </v-list-item-avatar>
                   <v-list-item-content>
-                    <v-list-item-title>{{chatspreview[chatID]["roomName"]}}</v-list-item-title>
+                    <v-list-item-title>
+                      <v-row>
+                        <v-col
+                          cols="8"
+                          align="center"
+                          justify="start"
+                        >{{chatspreview[chatID]["roomName"]}}</v-col>
+                        <v-col
+                          cols="4"
+                          align="center"
+                          v-if="onreadroommessagecount[chatID]!==undefined"
+                          justify="end"
+                        >
+                          <v-badge
+                            inline
+                            color="red"
+                            :content="onreadroommessagecount[chatID]"
+                            :value="onreadroommessagecount[chatID]"
+                          ></v-badge>
+                        </v-col>
+                      </v-row>
+                    </v-list-item-title>
                     <v-list-item-subtitle>{{chatspreview[chatID]["message"]}}</v-list-item-subtitle>
                   </v-list-item-content>
                 </v-list-item>
