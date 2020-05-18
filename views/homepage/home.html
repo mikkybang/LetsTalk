@@ -34,8 +34,8 @@
                                         <v-list-item></v-list-item>
 
                                         <v-list-item>
-                                            <v-badge overlap color="red" :content="notificationCount"
-                                                :value="notificationCount">
+                                            <v-badge overlap color="red" :content="messages.length"
+                                                :value="messages.length">
                                                 <v-icon @click="openMessageDialog=true">mdi-email</v-icon>
                                             </v-badge>
                                             <v-dialog scrollable v-model="openMessageDialog" width="600px">
@@ -44,17 +44,17 @@
                                                     <v-divider></v-divider>
                                                     <v-card-text style="max-height: 500px;">
                                                         <v-container>
-                                                            <span v-if="notificationCount==0">No Message</span>
+                                                            <span v-if="messages.length==0">No Message</span>
                                                             <v-row>
-                                                                <v-col v-for="(notification,i) in notifications"
-                                                                    :key="i" cols="12">
-                                                                    <span>{{notification.requestingUserName}}
-                                                                        ({{notification.requestingUserID}}) wants to add
+                                                                <v-col v-for="(message,i) in messages" :key="i"
+                                                                    cols="12">
+                                                                    <span>{{message.requestingUserName}}
+                                                                        ({{message.requestingUserID}}) wants to add
                                                                         you
-                                                                        to a room ({{notification.roomName}})</span>
+                                                                        to a room ({{message.roomName}})</span>
                                                                     <v-spacer></v-spacer>
                                                                     <v-btn color="green darken-1"
-                                                                        @click="acceptJoinRequest(notification.roomID,notification.roomName,i)"
+                                                                        @click="acceptJoinRequest(message.roomID,message.roomName,i)"
                                                                         text>Accept</v-btn>
                                                                     <v-btn color="green darken-1" text>Decline</v-btn>
                                                                 </v-col>
@@ -95,8 +95,9 @@
                                         </v-list-item>
 
                                         <v-list-item>
-                                            <v-badge overlap color="red" :content="roomMessageCount"
-                                                :value="roomMessageCount">
+                                            <v-badge overlap color="red"
+                                                :content="Object.keys(unreadRoomMessageCount).length"
+                                                :value="Object.keys(unreadRoomMessageCount).length">
                                                 <v-icon>mdi-account-group-outline</v-icon>
                                             </v-badge>
                                         </v-list-item>
@@ -122,8 +123,7 @@
                         <v-col cols="auto">
                             <side-bar :chats="chats" :chatspreview="chatspreview"
                                 @update-current-chat-contents-loaded="loadChatContent"
-                                @accept-join-request="acceptJoinRequest" :notificationcount="notificationCount"
-                                :notifications="notifications" :newroomname="newRoomName"
+                                @accept-join-request="acceptJoinRequest" :messages="messages" :newroomname="newRoomName"
                                 :createroomdialog="createRoomDialog" @create-room="createRoom" />
                         </v-col>
                         <v-divider vertical></v-divider>
@@ -147,8 +147,7 @@
             props: {
                 chats: Array,
                 chatspreview: {},
-                notificationcount: Number,
-                notifications: Array,
+                messages: Array,
                 newroomname: String,
             },
 
@@ -260,9 +259,8 @@
             el: '#app',
             data: {
                 chats: [],
-                notifications: [],
-                notificationCount: 0,
-                roomMessageCount: 0,
+                messages: [],
+                unreadRoomMessageCount: {},
                 currentChatContentsNotLoaded: false,
                 createRoomDialog: false,
                 openMessageDialog: false,
@@ -278,6 +276,7 @@
                 expand: false,
                 mini: true,
             },
+
             methods: {
                 loadChatContent: function (roomID) {
                     this.removeWelcomePage = true
@@ -287,9 +286,8 @@
                     this.currentViewedRoomID = roomID
                 },
 
-                removeNotification: function (notificationIndex) {
-                    this.notificationCount--
-                    this.notifications.splice(notificationIndex, 1)
+                removeMessage: function (notificationIndex) {
+                    this.messages.splice(notificationIndex, 1)
                 },
 
                 createRoom: function () {
@@ -311,7 +309,7 @@
 
                     socket.send(JSON.stringify(message))
                     this.openMessageDialog = false
-                    this.removeNotification(notificationIndex);
+                    this.removeMessage(notificationIndex);
                 }
             },
 
@@ -381,8 +379,7 @@
                         "roomID": jsonString['roomID'],
                     }
 
-                    vueComponent.notifications.push(message)
-                    vueComponent.notificationCount++
+                    vueComponent.messages.push(message)
 
                 } else {
                     if (jsonString['roomID'] === vueComponent.currentViewedRoomID) {
@@ -428,9 +425,8 @@
                 "requestingUserName": '(%.RequestingUserName%)', "requestingUserID": '(%.RequestingUserID%)',
                 "roomName": '(%.RoomName%)', "roomID": '(%.RoomID%)',
             }
-            vueComponent.notifications.push(message)
-            vueComponent.notificationCount++
-            (% end %)
+            vueComponent.messages.push(message)
+                (% end %)
         };
 
         socket.onclose = function () {
