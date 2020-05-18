@@ -43,8 +43,8 @@
           <v-col md="auto">
             <v-badge
               @click.native="openMessageDialog=!openMessageDialog"
-              :content="notificationcount"
-              :value="notificationcount"
+              :content="messages.length"
+              :value="messages.length"
               color="red"
               overlap
             >
@@ -57,14 +57,14 @@
                 <v-divider></v-divider>
                 <v-card-text style="max-height: 500px;">
                   <v-container>
-                    <span v-if="notificationcount==0">No Message</span>
+                    <span v-if="messages.length==0">No Message</span>
                     <v-row>
-                      <v-col v-for="(notification,i) in notifications" :key="i" cols="12">
-                        <span>{{notification.requestingUserName}} ({{notification.requestingUserID}}) wants to add you to a room ({{notification.roomName}})</span>
+                      <v-col v-for="(message,i) in messages" :key="i" cols="12">
+                        <span>{{message.requestingUserName}} ({{message.requestingUserID}}) wants to add you to a room ({{message.roomName}})</span>
                         <v-spacer></v-spacer>
                         <v-btn
                           color="green darken-1"
-                          @click="acceptJoinRequest(notification.roomID,notification.roomName,i)"
+                          @click="acceptJoinRequest(message.roomID,message.roomName,i)"
                           text
                         >Accept</v-btn>
                         <v-btn color="green darken-1" text>Decline</v-btn>
