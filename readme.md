@@ -33,7 +33,7 @@ Users also can not register to the platform. Registration is done by the adminis
 
 - [ ] Voice and Video call support
 
-- [ ] Low bandwidth consumption using selective video call transfer
+- [ ] Low bandwidth consumption using selective video call transfer [#31](https://github.com/metaclips/LetsTalk/issues/31)
 
 
 - [ ] Add logging system.
