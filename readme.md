@@ -84,3 +84,7 @@ Admin(You) need to generate login details to use web chat platform. Default admi
 # Browser support
 
 - To update when voice call is implemented
+
+# License
+
+[Apache 2.0](LICENSE)
