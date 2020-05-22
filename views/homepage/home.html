@@ -437,9 +437,13 @@
                     vueComponent.addToRoomNotification(roomID)
                 }
 
-                if (jsonString["userID"] === '(%.Email%)') {
-                    return
-                }
+                // if (jsonString["userID"] === '(%.Email%)') {
+                //     setTimeout(() => {
+                //         var chatcontent = document.getElementById("chatcontent");
+                //         vueComponent.$vuetify.goTo("#chatcontent", { offset: 0 - chatcontent.scrollHeight });
+                //     }, 0)
+                //     return
+                // }
                 audio.play();
                 Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
             }
