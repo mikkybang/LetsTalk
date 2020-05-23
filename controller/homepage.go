@@ -12,7 +12,7 @@ import (
 	"github.com/metaclips/LetsTalk/values"
 )
 
-// ToDo: initially parse html template one time only
+// TODO: initially parse html template one time only
 func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	cookie := model.CookieDetail{CookieName: values.UserCookieName, Collection: values.UsersCollectionName}
 	if err := cookie.CheckCookie(r, w); err != nil {
@@ -97,7 +97,7 @@ func HomePageLoginPost(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	http.Redirect(w, r, "/", 302)
 }
 
-// todo: Use API instead..
+// TODO: Use as API instead..
 func SearchUser(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	id := params.ByName("ID")
@@ -109,8 +109,6 @@ func SearchUser(w http.ResponseWriter, r *http.Request, params httprouter.Params
 		return
 	}
 
-	// todo: do we need to still validate???
-	// Are matric number meant to be confidential???
 	err := model.User{}.ValidateUser(id, uniqueID)
 	if err != nil {
 		log.Println("No id was specified while searching for user")

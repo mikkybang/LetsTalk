@@ -11,10 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-// todo: fix this
-var hashKey = []byte("f8e3d17d08d04ea3c27e61ddc0daf98d5ce911f69e50ad7e36da335354909f4e")
-var blockKey = []byte{69, 96, 123, 60, 87, 130, 59, 101, 151, 171, 191, 53, 108, 112, 170, 26, 163, 68, 160, 193, 103, 182, 108, 4, 150, 91, 83, 11, 118, 13, 179, 219}
-var cookieHandler = securecookie.New(hashKey, blockKey)
+var cookieHandler = securecookie.New(securecookie.GenerateRandomKey(64), securecookie.GenerateRandomKey(64))
 
 func (b CookieDetail) CreateCookie(w http.ResponseWriter) error {
 	exitTime := time.Now().Add(time.Hour * 2)
@@ -77,6 +74,6 @@ func (b *CookieDetail) CheckCookie(r *http.Request, w http.ResponseWriter) error
 		return values.ErrIncorrectUUID
 	}
 
-	// todo: also check for expiry time.
+	// TODO: also check for expiry time.
 	return nil
 }

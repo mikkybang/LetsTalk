@@ -138,8 +138,8 @@ func (msg messageBytes) handleNewMessage(requester string) {
 	if requester != newMessage.UserID {
 		return
 	}
+
 	newMessage.Time = time.Now().Format(values.TimeLayout)
-	// Message is sent back to all users including sender.
 	registeredUsers, err := newMessage.SaveMessageContent()
 	if err != nil {
 		log.Println("Error saving msg to db", err, requester)
@@ -152,6 +152,7 @@ func (msg messageBytes) handleNewMessage(requester string) {
 		return
 	}
 
+	// Message is sent back to all users including sender.
 	for _, registeredUser := range registeredUsers {
 		m := WSMessage{jsonContent, registeredUser}
 		HubConstruct.Broadcast <- m

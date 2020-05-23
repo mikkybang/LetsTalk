@@ -150,9 +150,9 @@ func (s Subscription) ReadPump(user string) {
 		}
 
 		switch msgType {
-		// todo: add support to remove message.
-		// todo: add support to remove messages.
-		// todo: users should choose if to join chat.
+		// TODO: add support to remove message.
+		// TODO: add support to remove messages.
+		// TODO: users should choose if to join chat.
 		case "NewRoomCreated":
 			msg.handleCreateNewRoom()
 

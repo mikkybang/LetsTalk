@@ -26,12 +26,13 @@ func InitDB() {
 
 	db = mongoDB.Database(values.DatabaseName)
 
-	// Ping mongo database continuously if up.
+	// Ping mongo database continuously if down.
 	go func(mongoDB *mongo.Client) {
 		for {
 			if err := mongoDB.Ping(context.TODO(), readpref.Primary()); err != nil {
 				log.Fatalln(err)
 			}
+
 			time.Sleep(time.Second * 5)
 		}
 	}(mongoDB)

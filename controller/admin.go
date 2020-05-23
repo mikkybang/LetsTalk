@@ -41,6 +41,7 @@ func AdminLoginPOST(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 		if err := loginTmpl.Execute(w, data); err != nil {
 			log.Println(err)
 		}
+
 		return
 	}
 
@@ -131,6 +132,7 @@ func UploadUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		"views/admin/components/adduser.vue", "views/admin/components/block.vue", "views/admin/components/messagescan.vue")
 	if terr != nil {
 		log.Println("could not load template in UploadUser function", terr)
+		return
 	}
 
 	if err := tmpl.Execute(w, data); err != nil {

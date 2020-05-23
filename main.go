@@ -14,6 +14,10 @@ import (
 )
 
 func main() {
+	defer func() {
+		fmt.Println("Webserver DOWN")
+	}()
+
 	gob.Register(time.Time{})
 	model.InitDB()
 	router := httprouter.New()
@@ -35,5 +39,4 @@ func main() {
 	if err := http.ListenAndServe(":8080", router); err != nil {
 		log.Fatalln(err)
 	}
-	fmt.Println("Webserver DOWN")
 }
