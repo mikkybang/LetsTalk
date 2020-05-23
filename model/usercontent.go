@@ -73,25 +73,25 @@ func (b Message) SaveMessageContent() ([]string, error) {
 	result := db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{
 		"_id": b.RoomID,
 	})
-	err := result.Decode(&messages)
-	if err != nil {
+
+	if err := result.Decode(&messages); err != nil {
 		return nil, err
 	}
+
 	var userExists bool
-	// todo: checking all users really isn't required.
-	// Check if user is registered to the room
 	for _, user := range messages.RegisteredUsers {
 		if b.UserID == user {
 			userExists = true
 			break
 		}
 	}
+
 	if !userExists {
 		return nil, values.ErrInvalidUser
 	}
 
 	messages.Messages = append(messages.Messages, b)
-	_, err = db.Collection(values.RoomsCollectionName).UpdateOne(context.TODO(), bson.M{"_id": b.RoomID},
+	_, err := db.Collection(values.RoomsCollectionName).UpdateOne(context.TODO(), bson.M{"_id": b.RoomID},
 		bson.M{"$set": bson.M{"messages": messages.Messages}})
 
 	return messages.RegisteredUsers, err

@@ -10,6 +10,8 @@ import (
 	"github.com/metaclips/LetsTalk/values"
 )
 
+type messageBytes []byte
+
 const (
 	// Time allowed to write a message to the peer.
 	writeWait = 10 * time.Second
@@ -129,7 +131,9 @@ func (s Subscription) ReadPump(user string) {
 		})
 
 	for {
-		_, msg, err := c.WS.ReadMessage()
+		var err error
+		var msg messageBytes
+		_, msg, err = c.WS.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
 				log.Printf("error: %v\n", err)
@@ -154,13 +158,13 @@ func (s Subscription) ReadPump(user string) {
 		// todo: add support to remove messages.
 		// todo: users should choose if to join chat.
 		case "NewRoomCreated":
-			handleCreateNewRoom(msg)
+			msg.handleCreateNewRoom()
 
 		case "RequestUsersToJoinRoom":
-			handleRequestUserToJoinRoom(msg)
+			msg.handleRequestUserToJoinRoom()
 
 		case "UserJoinedRoom":
-			handleUserAcceptRoomRequest(msg, user)
+			msg.handleUserAcceptRoomRequest(user)
 
 		case "RequestAllMessages":
 			roomID, ok := data["roomID"].(string)
@@ -169,42 +173,14 @@ func (s Subscription) ReadPump(user string) {
 			}
 
 		case "NewMessage":
-			var convertedType Message
-			if err := json.Unmarshal(msg, &convertedType); err != nil {
-				log.Println("Could not convert to required New Message struct")
-				continue
-			}
-
-			if user != convertedType.UserID {
-				continue
-			}
-			convertedType.Time = time.Now().Format(values.TimeLayout)
-			// Send message to all users.
-			// Message is sent back to you as confirmation
-			// it is delivered and saved to DB.
-			registeredUsers, err := convertedType.SaveMessageContent()
-			if err != nil {
-				log.Println("Error saving msg to db", err, user)
-				continue
-			}
-
-			jsonContent, err := json.Marshal(convertedType)
-			if err != nil {
-				log.Println("Error converted message to json content", err)
-				continue
-			}
-
-			for _, registeredUser := range registeredUsers {
-				m := WSMessage{jsonContent, registeredUser}
-				HubConstruct.Broadcast <- m
-			}
+			msg.handleNewMessage(user)
 		default:
 			log.Println("Could not convert required type", msgType)
 		}
 	}
 }
 
-func handleCreateNewRoom(msg []byte) {
+func (msg messageBytes) handleCreateNewRoom() {
 	var newRoom NewRoomRequest
 	if err := json.Unmarshal(msg, &newRoom); err != nil {
 		log.Println("Could not convert to required New Room Request struct")
@@ -235,7 +211,7 @@ func handleCreateNewRoom(msg []byte) {
 	HubConstruct.Broadcast <- m
 }
 
-func handleRequestUserToJoinRoom(msg []byte) {
+func (msg messageBytes) handleRequestUserToJoinRoom() {
 	var request JoinRequest
 	if err := json.Unmarshal(msg, &request); err != nil {
 		log.Println("Could not convert to required Joined Request struct")
@@ -275,7 +251,7 @@ func handleRequestUserToJoinRoom(msg []byte) {
 	}
 }
 
-func handleUserAcceptRoomRequest(msg []byte, joiner string) {
+func (msg messageBytes) handleUserAcceptRoomRequest(joiner string) {
 	var roomRequest Joined
 	if err := json.Unmarshal(msg, &roomRequest); err != nil {
 		log.Println("Could not convert to required Join Room Request struct")
@@ -320,4 +296,34 @@ func handleRequestAllMessages(roomID, requester string) {
 
 	m := WSMessage{jsonContent, requester}
 	HubConstruct.Broadcast <- m
+}
+
+func (msg messageBytes) handleNewMessage(requester string) {
+	var newMessage Message
+	if err := json.Unmarshal(msg, &newMessage); err != nil {
+		log.Println("Could not convert to required New Message struct")
+		return
+	}
+
+	if requester != newMessage.UserID {
+		return
+	}
+	newMessage.Time = time.Now().Format(values.TimeLayout)
+	// Message is sent back to all users including sender.
+	registeredUsers, err := newMessage.SaveMessageContent()
+	if err != nil {
+		log.Println("Error saving msg to db", err, requester)
+		return
+	}
+
+	jsonContent, err := json.Marshal(newMessage)
+	if err != nil {
+		log.Println("Error converted message to json content", err)
+		return
+	}
+
+	for _, registeredUser := range registeredUsers {
+		m := WSMessage{jsonContent, registeredUser}
+		HubConstruct.Broadcast <- m
+	}
 }
