@@ -156,28 +156,12 @@ func (s Subscription) ReadPump(user string) {
 		// todo: users should choose if to join chat.
 		case "NewRoomCreated":
 			handleCreateNewRoom(msg)
+
 		case "RequestUsersToJoinRoom":
 			handleRequestUserToJoinRoom(msg)
+
 		case "UserJoinedRoom":
-			var convertedType Joined
-			if err := json.Unmarshal(msg, &convertedType); err != nil {
-				log.Println("Could not convert to required Join Room Request struct")
-				continue
-			}
-
-			if convertedType.Email != user {
-				continue
-			}
-			users, err := convertedType.JoinRoom()
-			if err != nil {
-				log.Println("could not join room", err)
-				continue
-			}
-
-			for _, user := range users {
-				m := WSMessage{msg, user}
-				HubConstruct.Broadcast <- m
-			}
+			handleUserAcceptRoomRequest(msg, user)
 
 		case "RequestAllMessages":
 			roomID, ok := data["roomID"].(string)
@@ -307,6 +291,29 @@ func handleRequestUserToJoinRoom(msg []byte) {
 		}
 
 		m := WSMessage{jsonContent, user}
+		HubConstruct.Broadcast <- m
+	}
+}
+
+func handleUserAcceptRoomRequest(msg []byte, joiner string) {
+	var roomRequest Joined
+	if err := json.Unmarshal(msg, &roomRequest); err != nil {
+		log.Println("Could not convert to required Join Room Request struct")
+		return
+	}
+
+	if roomRequest.Email != joiner {
+		return
+	}
+
+	users, err := roomRequest.AcceptRoomRequest()
+	if err != nil {
+		log.Println("could not join room", err)
+		return
+	}
+
+	for _, user := range users {
+		m := WSMessage{msg, user}
 		HubConstruct.Broadcast <- m
 	}
 }

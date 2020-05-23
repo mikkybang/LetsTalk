@@ -121,7 +121,7 @@ func (b NewRoomRequest) CreateNewRoom() (string, error) {
 	return chats.RoomID, nil
 }
 
-func (b Joined) JoinRoom() ([]string, error) {
+func (b Joined) AcceptRoomRequest() ([]string, error) {
 	result := db.Collection(values.UsersCollectionName).FindOne(context.TODO(), bson.M{
 		"_id": b.Email,
 	})
@@ -132,6 +132,7 @@ func (b Joined) JoinRoom() ([]string, error) {
 		return nil, err
 	}
 
+	// Check users join requests for room.
 	var joinRequestLegit bool
 	for i, request := range user.JoinRequest {
 		if request.RoomID == b.RoomID {

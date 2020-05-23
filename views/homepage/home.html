@@ -350,10 +350,9 @@
 
             if (msgType === "UserJoinedRoom") {
                 var roomID = jsonString['roomID'];
-                var message = jsonString['email'];
                 var roomName = jsonString['roomName'];
 
-                message = message + " Joined";
+                var message = jsonString['email'] + " Joined";
                 if (jsonString['email'] === '(%.Email %)') {
                     message = "You Joined";
                 }
