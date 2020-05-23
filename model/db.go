@@ -41,7 +41,7 @@ func InitDB() {
 	values.RoomUsers = make(map[string][]string)
 	values.Users = make(map[string]string)
 
-	getContent := func(collection string, content interface{}) {
+	getCollection := func(collection string, content interface{}) {
 		result, err := db.Collection(collection).Find(context.TODO(), bson.D{})
 		if err != nil {
 			log.Fatalln("error while getting collection", err)
@@ -58,8 +58,8 @@ func InitDB() {
 	var roomChats []Chats
 	var users []User
 
-	getContent(values.RoomsCollectionName, &roomChats)
-	getContent(values.UsersCollectionName, &users)
+	getCollection(values.RoomsCollectionName, &roomChats)
+	getCollection(values.UsersCollectionName, &users)
 
 	for _, chat := range roomChats {
 		values.RoomUsers[chat.RoomID] = chat.RegisteredUsers

@@ -108,12 +108,13 @@ func (b NewRoomRequest) CreateNewRoom() (string, error) {
 	chats.RoomID = uuid.New().String()
 	chats.RoomName = b.RoomName
 	chats.RegisteredUsers = append(chats.RegisteredUsers, b.Email)
-	_, err := db.Collection(values.RoomsCollectionName).InsertOne(context.TODO(), chats)
-	if err != nil {
+
+	if _, err := db.Collection(values.RoomsCollectionName).InsertOne(context.TODO(), chats); err != nil {
 		return "", err
 	}
+
 	user := User{Email: b.Email}
-	if err := user.UserJoinedRoom(chats.RoomID, chats.RoomName, true); err != nil {
+	if err := user.updateRoomsJoinedByUsers(chats.RoomID, chats.RoomName); err != nil {
 		return "", err
 	}
 
@@ -232,10 +233,34 @@ func (b JoinRequest) RequestUserToJoinRoom(userToJoinEmail string) ([]string, er
 	return room.RegisteredUsers, err
 }
 
-func (b User) UserJoinedRoom(roomID, roomName string, newRoom bool) error {
+func (b User) AddUserToRoom(roomID, roomName string) error {
+	b.updateRoomsJoinedByUsers(roomID, roomName)
+	var chats Chats
+	message := Message{
+		Message: b.Email + " Joined",
+		Type:    getContentType(values.INFO),
+	}
+
+	result := db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{
+		"_id": roomID,
+	})
+
+	if err := result.Decode(&chats); err != nil {
+		return err
+	}
+
+	chats.Messages = append(chats.Messages, message)
+	_, err := db.Collection(values.RoomsCollectionName).UpdateOne(context.TODO(), bson.M{"_id": roomID},
+		bson.M{"$set": bson.M{"messages": chats.Messages}})
+
+	return err
+}
+
+func (b *User) updateRoomsJoinedByUsers(roomID, roomName string) error {
 	result := db.Collection(values.UsersCollectionName).FindOne(context.TODO(), bson.M{
 		"_id": b.Email,
 	})
+
 	if err := result.Decode(&b); err != nil {
 		return err
 	}
@@ -245,26 +270,6 @@ func (b User) UserJoinedRoom(roomID, roomName string, newRoom bool) error {
 
 	_, err := db.Collection(values.UsersCollectionName).UpdateOne(context.TODO(), bson.M{"_id": b.Email},
 		bson.M{"$set": bson.M{"roomsJoined": b.RoomsJoined}})
-
-	if !newRoom {
-		// Add to chat room message that user has joined room.
-		var chats Chats
-		message := Message{
-			Message: b.Email + " Joined",
-			Type:    getContentType(values.INFO),
-		}
-		result = db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{
-			"_id": roomID,
-		})
-		if err := result.Decode(&chats); err != nil {
-			return err
-		}
-
-		chats.Messages = append(chats.Messages, message)
-		_, err = db.Collection(values.RoomsCollectionName).UpdateOne(context.TODO(), bson.M{"_id": roomID},
-			bson.M{"$set": bson.M{"messages": chats.Messages}})
-		return err
-	}
 
 	return err
 }

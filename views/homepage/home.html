@@ -350,34 +350,25 @@
 
             if (msgType === "UserJoinedRoom") {
                 var roomID = jsonString['roomID'];
+                var message = jsonString['email'];
+                var roomName = jsonString['roomName'];
 
-                if (jsonString['joined'] === true) {
-                    var message = jsonString['email'];
-                    message = message + " Joined";
-                    if (jsonString['email'] === '(%.Email %)') {
-                        message = "You Joined";
-                    }
+                message = message + " Joined";
+                if (jsonString['email'] === '(%.Email %)') {
+                    message = "You Joined";
+                }
 
-                    var roomName = jsonString['roomName'];
-                    vueComponent.chatspreview[roomID] = { "message": message, "roomName": roomName }
+                vueComponent.chatspreview[roomID] = { "message": message, "roomName": roomName }
 
-                    if (jsonString['email'] === '(%.Email %)') {
-                        vueComponent.chats.push(roomID)
-                    } else {
-                        Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
-                    }
-
-                    // Update current chat if in view.
-                    if (vueComponent.currentViewedRoomID === roomID) {
-                        vueComponent.currentChatContent.push({ "type": "info", "message": jsonString['email'] + " Joined the room" })
-                    }
-
+                if (jsonString['email'] === '(%.Email %)') {
+                    vueComponent.chats.push(roomID)
                 } else {
-                    for (var i = 0; i < vueComponent.chats.length; i++) {
-                        if (vueComponent.chats[i] === roomID) {
-                            vueComponent.chats.splice(i, 1)
-                        }
-                    }
+                    Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
+                }
+
+                // Update current chat if in view.
+                if (vueComponent.currentViewedRoomID === roomID) {
+                    vueComponent.currentChatContent.push({ "type": "info", "message": jsonString['email'] + " Joined the room" })
                 }
 
                 vueComponent.addToRoomNotification(roomID)

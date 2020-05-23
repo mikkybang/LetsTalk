@@ -74,6 +74,43 @@ func (h *Hub) Run() {
 	}
 }
 
+// WritePump pumps messages from the hub to the websocket connection.
+func (s *Subscription) WritePump() {
+	c := s.Conn
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		c.WS.Close()
+	}()
+
+	for {
+		select {
+		case message, ok := <-c.Send:
+			if !ok {
+				c.write(websocket.CloseMessage, []byte{})
+				return
+			}
+
+			if err := c.write(websocket.TextMessage, message); err != nil {
+				return
+			}
+		case <-ticker.C:
+			if err := c.write(websocket.PingMessage, []byte{}); err != nil {
+				return
+			}
+		}
+	}
+}
+
+// write writes a message with the given message type and payload.
+func (c *Connection) write(mt int, payload []byte) error {
+	if err := c.WS.SetWriteDeadline(time.Now().Add(writeWait)); err != nil {
+		return err
+	}
+
+	return c.WS.WriteMessage(mt, payload)
+}
+
 // ReadPump pumps messages from the websocket connection to the hub.
 func (s Subscription) ReadPump(user string) {
 	c := s.Conn
@@ -108,7 +145,7 @@ func (s Subscription) ReadPump(user string) {
 		}
 		msgType, ok := data["msgType"].(string)
 		if !ok {
-			log.Println("User did not send a valid message type", user, data)
+			log.Println("user did not send a valid message type", user, data)
 			return
 		}
 
@@ -118,34 +155,7 @@ func (s Subscription) ReadPump(user string) {
 		// todo: add support to remove messages.
 		// todo: users should choose if to join chat.
 		case "NewRoomCreated":
-			var convertedType NewRoomRequest
-			if err := json.Unmarshal(msg, &convertedType); err != nil {
-				log.Println("Could not convert to required New Room Request struct")
-				continue
-			}
-
-			roomID, err := convertedType.CreateNewRoom()
-			if err != nil {
-				log.Println("Unable to create a new room for user:", convertedType.Email, "err:", err.Error())
-				continue
-			}
-
-			// Broadcast a joined message.
-			userJoinedMessage := Joined{
-				RoomID:      roomID,
-				Email:       convertedType.Email,
-				Joined:      true,
-				RoomName:    convertedType.RoomName,
-				MessageType: "UserJoinedRoom",
-			}
-			jsonByte, err := json.Marshal(userJoinedMessage)
-			if err != nil {
-				log.Println("Could not marshal to jsonByte while creating room", err.Error())
-				continue
-			}
-			m := WSMessage{jsonByte, convertedType.Email}
-			HubConstruct.Broadcast <- m
-
+			handleNewRoomCreated(msg)
 		case "RequestUsersToJoinRoom":
 			users, ok := data["users"].([]interface{})
 			if ok {
@@ -274,39 +284,33 @@ func (s Subscription) ReadPump(user string) {
 	}
 }
 
-// write writes a message with the given message type and payload.
-func (c *Connection) write(mt int, payload []byte) error {
-	if err := c.WS.SetWriteDeadline(time.Now().Add(writeWait)); err != nil {
-		return err
+func handleNewRoomCreated(msg []byte) {
+	var convertedType NewRoomRequest
+	if err := json.Unmarshal(msg, &convertedType); err != nil {
+		log.Println("Could not convert to required New Room Request struct")
+		return
 	}
 
-	return c.WS.WriteMessage(mt, payload)
-}
-
-// WritePump pumps messages from the hub to the websocket connection.
-func (s *Subscription) WritePump() {
-	c := s.Conn
-	ticker := time.NewTicker(pingPeriod)
-	defer func() {
-		ticker.Stop()
-		c.WS.Close()
-	}()
-
-	for {
-		select {
-		case message, ok := <-c.Send:
-			if !ok {
-				c.write(websocket.CloseMessage, []byte{})
-				return
-			}
-
-			if err := c.write(websocket.TextMessage, message); err != nil {
-				return
-			}
-		case <-ticker.C:
-			if err := c.write(websocket.PingMessage, []byte{}); err != nil {
-				return
-			}
-		}
+	roomID, err := convertedType.CreateNewRoom()
+	if err != nil {
+		log.Println("Unable to create a new room for user:", convertedType.Email, "err:", err.Error())
+		return
 	}
+
+	// Broadcast a joined message.
+	userJoinedMessage := Joined{
+		RoomID:      roomID,
+		Email:       convertedType.Email,
+		RoomName:    convertedType.RoomName,
+		MessageType: "UserJoinedRoom",
+	}
+
+	jsonByte, err := json.Marshal(userJoinedMessage)
+	if err != nil {
+		log.Println("Could not marshal to jsonByte while creating room", err.Error())
+		return
+	}
+
+	m := WSMessage{jsonByte, convertedType.Email}
+	HubConstruct.Broadcast <- m
 }
