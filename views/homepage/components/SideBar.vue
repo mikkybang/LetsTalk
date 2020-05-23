@@ -85,12 +85,12 @@
           <v-row>
             <v-col align="center" justify="start" cols="mx-auto">Chats</v-col>
             <v-col align="center" justify="end" cols="auto">
-              <v-badge
-                inline
+              <v-chip
                 color="red"
-                :content="Object.keys(onreadroommessagecount).length"
-                :value="Object.keys(onreadroommessagecount).length"
-              ></v-badge>
+                x-small
+                pill
+                text-color="white"
+              >{{Object.keys(onreadroommessagecount).length}}</v-chip>
             </v-col>
           </v-row>
         </v-expansion-panel-header>
@@ -106,7 +106,7 @@
                     <v-list-item-title>
                       <v-row>
                         <v-col
-                          cols="8"
+                          cols="auto"
                           align="center"
                           justify="start"
                         >{{chatspreview[chatID]["roomName"]}}</v-col>
@@ -116,12 +116,7 @@
                           v-if="onreadroommessagecount[chatID]!==undefined"
                           justify="end"
                         >
-                          <v-badge
-                            inline
-                            color="red"
-                            :content="onreadroommessagecount[chatID]"
-                            :value="onreadroommessagecount[chatID]"
-                          ></v-badge>
+                          <v-chip color="red" x-small pill text-color="white">1</v-chip>
                         </v-col>
                       </v-row>
                     </v-list-item-title>
