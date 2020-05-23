@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-var cookieHandler = securecookie.New(securecookie.GenerateRandomKey(64), securecookie.GenerateRandomKey(64))
+var cookieHandler = securecookie.New(securecookie.GenerateRandomKey(64), securecookie.GenerateRandomKey(32))
 
 func (b CookieDetail) CreateCookie(w http.ResponseWriter) error {
 	exitTime := time.Now().Add(time.Hour * 2)
@@ -52,6 +52,7 @@ func (b *CookieDetail) CheckCookie(r *http.Request, w http.ResponseWriter) error
 			Name:    b.CookieName,
 			Expires: time.Now(),
 		})
+
 		return err
 	}
 
@@ -59,8 +60,10 @@ func (b *CookieDetail) CheckCookie(r *http.Request, w http.ResponseWriter) error
 	if !ok {
 		email = ""
 	}
+
 	b.Email = email
 	result := db.Collection(b.Collection).FindOne(context.TODO(), map[string]interface{}{"_id": email})
+
 	if err := result.Err(); err != nil {
 		return err
 	}
