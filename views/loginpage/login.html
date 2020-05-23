@@ -43,7 +43,7 @@
                                         placeholder="Password">
                                     </v-text-field>
                                     (%if .SigninError%)
-                                    <v-alert dense text type="error">invalid signin details</v-alert>
+                                    <v-alert dense text type="error">(%.ErrorDetail%)</v-alert>
                                     (%end%)
                                 </v-col>
                                 <v-col cols="12">
