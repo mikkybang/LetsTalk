@@ -15,9 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-var (
-	db *mongo.Database
-)
+var db *mongo.Database
 
 func InitDB() {
 	dbHost := os.Getenv("db_host")
