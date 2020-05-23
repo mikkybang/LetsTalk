@@ -151,7 +151,6 @@ func (s Subscription) ReadPump(user string) {
 
 		switch msgType {
 		// todo: add support to remove message.
-		// todo: treat errors better.
 		// todo: add support to remove messages.
 		// todo: users should choose if to join chat.
 		case "NewRoomCreated":
@@ -166,26 +165,7 @@ func (s Subscription) ReadPump(user string) {
 		case "RequestAllMessages":
 			roomID, ok := data["roomID"].(string)
 			if ok {
-				messages, roomName, err := GetAllMessageInRoom(roomID)
-				if err != nil {
-					log.Println("could not get all messages in room, err:", err)
-					continue
-				}
-				mapContent := map[string]interface{}{
-					"messages": messages,
-					"msgType":  "RequestAllMessages",
-					"roomName": roomName,
-					"roomID":   roomID,
-				}
-
-				jsonContent, err := json.Marshal(mapContent)
-				if err != nil {
-					log.Println("could not marshal images, err:", err)
-					continue
-				}
-
-				m := WSMessage{jsonContent, user}
-				HubConstruct.Broadcast <- m
+				handleRequestAllMessages(roomID, user)
 			}
 
 		case "NewMessage":
@@ -316,4 +296,28 @@ func handleUserAcceptRoomRequest(msg []byte, joiner string) {
 		m := WSMessage{msg, user}
 		HubConstruct.Broadcast <- m
 	}
+}
+
+func handleRequestAllMessages(roomID, requester string) {
+	messages, roomName, err := GetAllMessageInRoom(roomID)
+	if err != nil {
+		log.Println("could not get all messages in room, err:", err)
+		return
+	}
+
+	data := map[string]interface{}{
+		"messages": messages,
+		"msgType":  "RequestAllMessages",
+		"roomName": roomName,
+		"roomID":   roomID,
+	}
+
+	jsonContent, err := json.Marshal(data)
+	if err != nil {
+		log.Println("could not marshal images, err:", err)
+		return
+	}
+
+	m := WSMessage{jsonContent, requester}
+	HubConstruct.Broadcast <- m
 }
