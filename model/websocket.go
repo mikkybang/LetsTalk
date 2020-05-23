@@ -155,53 +155,9 @@ func (s Subscription) ReadPump(user string) {
 		// todo: add support to remove messages.
 		// todo: users should choose if to join chat.
 		case "NewRoomCreated":
-			handleNewRoomCreated(msg)
+			handleCreateNewRoom(msg)
 		case "RequestUsersToJoinRoom":
-			users, ok := data["users"].([]interface{})
-			if ok {
-				var convertedType JoinRequest
-				if err := json.Unmarshal(msg, &convertedType); err != nil {
-					log.Println("Could not convert to required Joined Request struct")
-					continue
-				}
-
-				for i := range users {
-					user, ok := users[i].(string)
-					if ok {
-						roomRegisteredUser, err := convertedType.RequestUserToJoinRoom(user)
-						if err != nil {
-							log.Println("Error while requesting to room", err)
-							continue
-						}
-
-						mapContent := map[string]interface{}{
-							"requesterID":   convertedType.RequestingUserID,
-							"requesterName": convertedType.RequestingUserName,
-							"userRequested": user,
-							"roomID":        convertedType.RoomID,
-							"roomName":      convertedType.RoomName,
-							"msgType":       "RequestUsersToJoinRoom",
-						}
-
-						jsonContent, err := json.Marshal(mapContent)
-						if err != nil {
-							log.Println("could not marshal to RequestUsersToJoinRoom, err:", err)
-							continue
-						}
-
-						// Send back RequestUsersToJoinRoom signal to everyone
-						for _, roomRegisteredUser := range roomRegisteredUser {
-							m := WSMessage{jsonContent, roomRegisteredUser}
-							HubConstruct.Broadcast <- m
-						}
-						m := WSMessage{jsonContent, user}
-						HubConstruct.Broadcast <- m
-					}
-				}
-
-			} else {
-				log.Println("could not convert users details to a []string")
-			}
+			handleRequestUserToJoinRoom(msg)
 		case "UserJoinedRoom":
 			var convertedType Joined
 			if err := json.Unmarshal(msg, &convertedType); err != nil {
@@ -284,24 +240,24 @@ func (s Subscription) ReadPump(user string) {
 	}
 }
 
-func handleNewRoomCreated(msg []byte) {
-	var convertedType NewRoomRequest
-	if err := json.Unmarshal(msg, &convertedType); err != nil {
+func handleCreateNewRoom(msg []byte) {
+	var newRoom NewRoomRequest
+	if err := json.Unmarshal(msg, &newRoom); err != nil {
 		log.Println("Could not convert to required New Room Request struct")
 		return
 	}
 
-	roomID, err := convertedType.CreateNewRoom()
+	roomID, err := newRoom.CreateNewRoom()
 	if err != nil {
-		log.Println("Unable to create a new room for user:", convertedType.Email, "err:", err.Error())
+		log.Println("Unable to create a new room for user:", newRoom.Email, "err:", err.Error())
 		return
 	}
 
 	// Broadcast a joined message.
 	userJoinedMessage := Joined{
 		RoomID:      roomID,
-		Email:       convertedType.Email,
-		RoomName:    convertedType.RoomName,
+		Email:       newRoom.Email,
+		RoomName:    newRoom.RoomName,
 		MessageType: "UserJoinedRoom",
 	}
 
@@ -311,6 +267,46 @@ func handleNewRoomCreated(msg []byte) {
 		return
 	}
 
-	m := WSMessage{jsonByte, convertedType.Email}
+	m := WSMessage{jsonByte, newRoom.Email}
 	HubConstruct.Broadcast <- m
+}
+
+func handleRequestUserToJoinRoom(msg []byte) {
+	var request JoinRequest
+	if err := json.Unmarshal(msg, &request); err != nil {
+		log.Println("Could not convert to required Joined Request struct")
+		return
+	}
+
+	for _, user := range request.Users {
+		roomRegisteredUser, err := request.RequestUserToJoinRoom(user)
+		if err != nil {
+			log.Println("Error while requesting to room", err)
+			continue
+		}
+
+		data := map[string]interface{}{
+			"requesterID":   request.RequestingUserID,
+			"requesterName": request.RequestingUserName,
+			"userRequested": user,
+			"roomID":        request.RoomID,
+			"roomName":      request.RoomName,
+			"msgType":       "RequestUsersToJoinRoom",
+		}
+
+		jsonContent, err := json.Marshal(data)
+		if err != nil {
+			log.Println("could not marshal to RequestUsersToJoinRoom, err:", err)
+			continue
+		}
+
+		// Send back RequestUsersToJoinRoom signal to everyone registered in room.
+		for _, roomRegisteredUser := range roomRegisteredUser {
+			m := WSMessage{jsonContent, roomRegisteredUser}
+			HubConstruct.Broadcast <- m
+		}
+
+		m := WSMessage{jsonContent, user}
+		HubConstruct.Broadcast <- m
+	}
 }

@@ -409,6 +409,7 @@
 
                     vueComponent.chatspreview[jsonString['roomID']] = { "message": jsonString['userRequested'] + " Requested to join the room by " + jsonString['requesterID'], "roomName": jsonString['roomName'] }
                 }
+
                 Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
 
             } else if (msgType === "NewMessage") {

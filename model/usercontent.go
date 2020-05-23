@@ -178,13 +178,10 @@ func (b Joined) JoinRoom() ([]string, error) {
 }
 
 func (b JoinRequest) RequestUserToJoinRoom(userToJoinEmail string) ([]string, error) {
-	// todo: if user has already been requested to join
-	// do not request again.
-	// also update users on the room that the user has been requested.
-	result := db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{"_id": b.RoomID})
 	var room Chats
-	err := result.Decode(&room)
-	if err != nil {
+	result := db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{"_id": b.RoomID})
+
+	if err := result.Decode(&room); err != nil {
 		return nil, err
 	}
 
@@ -198,26 +195,29 @@ func (b JoinRequest) RequestUserToJoinRoom(userToJoinEmail string) ([]string, er
 			return nil, values.ErrUserExistInRoom
 		}
 	}
+
 	if !requesterLegit {
 		return nil, errors.New("Invalid user made a RequestUsersToJoinRoom request Name: " + b.RequestingUserID)
 	}
 
 	result = db.Collection(values.UsersCollectionName).FindOne(context.TODO(), bson.M{"_id": userToJoinEmail})
 	var user User
-	if err = result.Decode(&user); err != nil {
+
+	if err := result.Decode(&user); err != nil {
 		return nil, err
 	}
 
 	// Check if user has already been requested by the room.
 	for _, request := range user.JoinRequest {
 		if b.RoomID == request.RoomID {
-			return nil, errors.New("User already requested")
+			return nil, values.ErrUserAlreadyRequested
 		}
 	}
 	user.JoinRequest = append(user.JoinRequest, b)
 
-	_, err = db.Collection(values.UsersCollectionName).UpdateOne(context.TODO(), bson.M{"_id": userToJoinEmail},
+	_, err := db.Collection(values.UsersCollectionName).UpdateOne(context.TODO(), bson.M{"_id": userToJoinEmail},
 		bson.M{"$set": bson.M{"joinRequest": user.JoinRequest}})
+
 	if err != nil {
 		return nil, err
 	}

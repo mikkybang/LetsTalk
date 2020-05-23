@@ -34,10 +34,11 @@ type RoomsJoined struct {
 }
 
 type JoinRequest struct {
-	RoomID             string `bson:"_id" json:"roomID"`
-	RoomName           string `bson:"roomName" json:"roomName"`
-	RequestingUserName string `bson:"requestingUserName" json:"requestingUserName"`
-	RequestingUserID   string `bson:"requestingUserID" json:"requestingUserID"`
+	RoomID             string   `bson:"_id" json:"roomID"`
+	RoomName           string   `bson:"roomName" json:"roomName"`
+	RequestingUserName string   `bson:"requestingUserName" json:"requestingUserName"`
+	RequestingUserID   string   `bson:"requestingUserID" json:"requestingUserID"`
+	Users              []string `bson:"-" json:"users"`
 }
 
 type Admin struct {
