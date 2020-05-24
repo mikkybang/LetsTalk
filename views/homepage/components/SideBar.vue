@@ -84,7 +84,7 @@
         <v-expansion-panel-header>
           <v-row>
             <v-col align="center" justify="start" cols="mx-auto">Chats</v-col>
-            <v-col align="center" justify="end" cols="auto">
+            <v-col align="center" justify="end" cols="mx-auto">
               <v-chip
                 color="red"
                 x-small
@@ -95,23 +95,26 @@
           </v-row>
         </v-expansion-panel-header>
         <v-expansion-panel-content>
-          <v-flex style="height: 55vh;" class="overflow-y-auto">
+          <v-container style="height: 55vh;" class="overflow-y-auto">
             <v-list tile dense three-line>
               <v-list-item-group color="black">
                 <v-list-item v-for="(chatID,i) in chats" :key="i" @click="loadChatContent(chatID)">
                   <v-list-item-avatar>
                     <v-icon large>mdi-account-circle</v-icon>
                   </v-list-item-avatar>
+
                   <v-list-item-content>
                     <v-list-item-title>
-                      <v-row>
+                      <v-row no-gutters>
                         <v-col
                           cols="auto"
+                          class="d-inline-block text-truncate"
                           align="center"
+                          style="max-width: 100px;"
                           justify="start"
                         >{{chatspreview[chatID]["roomName"]}}</v-col>
                         <v-col
-                          cols="4"
+                          cols="mx-auto"
                           align="center"
                           v-if="onreadroommessagecount[chatID]!==undefined"
                           justify="end"
@@ -120,12 +123,15 @@
                         </v-col>
                       </v-row>
                     </v-list-item-title>
-                    <v-list-item-subtitle>{{chatspreview[chatID]["message"]}}</v-list-item-subtitle>
+
+                    <v-list-item-subtitle
+                      class="d-inline-block text-truncate"
+                    >{{chatspreview[chatID]["message"]}}</v-list-item-subtitle>
                   </v-list-item-content>
                 </v-list-item>
               </v-list-item-group>
             </v-list>
-          </v-flex>
+          </v-container>
         </v-expansion-panel-content>
       </v-expansion-panel>
     </v-expansion-panels>

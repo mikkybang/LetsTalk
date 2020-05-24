@@ -242,7 +242,7 @@
                 },
 
                 sendMessage: function () {
-                    if (this.messageContent === "") {
+                    if (!this.messageContent.match(/\S/)) {
                         return
                     }
 
@@ -340,6 +340,13 @@
     </script>
 
     <script>
+        var scrollChatToBottom = function () {
+            setTimeout(() => {
+                var chatcontent = document.getElementById("chatcontent");
+                chatcontent.scrollTop = chatcontent.scrollHeight
+            }, 0)
+        }
+
         let audio = new Audio('./assets/notification.mp3');
         var endpoint = "ws://"
         if (document.location.protocol === "https:") {
@@ -389,6 +396,7 @@
 
                 vueComponent.removeFromRoomNotification(jsonString['roomID'])
                 Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
+                scrollChatToBottom()
 
             } else if (msgType === "RequestUsersToJoinRoom") {
                 if (jsonString['userRequested'] === '(%.Email %)') {
@@ -431,13 +439,11 @@
                     vueComponent.addToRoomNotification(roomID)
                 }
 
-                // if (jsonString["userID"] === '(%.Email%)') {
-                //     setTimeout(() => {
-                //         var chatcontent = document.getElementById("chatcontent");
-                //         vueComponent.$vuetify.goTo("#chatcontent", { offset: 0 - chatcontent.scrollHeight });
-                //     }, 0)
-                //     return
-                // }
+                if (jsonString["userID"] === '(%.Email%)') {
+                    scrollChatToBottom()
+                    return
+                }
+
                 audio.play();
                 Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
             }
