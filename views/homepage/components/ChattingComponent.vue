@@ -79,7 +79,12 @@
           </v-card>
         </v-dialog>
 
-        <v-container id="chatcontent" class="overflow-y-auto" style="height: 78vh;" fluid>
+        <v-container
+          id="chatcontent"
+          class="overflow-y-auto scroll-behavior-smooth"
+          style="height: 78vh;"
+          fluid
+        >
           <v-row>
             <v-col cols="12" v-for="(chat,i) in currentchatcontent" :key="i">
               <div align="center" justify="center" v-if="chat['type']==='info'">
