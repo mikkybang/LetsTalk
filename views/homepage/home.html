@@ -340,13 +340,6 @@
     </script>
 
     <script>
-        var scrollChatToBottom = function () {
-            setTimeout(() => {
-                var chatcontent = document.getElementById("chatcontent");
-                chatcontent.scrollTop = chatcontent.scrollHeight
-            }, 0)
-        }
-
         let audio = new Audio('./assets/notification.mp3');
         var endpoint = "ws://"
         if (document.location.protocol === "https:") {
@@ -354,104 +347,8 @@
         }
         socket = new WebSocket(endpoint + document.location.host + "/ws");
 
-        socket.onmessage = function (e) {
-            var jsonString = JSON.parse(e.data);
-            var msgType = jsonString['msgType'];
-
-            if (msgType === "UserJoinedRoom") {
-                var roomID = jsonString['roomID'];
-                var roomName = jsonString['roomName'];
-
-                var message = jsonString['email'] + " Joined";
-                if (jsonString['email'] === '(%.Email %)') {
-                    message = "You Joined";
-                }
-
-                vueComponent.chatspreview[roomID] = { "message": message, "roomName": roomName }
-
-                if (jsonString['email'] === '(%.Email %)') {
-                    vueComponent.chats.push(roomID)
-                } else {
-                    Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
-                }
-
-                // Update current chat if in view.
-                if (vueComponent.currentViewedRoomID === roomID) {
-                    vueComponent.currentChatContent.push({ "type": "info", "message": jsonString['email'] + " Joined the room" })
-                }
-
-                vueComponent.addToRoomNotification(roomID)
-                Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
-                audio.play();
-
-            } else if (msgType === "RequestAllMessages") {
-                var messageArray = jsonString['messages']
-                if (messageArray === null) {
-                    return
-                }
-
-                vueComponent.currentChatContent = messageArray
-                vueComponent.currentViewedRoomName = jsonString['roomName']
-                vueComponent.currentChatContentsNotLoaded = false
-
-                vueComponent.removeFromRoomNotification(jsonString['roomID'])
-                Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
-                scrollChatToBottom()
-
-            } else if (msgType === "RequestUsersToJoinRoom") {
-                if (jsonString['userRequested'] === '(%.Email %)') {
-                    var message = {
-                        "requestingUserName": jsonString['requesterID'],
-                        "requestingUserID": jsonString['requesterName'],
-                        "roomName": jsonString['roomName'],
-                        "roomID": jsonString['roomID'],
-                    }
-
-                    vueComponent.messages.push(message)
-                    vueComponent.addToRoomNotification(jsonString['roomID'])
-
-                } else {
-                    if (jsonString['roomID'] === vueComponent.currentViewedRoomID) {
-                        vueComponent.currentChatContent.push({ "type": "info", "message": jsonString['userRequested'] + " Requested to join room by" + jsonString['requesterID'] })
-                    } else {
-                        vueComponent.addToRoomNotification(jsonString['roomID'])
-                    }
-
-                    vueComponent.chatspreview[jsonString['roomID']] = { "message": jsonString['userRequested'] + " Requested to join the room by " + jsonString['requesterID'], "roomName": jsonString['roomName'] }
-                }
-
-                Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
-
-            } else if (msgType === "NewMessage") {
-                var roomID = jsonString['roomID']
-                vueComponent.chatspreview[roomID].message = jsonString['message']
-
-                if (roomID === vueComponent.currentViewedRoomID) {
-                    vueComponent.currentChatContent.push({
-                        "type": jsonString['type'],
-                        "message": jsonString['message'],
-                        "userID": jsonString['userID'],
-                        "time": jsonString['time'],
-                        "name": jsonString['name'],
-                    })
-
-                } else {
-                    vueComponent.addToRoomNotification(roomID)
-                }
-
-                if (jsonString["userID"] === '(%.Email%)') {
-                    scrollChatToBottom()
-                    return
-                }
-
-                audio.play();
-                Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
-            }
-        };
-
         socket.onopen = function () {
-            // TODO: below
-            // If we have to reconnect websocket, we might need to move this away from here
+            // TODO: If we have to reconnect websocket, we might need to move this away from here
             // Instead update info through websocket.
             (% range.UsersRooms %)
             var roomID = ''.concat("(% .RoomID  %)")
@@ -470,6 +367,135 @@
 
         socket.onclose = function () {
             console.log("websocket closed");
+        }
+    </script>
+
+    <script>
+        socket.onmessage = function (e) {
+            var jsonString = JSON.parse(e.data);
+            var msgType = jsonString['msgType'];
+
+            if (msgType === "UserJoinedRoom") {
+                onUserJoinedRoom(jsonString)
+
+            } else if (msgType === "RequestAllMessages") {
+                onRquestAllMessages(jsonString)
+
+            } else if (msgType === "RequestUsersToJoinRoom") {
+                onUserJoined(jsonString)
+
+            } else if (msgType === "NewMessage") {
+                onMessageReceived(jsonString)
+            }
+        };
+    </script>
+
+    <script>
+        var scrollChatToBottom = function () {
+            setTimeout(() => {
+                var chatcontent = document.getElementById("chatcontent");
+                chatcontent.scrollTop = chatcontent.scrollHeight
+            }, 0)
+        }
+
+        var onUserJoinedRoom = function (msg) {
+            var roomID = msg.roomID;
+            var roomName = msg.roomName;
+
+            var message = msg.email + " Joined";
+            if (msg.email === '(%.Email %)') {
+                message = "You Joined";
+            }
+
+            vueComponent.chatspreview[roomID] = { "message": message, "roomName": roomName }
+
+            if (msg.email === '(%.Email %)') {
+                vueComponent.chats.push(roomID)
+            } else {
+                Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
+            }
+
+            // Only update current chat if in view.
+            if (vueComponent.currentViewedRoomID === roomID) {
+                vueComponent.currentChatContent.push({ "type": "info", "message": msg.email + " Joined the room" })
+            }
+
+            vueComponent.addToRoomNotification(roomID)
+            Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
+            audio.play();
+        }
+
+        var onRquestAllMessages = function (msg) {
+            var messageArray = msg.messages
+            if (messageArray === null) {
+                return
+            }
+
+            vueComponent.currentChatContent = messageArray
+            vueComponent.currentViewedRoomName = msg.roomName
+            vueComponent.currentChatContentsNotLoaded = false
+
+            vueComponent.removeFromRoomNotification(msg.roomID)
+            Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
+            scrollChatToBottom()
+        }
+
+        var onUserJoined = function (msg) {
+            if (msg.userRequested === '(%.Email %)') {
+                var message = {
+                    "requestingUserName": msg.requesterID,
+                    "requestingUserID": msg.requesterName,
+                    "roomName": msg.roomName,
+                    "roomID": msg.roomID,
+                }
+
+                vueComponent.messages.push(message)
+                vueComponent.addToRoomNotification(msg.roomID)
+
+            } else {
+                if (msg['roomID'] === vueComponent.currentViewedRoomID) {
+                    vueComponent.currentChatContent.push({
+                        "type": "info",
+                        "message": msg.userRequested + " Requested to join room by" + msg.requesterID
+                    })
+
+                } else {
+                    vueComponent.addToRoomNotification(msg.roomID)
+                }
+
+                vueComponent.chatspreview[msg.roomID] = {
+                    "message": msg.userRequested + " Requested to join the room by " + msg.requesterID,
+                    "roomName": msg.roomName
+                }
+            }
+
+            Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
+        }
+
+        var onMessageReceived = function (msg) {
+            var roomID = msg.roomID
+            vueComponent.chatspreview[roomID].message = msg.message
+
+            if (roomID === vueComponent.currentViewedRoomID) {
+                vueComponent.currentChatContent.push({
+                    "type": msg.type,
+                    "message": msg.message,
+                    "userID": msg.userID,
+                    "time": msg.time,
+                    "name": msg.name,
+                })
+
+            } else {
+                vueComponent.addToRoomNotification(roomID)
+            }
+
+            if (msg.userID === '(%.Email%)') {
+                scrollChatToBottom()
+                return
+            }
+
+            audio.play();
+            Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
         }
     </script>
 </body>
