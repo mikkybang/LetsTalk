@@ -72,8 +72,10 @@ func (msg messageBytes) handleRequestUserToJoinRoom() {
 
 		// Send back RequestUsersToJoinRoom signal to everyone registered in room.
 		for _, roomRegisteredUser := range roomRegisteredUser {
-			m := WSMessage{jsonContent, roomRegisteredUser}
-			HubConstruct.Broadcast <- m
+			if HubConstruct.Users[roomRegisteredUser] != nil {
+				m := WSMessage{jsonContent, roomRegisteredUser}
+				HubConstruct.Broadcast <- m
+			}
 		}
 
 		m := WSMessage{jsonContent, user}
@@ -99,8 +101,10 @@ func (msg messageBytes) handleUserAcceptRoomRequest(joiner string) {
 	}
 
 	for _, user := range users {
-		m := WSMessage{msg, user}
-		HubConstruct.Broadcast <- m
+		if HubConstruct.Users[user] != nil {
+			m := WSMessage{msg, user}
+			HubConstruct.Broadcast <- m
+		}
 	}
 }
 
@@ -152,10 +156,12 @@ func (msg messageBytes) handleNewMessage(requester string) {
 		return
 	}
 
-	// Message is sent back to all users including sender.
+	// Message is sent back to all online users including sender.
 	for _, registeredUser := range registeredUsers {
-		m := WSMessage{jsonContent, registeredUser}
-		HubConstruct.Broadcast <- m
+		if HubConstruct.Users[registeredUser] != nil {
+			m := WSMessage{jsonContent, registeredUser}
+			HubConstruct.Broadcast <- m
+		}
 	}
 }
 
