@@ -19,6 +19,7 @@
                   <v-icon>mdi-plus</v-icon>
                 </v-btn>
               </template>
+
               <v-card>
                 <v-card-text>
                   <v-container fluid>
@@ -79,12 +80,12 @@
       </v-col>
     </v-row>
 
-    <v-expansion-panels flat>
+    <v-expansion-panels popout>
       <v-expansion-panel>
         <v-expansion-panel-header>
-          <v-row>
-            <v-col align="center" justify="start" cols="mx-auto">Chats</v-col>
-            <v-col align="center" justify="end" cols="mx-auto">
+          <v-row align="center">
+            <v-col cols="8" md="8" sm="2">Chats</v-col>
+            <v-col md="4" sm="1">
               <v-chip
                 color="red"
                 x-small
@@ -94,6 +95,7 @@
             </v-col>
           </v-row>
         </v-expansion-panel-header>
+
         <v-expansion-panel-content>
           <v-container style="height: 55vh;" class="overflow-y-auto">
             <v-list tile dense three-line>

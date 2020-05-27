@@ -158,3 +158,22 @@ func (msg messageBytes) handleNewMessage(requester string) {
 		HubConstruct.Broadcast <- m
 	}
 }
+
+func handleLoadUserContent(email string) {
+	userInfo, err := GetAllUserRooms(email)
+	if err != nil {
+		log.Println("Could not fetch users room", email)
+		return
+	}
+
+	request := map[string]interface{}{
+		"msgType":  "WebsocketOpen",
+		"rooms":    userInfo.RoomsJoined,
+		"requests": userInfo.JoinRequest,
+	}
+
+	if data, err := json.Marshal(request); err == nil {
+		m := WSMessage{data, email}
+		HubConstruct.Broadcast <- m
+	}
+}

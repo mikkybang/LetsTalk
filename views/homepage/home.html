@@ -136,6 +136,23 @@
                         </v-col>
                     </v-row>
                 </template>
+
+                <v-dialog width="400px" v-model="socketClosed">
+                    <v-card>
+                        <v-card-text>
+                            <div align="center" justify="center">
+                                <v-row>
+                                    <v-col cols="12">
+                                        <v-progress-circular indeterminate color="green"></v-progress-circular>
+                                    </v-col>
+                                    <v-col cols="12">
+                                        <span>Websocket disconnected. Reconnecting.</span>
+                                    </v-col>
+                                </v-row>
+                            </div>
+                        </v-card-text>
+                    </v-card>
+                </v-dialog>
             </v-content>
         </v-app>
     </div>
@@ -279,6 +296,7 @@
                 currentChatContent: [],
 
                 drawer: false,
+                socketClosed: false,
                 expand: false,
                 mini: true,
             },
@@ -303,7 +321,10 @@
                 loadChatContent: function (roomID) {
                     this.removeWelcomePage = true
                     this.currentChatContentsNotLoaded = true
-                    var message = { 'msgType': 'RequestAllMessages', "roomID": roomID }
+                    var message = {
+                        'msgType': 'RequestAllMessages',
+                        "roomID": roomID
+                    }
                     socket.send(JSON.stringify(message))
                     this.currentViewedRoomID = roomID
                 },
@@ -313,7 +334,12 @@
                 },
 
                 createRoom: function () {
-                    var jsonString = { "email": this.userID, "msgType": "NewRoomCreated", "roomName": this.newRoomName };
+                    var jsonString = {
+                        "email": this.userID,
+                        "msgType": "NewRoomCreated",
+                        "roomName": this.newRoomName
+                    };
+
                     jsonString = JSON.stringify(jsonString);
                     socket.send(jsonString);
                     this.createRoomDialog = false;
@@ -340,38 +366,7 @@
     </script>
 
     <script>
-        let audio = new Audio('./assets/notification.mp3');
-        var endpoint = "ws://"
-        if (document.location.protocol === "https:") {
-            endpoint = "wss://"
-        }
-        socket = new WebSocket(endpoint + document.location.host + "/ws");
-
-        socket.onopen = function () {
-            // TODO: If we have to reconnect websocket, we might need to move this away from here
-            // Instead update info through websocket.
-            (% range.UsersRooms %)
-            var roomID = ''.concat("(% .RoomID  %)")
-            vueComponent.chatspreview[roomID] = { "message": "", "roomName": "(%.RoomName %)" };
-            vueComponent.chats.push(''.concat("(% .RoomID  %)"))
-                (% end %)
-
-                (% range.Requests %)
-            var message = {
-                "requestingUserName": '(%.RequestingUserName%)', "requestingUserID": '(%.RequestingUserID%)',
-                "roomName": '(%.RoomName%)', "roomID": '(%.RoomID%)',
-            }
-            vueComponent.messages.push(message)
-                (% end %)
-        };
-
-        socket.onclose = function () {
-            console.log("websocket closed");
-        }
-    </script>
-
-    <script>
-        socket.onmessage = function (e) {
+        var onMessage = function (e) {
             var jsonString = JSON.parse(e.data);
             var msgType = jsonString['msgType'];
 
@@ -386,11 +381,55 @@
 
             } else if (msgType === "NewMessage") {
                 onMessageReceived(jsonString)
+
+            } else if (msgType === "WebsocketOpen") {
+                onSocketOpened(jsonString)
             }
         };
     </script>
 
     <script>
+        var socket
+
+        var connectWebsocket = function () {
+            var endpoint = "ws://"
+            if (document.location.protocol === "https:") {
+                endpoint = "wss://"
+            }
+            socket = new WebSocket(endpoint + document.location.host + "/ws");
+
+            socket.onopen = function () {
+                console.log("websocket open")
+                var msg = JSON.stringify({ msgType: "WebsocketOpen" })
+                socket.send(msg)
+
+                if (vueComponent.currentViewedRoomID !== "") {
+                    var message = {
+                        'msgType': 'RequestAllMessages',
+                        "roomID": vueComponent.currentViewedRoomID
+                    }
+
+                    socket.send(JSON.stringify(message))
+                }
+            };
+
+            socket.onclose = function (e) {
+                vueComponent.socketClosed = true
+                setTimeout(() => {
+                    connectWebsocket()
+                }, (5000));
+            }
+
+            socket.onmessage = onMessage
+        }
+
+        connectWebsocket()
+    </script>
+
+
+    <script>
+        var playAudio = new Audio('./assets/notification.mp3');
+
         var scrollChatToBottom = function () {
             setTimeout(() => {
                 var chatcontent = document.getElementById("chatcontent");
@@ -422,7 +461,7 @@
 
             vueComponent.addToRoomNotification(roomID)
             Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
-            audio.play();
+            playAudio.play();
         }
 
         var onRquestAllMessages = function (msg) {
@@ -494,8 +533,38 @@
                 return
             }
 
-            audio.play();
+            playAudio.play();
             Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
+        }
+
+        var onSocketOpened = function (msg) {
+            vueComponent.messages = []
+            for (var i = 0; i < msg.requests.length; i++) {
+                var data = msg.requests[i]
+                var message = {
+                    "requestingUserName": data.requestingUserName,
+                    "requestingUserID": data.requestingUserID,
+                    "roomName": data.roomName,
+                    "roomID": data.roomID,
+                }
+
+                vueComponent.messages.push(message)
+            }
+
+            vueComponent.chats = []
+            for (var i = 0; i < msg.rooms.length; i++) {
+                var data = msg.rooms[i]
+
+                var roomID = data.roomID
+                vueComponent.chatspreview[roomID] = {
+                    "message": "",
+                    "roomName": data.roomName
+                };
+
+                vueComponent.chats.push(roomID)
+            }
+
+            vueComponent.socketClosed = false
         }
     </script>
 </body>

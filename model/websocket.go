@@ -148,7 +148,6 @@ func (s Subscription) ReadPump(user string) {
 
 		switch msgType {
 		// TODO: add support to remove message.
-		// TODO: add support to remove messages.
 		// TODO: users should choose if to join chat.
 		case "NewRoomCreated":
 			msg.handleCreateNewRoom()
@@ -167,6 +166,10 @@ func (s Subscription) ReadPump(user string) {
 
 		case "NewMessage":
 			msg.handleNewMessage(user)
+
+		case "WebsocketOpen":
+			handleLoadUserContent(user)
+
 		default:
 			log.Println("Could not convert required type", msgType)
 		}

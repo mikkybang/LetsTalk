@@ -27,17 +27,10 @@ func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	userInfo, err := model.GetAllUserRooms(cookie.Email)
-	if err != nil {
-		log.Println("Could not fetch users room", cookie.Email)
-	}
-
 	data := map[string]interface{}{
-		"Email":      cookie.Email,
-		"UUID":       uuid,
-		"UsersRooms": userInfo.RoomsJoined,
-		"Requests":   userInfo.JoinRequest,
-		"Name":       values.Users[cookie.Email],
+		"Email": cookie.Email,
+		"UUID":  uuid,
+		"Name":  values.Users[cookie.Email],
 	}
 
 	// Use (%%) instead of {{}} for templates.

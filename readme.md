@@ -25,16 +25,15 @@ Users also can not register to the platform. Registration is done by the adminis
 
 - [x] Desktop UI
 
+- [x] Seamless websocket connection
+
 - [ ] File transfer over websocket for file < 1gb and over webRTC for > 1gb
 
 - [ ] Desktop screen sharing support
 
-- [ ] Seamless websocket connection
-
 - [ ] Voice and Video call support
 
 - [ ] Low bandwidth consumption using selective video call transfer [#31](https://github.com/metaclips/LetsTalk/issues/31)
-
 
 - [ ] Add logging system.
 
