@@ -56,7 +56,7 @@ func (b User) ValidateUser(email, uniqueID string) error {
 
 func GetUser(key string, user string) (names []string) {
 	names = make([]string, 0)
-	for email := range values.Users {
+	for email := range values.MapEmailToName {
 		if email == "" || email == user {
 			continue
 		}
@@ -69,7 +69,7 @@ func GetUser(key string, user string) (names []string) {
 }
 
 func (b Message) SaveMessageContent() ([]string, error) {
-	var messages Chats
+	var messages Room
 	result := db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{
 		"_id": b.RoomID,
 	})
@@ -98,7 +98,7 @@ func (b Message) SaveMessageContent() ([]string, error) {
 }
 
 func (b NewRoomRequest) CreateNewRoom() (string, error) {
-	var chats Chats
+	var chats Room
 	message := Message{
 		Message: b.Email + " Joined",
 		Type:    getContentType(values.INFO),
@@ -158,7 +158,7 @@ func (b Joined) AcceptRoomRequest() ([]string, error) {
 		"_id": b.RoomID,
 	})
 
-	var messages Chats
+	var messages Room
 	if err := result.Decode(&messages); err != nil {
 		return nil, err
 	}
@@ -179,7 +179,7 @@ func (b Joined) AcceptRoomRequest() ([]string, error) {
 }
 
 func (b JoinRequest) RequestUserToJoinRoom(userToJoinEmail string) ([]string, error) {
-	var room Chats
+	var room Room
 	result := db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{"_id": b.RoomID})
 
 	if err := result.Decode(&room); err != nil {
@@ -236,7 +236,7 @@ func (b JoinRequest) RequestUserToJoinRoom(userToJoinEmail string) ([]string, er
 
 func (b User) AddUserToRoom(roomID, roomName string) error {
 	b.updateRoomsJoinedByUsers(roomID, roomName)
-	var chats Chats
+	var chats Room
 	message := Message{
 		Message: b.Email + " Joined",
 		Type:    getContentType(values.INFO),
@@ -275,28 +275,71 @@ func (b *User) updateRoomsJoinedByUsers(roomID, roomName string) error {
 	return err
 }
 
-func GetAllMessageInRoom(roomID string) ([]Message, string, error) {
-	result := db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{"_id": roomID})
+func (b *Room) GetAllMessageInRoom() error {
+	result := db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{"_id": b.RoomID})
 
-	var chat Chats
-	if err := result.Decode(&chat); err != nil {
-		return nil, "", err
+	if err := result.Decode(&b); err != nil {
+		return err
 	}
 
-	return chat.Messages, chat.RoomName, nil
+	return nil
 }
 
-func GetAllUserRooms(email string) (User, error) {
-	var user User
+func (b *User) GetAllUserRooms() error {
 	result := db.Collection(values.UsersCollectionName).FindOne(context.TODO(), bson.M{
-		"_id": email,
+		"_id": b.Email,
 	})
 
-	if err := result.Decode(&user); err != nil {
-		return User{}, err
+	if err := result.Decode(&b); err != nil {
+		return err
 	}
 
-	return user, nil
+	return nil
+}
+
+func (b *User) GetAllUsersAssociates() ([]string, error) {
+	if err := b.GetAllUserRooms(); err != nil {
+		return nil, err
+	}
+
+	usersChannel := make(chan []string)
+	users := make([]string, 0)
+	done := make(chan bool)
+	registeredUser := make(map[string]bool)
+
+	go func() {
+		for {
+			select {
+			case e := <-usersChannel:
+				for _, user := range e {
+					if _, exist := registeredUser[user]; !exist && user != b.Email {
+						users = append(users, user)
+						registeredUser[user] = true
+					}
+				}
+
+			case <-done:
+				break
+			}
+		}
+	}()
+
+	for _, roomJoined := range b.RoomsJoined {
+		var room Room
+		result := db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{
+			"_id": roomJoined.RoomID,
+		})
+
+		if err := result.Decode(&room); err != nil {
+			done <- true
+			return nil, err
+		}
+
+		usersChannel <- room.RegisteredUsers
+	}
+	done <- true
+
+	return users, nil
 }
 
 func getContentType(contentType values.MessageType) string {

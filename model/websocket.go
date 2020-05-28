@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
@@ -41,6 +42,9 @@ func (h *Hub) Run() {
 				h.Users[s.User] = connections
 			}
 			h.Users[s.User][s.Conn] = true
+			fmt.Println("User registered")
+			go broadcastOnlineStatusToAllUserRoom(s.User, true)
+
 		case s := <-h.UnRegister:
 			connections := h.Users[s.User]
 			if connections != nil {
@@ -49,9 +53,13 @@ func (h *Hub) Run() {
 					close(s.Conn.Send)
 					if len(connections) == 0 {
 						delete(h.Users, s.User)
+						go broadcastOnlineStatusToAllUserRoom(s.User, false)
+						fmt.Println(s.User, "offline")
 					}
+					fmt.Println(s.User, "subscription removed")
 				}
 			}
+
 		case m := <-h.Broadcast:
 			connections := h.Users[m.User]
 			for c := range connections {
@@ -62,6 +70,7 @@ func (h *Hub) Run() {
 					delete(connections, c)
 					if len(connections) == 0 {
 						delete(h.Users, m.User)
+						go broadcastOnlineStatusToAllUserRoom(m.User, false)
 					}
 				}
 			}
@@ -89,6 +98,7 @@ func (s *Subscription) WritePump() {
 			if err := c.write(websocket.TextMessage, message); err != nil {
 				return
 			}
+
 		case <-ticker.C:
 			if err := c.write(websocket.PingMessage, []byte{}); err != nil {
 				return

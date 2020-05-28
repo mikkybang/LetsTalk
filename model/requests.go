@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
@@ -109,17 +110,26 @@ func (msg messageBytes) handleUserAcceptRoomRequest(joiner string) {
 }
 
 func handleRequestAllMessages(roomID, requester string) {
-	messages, roomName, err := GetAllMessageInRoom(roomID)
-	if err != nil {
+	room := Room{RoomID: roomID}
+	if err := room.GetAllMessageInRoom(); err != nil {
 		log.Println("could not get all messages in room, err:", err)
 		return
 	}
 
+	onlineUsers := make(map[string]bool)
+	for _, user := range room.RegisteredUsers {
+		if name, ok := values.MapEmailToName[user]; ok {
+			nameAndEmail := fmt.Sprintf("%s (%s)", name, user)
+			onlineUsers[nameAndEmail] = HubConstruct.Users[user] != nil
+		}
+	}
+
 	data := map[string]interface{}{
-		"messages": messages,
-		"msgType":  "RequestAllMessages",
-		"roomName": roomName,
-		"roomID":   roomID,
+		"messages":    room.Messages,
+		"msgType":     "RequestAllMessages",
+		"roomName":    room.RoomName,
+		"roomID":      roomID,
+		"onlineUsers": onlineUsers,
 	}
 
 	jsonContent, err := json.Marshal(data)
@@ -134,8 +144,9 @@ func handleRequestAllMessages(roomID, requester string) {
 
 func (msg messageBytes) handleNewMessage(requester string) {
 	var newMessage Message
+	fmt.Println(string(msg))
 	if err := json.Unmarshal(msg, &newMessage); err != nil {
-		log.Println("Could not convert to required New Message struct")
+		log.Println("Could not convert to required New Message struct", err)
 		return
 	}
 
@@ -166,8 +177,8 @@ func (msg messageBytes) handleNewMessage(requester string) {
 }
 
 func handleLoadUserContent(email string) {
-	userInfo, err := GetAllUserRooms(email)
-	if err != nil {
+	userInfo := User{Email: email}
+	if err := userInfo.GetAllUserRooms(); err != nil {
 		log.Println("Could not fetch users room", email)
 		return
 	}
@@ -181,5 +192,35 @@ func handleLoadUserContent(email string) {
 	if data, err := json.Marshal(request); err == nil {
 		m := WSMessage{data, email}
 		HubConstruct.Broadcast <- m
+	}
+}
+
+func broadcastOnlineStatusToAllUserRoom(userEmail string, online bool) {
+	// Update all users associates if online or not.
+	user := User{Email: userEmail}
+	associates, err := user.GetAllUsersAssociates()
+	if err != nil {
+		log.Println("could not get users associate", err)
+		return
+	}
+
+	for _, assassociateEmail := range associates {
+		if HubConstruct.Users[assassociateEmail] == nil {
+			continue
+		}
+
+		nameAndEmail := fmt.Sprintf("%s (%s)", values.MapEmailToName[assassociateEmail], userEmail)
+		msg := map[string]interface{}{
+			"msgType":  "OnlineStatus",
+			"username": nameAndEmail,
+			"status":   online,
+		}
+
+		if data, err := json.Marshal(msg); err == nil {
+			m := WSMessage{data, assassociateEmail}
+			// Since we are calling broadcastOnlineStatusToAllUserRoom
+			// from HubRun, we should it in a goroutine so as to make broadcast
+			HubConstruct.Broadcast <- m
+		}
 	}
 }
