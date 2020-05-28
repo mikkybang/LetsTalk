@@ -46,7 +46,7 @@ type Admin struct {
 	Super        bool `bson:"super" json:"super"`
 }
 
-type Chats struct {
+type Room struct {
 	RoomID          string    `bson:"_id" json:"email"`
 	RoomName        string    `bson:"roomName" json:"roomName"`
 	RegisteredUsers []string  `bson:"registeredUsers"`

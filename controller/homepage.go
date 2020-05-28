@@ -23,18 +23,19 @@ func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	uuid, ok := cookie.Data["UUID"].(string)
 	if !ok {
 		http.Error(w, values.ErrRetrieveUUID.Error(), 404)
-		log.Println("Could not retrieve UUID in homepage")
+		log.Println("Could not retrieve UUID/ in homepage")
 		return
 	}
 
 	data := map[string]interface{}{
 		"Email": cookie.Email,
 		"UUID":  uuid,
-		"Name":  values.Users[cookie.Email],
+		"Name":  values.MapEmailToName[cookie.Email],
 	}
 
 	// Use (%%) instead of {{}} for templates.
-	tmpl := template.Must(template.New("home.html").Delims("(%", "%)").ParseFiles("views/homepage/home.html",
+	tmpl := template.Must(template.New("home.html").Delims("(%", "%)").ParseFiles(
+		"views/homepage/home.html",
 		"views/homepage/components/SideBar.vue", "views/homepage/components/ChattingComponent.vue"))
 
 	if err := tmpl.Execute(w, data); err != nil {

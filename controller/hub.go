@@ -9,7 +9,7 @@ import (
 	"github.com/metaclips/LetsTalk/values"
 )
 
-// ServeWs handles websocket requests from the peer.
+// ServeWs handles websocket requests from the peer, ensuring user is registered.
 func ServeWs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	cookie := model.CookieDetail{CookieName: values.UserCookieName, Collection: values.UsersCollectionName}
 	if err := cookie.CheckCookie(r, w); err != nil {
@@ -18,8 +18,6 @@ func ServeWs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	ws, err := model.Upgrader.Upgrade(w, r, nil)
-	// Get user ID from cookies.
-	log.Println("User", cookie.Email, "Connected")
 	if err != nil {
 		log.Println(err)
 		return
@@ -28,6 +26,7 @@ func ServeWs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	s := model.Subscription{Conn: c, User: cookie.Email}
 	model.HubConstruct.Register <- s
+	log.Println("User", cookie.Email, "Connected")
 	go s.ReadPump(cookie.Email)
 	s.WritePump()
 }

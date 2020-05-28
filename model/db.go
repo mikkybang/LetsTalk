@@ -37,8 +37,7 @@ func InitDB() {
 		}
 	}(mongoDB)
 
-	values.RoomUsers = make(map[string][]string)
-	values.Users = make(map[string]string)
+	values.MapEmailToName = make(map[string]string)
 
 	getCollection := func(collection string, content interface{}) {
 		result, err := db.Collection(collection).Find(context.TODO(), bson.D{})
@@ -54,18 +53,11 @@ func InitDB() {
 
 	createNewAdminIfNotExist()
 
-	var roomChats []Chats
 	var users []User
-
-	getCollection(values.RoomsCollectionName, &roomChats)
 	getCollection(values.UsersCollectionName, &users)
 
-	for _, chat := range roomChats {
-		values.RoomUsers[chat.RoomID] = chat.RegisteredUsers
-	}
-
 	for _, user := range users {
-		values.Users[user.Email] = user.Name
+		values.MapEmailToName[user.Email] = user.Name
 	}
 }
 

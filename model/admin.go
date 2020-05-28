@@ -51,7 +51,7 @@ func (b User) UploadUser(r *http.Request) error {
 		b.ParentNumber = r.FormValue("parentNumber")
 	}
 
-	values.Users[b.Email] = b.Name
+	values.MapEmailToName[b.Email] = b.Name
 	_, err := db.Collection(values.UsersCollectionName).InsertOne(context.TODO(), b)
 	return err
 }

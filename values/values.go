@@ -15,6 +15,6 @@ const (
 )
 
 var (
-	RoomUsers map[string][]string
-	Users     map[string]string
+	// MapEmailToName maps user email to name
+	MapEmailToName map[string]string
 )
