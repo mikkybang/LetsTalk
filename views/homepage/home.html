@@ -105,7 +105,7 @@
                                 </v-navigation-drawer>
                             </v-card>
                             <v-navigation-drawer v-model="drawer" absolute temporary>
-                                <side-bar :chats="chats" :chatspreview="chatspreview"
+                                <side-bar :rooms="rooms" :chatspreview="chatspreview"
                                     @update-current-chat-contents-loaded="loadChatContent"
                                     :onreadroommessagecount="onreadRoomMessageCount" />
                             </v-navigation-drawer>
@@ -114,7 +114,8 @@
                         <v-col cols="mx-auto">
                             <chatting-component :currentchatcontentsloaded="currentChatContentsNotLoaded"
                                 :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
-                                :currentviewedroomname="currentViewedRoomName" :removewelcomepage="removeWelcomePage" />
+                                :currentviewedroomname="currentViewedRoomName" :removewelcomepage="removeWelcomePage"
+                                :onlineusers="onlineUsers" />
                         </v-col>
                     </v-row>
                 </template>
@@ -122,7 +123,7 @@
                 <template v-else>
                     <v-row style="height: 100%;" no-gutters>
                         <v-col cols="auto">
-                            <side-bar :chats="chats" :chatspreview="chatspreview"
+                            <side-bar :rooms="rooms" :chatspreview="chatspreview"
                                 @update-current-chat-contents-loaded="loadChatContent"
                                 @accept-join-request="acceptJoinRequest" :messages="messages" :newroomname="newRoomName"
                                 :createroomdialog="createRoomDialog" @create-room="createRoom"
@@ -132,7 +133,8 @@
                         <v-col cols="mx-auto">
                             <chatting-component :currentchatcontentsloaded=" currentChatContentsNotLoaded"
                                 :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
-                                :currentviewedroomname="currentViewedRoomName" :removewelcomepage="removeWelcomePage" />
+                                :currentviewedroomname="currentViewedRoomName" :removewelcomepage="removeWelcomePage"
+                                :onlineusers="onlineUsers" />
                         </v-col>
                     </v-row>
                 </template>
@@ -164,7 +166,7 @@
     <script>
         Vue.component('side-bar', {
             props: {
-                chats: Array,
+                rooms: Array,
                 chatspreview: {},
                 messages: Array,
                 newroomname: String,
@@ -204,11 +206,13 @@
                 currentchatcontent: Array,
                 currentviewedroomid: String,
                 currentviewedroomname: String,
+                onlineusers: {}
             },
 
             data: function () {
                 return {
                     addUserDialog: false,
+                    showRoomUsersDialog: false,
                     addedUsers: [],
                     usersFound: [],
                     selected: [],
@@ -265,7 +269,8 @@
 
                     var message = {
                         "msgType": "NewMessage",
-                        "roomID": this.currentviewedroomid, "message": this.messageContent,
+                        "roomID": this.currentviewedroomid,
+                        "message": this.messageContent,
                         "userID": '(%.Email%)', "name": '(%.Name%)',
                         "type": "txt",
                     }
@@ -281,7 +286,7 @@
         var vueComponent = new Vue({
             el: '#app',
             data: {
-                chats: [],
+                rooms: [],
                 messages: [],
                 onreadRoomMessageCount: {},
                 currentChatContentsNotLoaded: false,
@@ -294,6 +299,7 @@
                 userID: ''.concat('(%.Email %)'),
                 chatspreview: {},
                 currentChatContent: [],
+                onlineUsers: {},
 
                 drawer: false,
                 socketClosed: false,
@@ -334,14 +340,14 @@
                 },
 
                 createRoom: function () {
-                    var jsonString = {
+                    var jsonContent = {
                         "email": this.userID,
                         "msgType": "NewRoomCreated",
                         "roomName": this.newRoomName
                     };
 
-                    jsonString = JSON.stringify(jsonString);
-                    socket.send(jsonString);
+                    jsonContent = JSON.stringify(jsonContent);
+                    socket.send(jsonContent);
                     this.createRoomDialog = false;
                     this.newRoomName = '';
                 },
@@ -367,23 +373,29 @@
 
     <script>
         var onMessage = function (e) {
-            var jsonString = JSON.parse(e.data);
-            var msgType = jsonString['msgType'];
+            var jsonContent = JSON.parse(e.data);
+            var msgType = jsonContent.msgType;
 
             if (msgType === "UserJoinedRoom") {
-                onUserJoinedRoom(jsonString)
+                onUserJoinedRoom(jsonContent)
 
             } else if (msgType === "RequestAllMessages") {
-                onRquestAllMessages(jsonString)
+                onRquestAllMessages(jsonContent)
 
             } else if (msgType === "RequestUsersToJoinRoom") {
-                onUserJoined(jsonString)
+                onUserJoined(jsonContent)
 
             } else if (msgType === "NewMessage") {
-                onMessageReceived(jsonString)
+                onMessageReceived(jsonContent)
 
             } else if (msgType === "WebsocketOpen") {
-                onSocketOpened(jsonString)
+                onSocketOpened(jsonContent)
+
+            } else if (msgType === "OnlineStatus") {
+                if (vueComponent.onlineUsers[jsonContent.username] !== undefined) {
+                    vueComponent.onlineUsers[jsonContent.username] = jsonContent.status
+                    Vue.set(vueComponent.rooms, 0, vueComponent.rooms[0])
+                }
             }
         };
     </script>
@@ -392,6 +404,7 @@
         var socket
 
         var connectWebsocket = function () {
+            console.log("trying to open ws")
             var endpoint = "ws://"
             if (document.location.protocol === "https:") {
                 endpoint = "wss://"
@@ -448,10 +461,12 @@
 
             vueComponent.chatspreview[roomID] = { "message": message, "roomName": roomName }
 
+            // Append to rooms option if same user joined
+            // else notify others in room 
             if (msg.email === '(%.Email %)') {
-                vueComponent.chats.push(roomID)
+                vueComponent.rooms.push(roomID)
             } else {
-                Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
+                Vue.set(vueComponent.rooms, 0, vueComponent.rooms[0])
             }
 
             // Only update current chat if in view.
@@ -460,11 +475,14 @@
             }
 
             vueComponent.addToRoomNotification(roomID)
-            Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
+            Vue.set(vueComponent.rooms, 0, vueComponent.rooms[0])
             playAudio.play();
         }
 
         var onRquestAllMessages = function (msg) {
+            vueComponent.onlineUsers = msg.onlineUsers
+            console.log(msg.onlineUsers)
+
             var messageArray = msg.messages
             if (messageArray === null) {
                 return
@@ -475,7 +493,7 @@
             vueComponent.currentChatContentsNotLoaded = false
 
             vueComponent.removeFromRoomNotification(msg.roomID)
-            Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
+            Vue.set(vueComponent.rooms, 0, vueComponent.rooms[0])
             scrollChatToBottom()
         }
 
@@ -508,7 +526,7 @@
                 }
             }
 
-            Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
+            Vue.set(vueComponent.rooms, 0, vueComponent.rooms[0])
         }
 
         var onMessageReceived = function (msg) {
@@ -534,7 +552,7 @@
             }
 
             playAudio.play();
-            Vue.set(vueComponent.chats, 0, vueComponent.chats[0])
+            Vue.set(vueComponent.rooms, 0, vueComponent.rooms[0])
         }
 
         var onSocketOpened = function (msg) {
@@ -551,7 +569,7 @@
                 vueComponent.messages.push(message)
             }
 
-            vueComponent.chats = []
+            vueComponent.rooms = []
             for (var i = 0; i < msg.rooms.length; i++) {
                 var data = msg.rooms[i]
 
@@ -561,7 +579,7 @@
                     "roomName": data.roomName
                 };
 
-                vueComponent.chats.push(roomID)
+                vueComponent.rooms.push(roomID)
             }
 
             vueComponent.socketClosed = false

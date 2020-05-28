@@ -100,7 +100,7 @@
           <v-container style="height: 55vh;" class="overflow-y-auto">
             <v-list tile dense three-line>
               <v-list-item-group color="black">
-                <v-list-item v-for="(chatID,i) in chats" :key="i" @click="loadChatContent(chatID)">
+                <v-list-item v-for="(roomID,i) in rooms" :key="i" @click="loadChatContent(roomID)">
                   <v-list-item-avatar>
                     <v-icon large>mdi-account-circle</v-icon>
                   </v-list-item-avatar>
@@ -114,11 +114,11 @@
                           align="center"
                           style="max-width: 100px;"
                           justify="start"
-                        >{{chatspreview[chatID]["roomName"]}}</v-col>
+                        >{{chatspreview[roomID]["roomName"]}}</v-col>
                         <v-col
                           cols="mx-auto"
                           align="center"
-                          v-if="onreadroommessagecount[chatID]!==undefined"
+                          v-if="onreadroommessagecount[roomID]!==undefined"
                           justify="end"
                         >
                           <v-chip color="red" x-small pill text-color="white">1</v-chip>
@@ -128,7 +128,7 @@
 
                     <v-list-item-subtitle
                       class="d-inline-block text-truncate"
-                    >{{chatspreview[chatID]["message"]}}</v-list-item-subtitle>
+                    >{{chatspreview[roomID]["message"]}}</v-list-item-subtitle>
                   </v-list-item-content>
                 </v-list-item>
               </v-list-item-group>

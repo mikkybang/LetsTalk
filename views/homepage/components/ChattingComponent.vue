@@ -52,6 +52,28 @@
                 </v-card>
               </v-dialog>
 
+              <v-dialog scrollable v-model="showRoomUsersDialog" width="600px">
+                <template v-slot:activator="{ on }">
+                  <v-btn fab depressed v-on="on">
+                    <v-icon>mdi-information</v-icon>
+                  </v-btn>
+                </template>
+
+                <v-card>
+                  <v-card-title>Users</v-card-title>
+                  <v-divider></v-divider>
+                  <v-card-text style="height: 500px;">
+                    <v-row>
+                      <v-col cols="12"></v-col>
+                      <v-col v-for="(value,key) in onlineusers" :key="key" cols="12">
+                        <v-badge inline dot :color="value ? 'green' : 'red'"></v-badge>
+                        <span class="mx-4">{{key}}</span>
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
+                </v-card>
+              </v-dialog>
+
               <v-btn fab depressed>
                 <v-icon>mdi-phone</v-icon>
               </v-btn>
