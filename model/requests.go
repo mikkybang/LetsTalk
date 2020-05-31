@@ -109,6 +109,82 @@ func (msg messageBytes) handleUserAcceptRoomRequest(joiner string) {
 	}
 }
 
+// handleNewMessage broadcasts users message to all online users and also saves to database.
+func (msg messageBytes) handleNewMessage(requester string) {
+	var newMessage Message
+	if err := json.Unmarshal(msg, &newMessage); err != nil {
+		log.Println("Could not convert to required New Message struct", err)
+		return
+	}
+
+	// Do not send if registered WS user is not same and message sender.
+	if requester != newMessage.UserID {
+		return
+	}
+
+	newMessage.Time = time.Now().Format(values.TimeLayout)
+	// Save message to database ensuring user is registered to room.
+	registeredUsers, err := newMessage.SaveMessageContent()
+	if err != nil {
+		log.Println("Error saving msg to db", err, requester)
+		return
+	}
+
+	jsonContent, err := json.Marshal(newMessage)
+	if err != nil {
+		log.Println("Error converted message to json content", err)
+		return
+	}
+
+	// Message is sent back to all online users including sender.
+	for _, registeredUser := range registeredUsers {
+		if HubConstruct.Users[registeredUser] != nil {
+			m := WSMessage{jsonContent, registeredUser}
+			HubConstruct.Broadcast <- m
+		}
+	}
+}
+
+func (msg messageBytes) handleExitRoom(requester string) {
+	data := make(map[string]interface{})
+	if err := json.Unmarshal(msg, &data); err != nil {
+		log.Println("Could not retrieve json on exit room request", err)
+		return
+	}
+
+	email, ok := data["email"].(string)
+	if !ok {
+		log.Println("Could not retrieve required email to exit room")
+		return
+	}
+
+	roomID, ok := data["roomID"].(string)
+	if !ok {
+		log.Println("Could not retrieve required room ID to exit room")
+		return
+	}
+
+	if requester != email {
+		return
+	}
+
+	user := User{Email: email}
+	registeredUsers, err := user.ExitRoom(roomID)
+	if err != nil {
+		log.Println("Error exiting room", err)
+		return
+	}
+
+	// Broadcast to all online users of a room exit.
+	for _, registeredUser := range registeredUsers {
+		if HubConstruct.Users[registeredUser] != nil {
+			m := WSMessage{msg, registeredUser}
+			HubConstruct.Broadcast <- m
+		}
+	}
+}
+
+// handleRequestAllMessages coallates all messages in a particular room
 func handleRequestAllMessages(roomID, requester string) {
 	room := Room{RoomID: roomID}
 	if err := room.GetAllMessageInRoom(); err != nil {
@@ -142,40 +218,8 @@ func handleRequestAllMessages(roomID, requester string) {
 	HubConstruct.Broadcast <- m
 }
 
-func (msg messageBytes) handleNewMessage(requester string) {
-	var newMessage Message
-	fmt.Println(string(msg))
-	if err := json.Unmarshal(msg, &newMessage); err != nil {
-		log.Println("Could not convert to required New Message struct", err)
-		return
-	}
-
-	if requester != newMessage.UserID {
-		return
-	}
-
-	newMessage.Time = time.Now().Format(values.TimeLayout)
-	registeredUsers, err := newMessage.SaveMessageContent()
-	if err != nil {
-		log.Println("Error saving msg to db", err, requester)
-		return
-	}
-
-	jsonContent, err := json.Marshal(newMessage)
-	if err != nil {
-		log.Println("Error converted message to json content", err)
-		return
-	}
-
-	// Message is sent back to all online users including sender.
-	for _, registeredUser := range registeredUsers {
-		if HubConstruct.Users[registeredUser] != nil {
-			m := WSMessage{jsonContent, registeredUser}
-			HubConstruct.Broadcast <- m
-		}
-	}
-}
-
+// handleLoadUserContent loads all users contents on page load.
+// All rooms joined and users requests are loaded through WS.å
 func handleLoadUserContent(email string) {
 	userInfo := User{Email: email}
 	if err := userInfo.GetAllUserRooms(); err != nil {
@@ -195,8 +239,9 @@ func handleLoadUserContent(email string) {
 	}
 }
 
+// broadcastOnlineStatusToAllUserRoom broadcasts users availability
+// status to all users joined rooms. Status are broadcasted timely.
 func broadcastOnlineStatusToAllUserRoom(userEmail string, online bool) {
-	// Update all users associates if online or not.
 	user := User{Email: userEmail}
 	associates, err := user.GetAllUsersAssociates()
 	if err != nil {
@@ -219,7 +264,8 @@ func broadcastOnlineStatusToAllUserRoom(userEmail string, online bool) {
 		if data, err := json.Marshal(msg); err == nil {
 			m := WSMessage{data, assassociateEmail}
 			// Since we are calling broadcastOnlineStatusToAllUserRoom
-			// from HubRun, we should it in a goroutine so as to make broadcast
+			// from HubRun, we should call it in a goroutine so as
+			// not to block the hub channel
 			HubConstruct.Broadcast <- m
 		}
 	}

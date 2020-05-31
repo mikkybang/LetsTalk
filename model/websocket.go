@@ -162,6 +162,9 @@ func (s Subscription) ReadPump(user string) {
 		case "NewRoomCreated":
 			msg.handleCreateNewRoom()
 
+		case "ExitRoom":
+			msg.handleExitRoom(user)
+
 		case "RequestUsersToJoinRoom":
 			msg.handleRequestUserToJoinRoom()
 
