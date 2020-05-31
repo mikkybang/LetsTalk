@@ -83,8 +83,8 @@
                                                                 </v-col>
                                                                 <v-col cols="12">
                                                                     <v-spacer></v-spacer>
-                                                                    <v-btn @click="createRoom" color="green darken-1"
-                                                                        text>
+                                                                    <v-btn @click="createRoom(newRoomName)"
+                                                                        color="green darken-1" text>
                                                                         Create Room</v-btn>
                                                                 </v-col>
                                                             </v-row>
@@ -125,7 +125,7 @@
                         <v-col cols="auto">
                             <side-bar :rooms="rooms" :chatspreview="chatspreview"
                                 @update-current-chat-contents-loaded="loadChatContent"
-                                @accept-join-request="acceptJoinRequest" :messages="messages" :newroomname="newRoomName"
+                                @accept-join-request="acceptJoinRequest" :messages="messages"
                                 :createroomdialog="createRoomDialog" @create-room="createRoom"
                                 :onreadroommessagecount="onreadRoomMessageCount" />
                         </v-col>
@@ -169,14 +169,14 @@
                 rooms: Array,
                 chatspreview: {},
                 messages: Array,
-                newroomname: String,
                 onreadroommessagecount: {},
             },
 
             data: function () {
                 return {
-                    openMessageDialog: false,
+                    newRoomName: '',
                     createRoomDialog: false,
+                    openMessageDialog: false,
                     name: '(%.Name%)',
                 }
             },
@@ -191,7 +191,9 @@
                 },
 
                 createRoom: function () {
-                    this.$emit("create-room");
+                    this.$emit("create-room", this.newRoomName);
+                    this.newRoomName = ""
+                    this.createRoomDialog = false
                 },
 
             },
@@ -226,6 +228,17 @@
             },
 
             methods: {
+                exitRoom: function () {
+                    var message = {
+                        "msgType": "ExitRoom",
+                        "roomID": this.currentviewedroomid,
+                        "email": '(%.Email %)',
+                    }
+
+                    socket.send(JSON.stringify(message))
+                    this.showRoomUsersDialog = false
+                },
+
                 getUsers: function () {
                     var url = location.protocol + "//" + document.location.host + "/search/" + this.userID + "/" + this.uuid + "/" + this.searchText
                     console.log(url)
@@ -257,6 +270,7 @@
                         "requestingUserName": this.userName,
                         "requestingUserID": this.userID,
                     }
+
                     message = JSON.stringify(message)
                     socket.send(message)
                     this.closeSearchDialog()
@@ -295,7 +309,6 @@
                 removeWelcomePage: false,
                 currentViewedRoomID: '',
                 currentViewedRoomName: '',
-                newRoomName: '',
                 userID: ''.concat('(%.Email %)'),
                 chatspreview: {},
                 currentChatContent: [],
@@ -339,17 +352,17 @@
                     this.messages.splice(notificationIndex, 1)
                 },
 
-                createRoom: function () {
+                createRoom: function (roomName) {
                     var jsonContent = {
                         "email": this.userID,
                         "msgType": "NewRoomCreated",
-                        "roomName": this.newRoomName
+                        "roomName": roomName
                     };
 
                     jsonContent = JSON.stringify(jsonContent);
                     socket.send(jsonContent);
                     this.createRoomDialog = false;
-                    this.newRoomName = '';
+                    roomName = ""
                 },
 
                 acceptJoinRequest: function (roomID, roomName, notificationIndex) {
@@ -364,7 +377,7 @@
                     socket.send(JSON.stringify(message))
                     this.openMessageDialog = false
                     this.removeMessage(notificationIndex);
-                }
+                },
             },
 
             vuetify: new Vuetify(),
@@ -395,6 +408,18 @@
                 if (vueComponent.onlineUsers[jsonContent.username] !== undefined) {
                     vueComponent.onlineUsers[jsonContent.username] = jsonContent.status
                     Vue.set(vueComponent.rooms, 0, vueComponent.rooms[0])
+                }
+            } else if (msgType === "ExitRoom") {
+                var message = jsonContent.email + " exited room"
+                if (jsonContent.email === '(%.Email %)') {
+                    message = "You exited room"
+                }
+
+                if (jsonContent.roomID === vueComponent.currentViewedRoomID) {
+                    vueComponent.currentChatContent.push({
+                        "type": "info",
+                        "message": message
+                    })
                 }
             }
         };

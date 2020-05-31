@@ -33,6 +33,7 @@
                           @click:append="getUsers"
                         ></v-text-field>
                       </v-col>
+
                       <v-col cols="12">
                         <v-checkbox
                           v-for="(user,i) in usersFound"
@@ -71,6 +72,11 @@
                       </v-col>
                     </v-row>
                   </v-card-text>
+                  <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="red darken-1" text @click="exitRoom">Exit Room</v-btn>
+                    <v-btn color="green darken-1" text @click="showRoomUsersDialog=false">Close</v-btn>
+                  </v-card-actions>
                 </v-card>
               </v-dialog>
 
