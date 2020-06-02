@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -14,10 +15,6 @@ import (
 )
 
 func main() {
-	defer func() {
-		fmt.Println("Webserver DOWN")
-	}()
-
 	gob.Register(time.Time{})
 	model.InitDB()
 	router := httprouter.New()
@@ -34,9 +31,17 @@ func main() {
 	router.POST("/admin/login", controller.AdminLoginPOST)
 	router.POST("/admin/upload", controller.UploadUser)
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = os.Getenv("HTTP_PLATFORM_PORT")
+	}
+	if port == "" {
+		port = "8080"
+	}
+
 	router.ServeFiles("/assets/*filepath", http.Dir("./views/assets"))
 	fmt.Println("Webserver UP")
-	if err := http.ListenAndServe(":8080", router); err != nil {
+	if err := http.ListenAndServe(":"+port, router); err != nil {
 		log.Fatalln(err)
 	}
 }
