@@ -197,7 +197,7 @@ func (b User) CreateUserLogin(password string, w http.ResponseWriter) error {
 	return err
 }
 
-func (b User) ValidateUser(email, uniqueID string) error {
+func (b User) ValidateUser(uniqueID string) error {
 	if err := b.GetAllUserRooms(); err != nil {
 		return err
 	}

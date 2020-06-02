@@ -103,7 +103,7 @@ func SearchUser(w http.ResponseWriter, r *http.Request, params httprouter.Params
 		return
 	}
 
-	err := model.User{}.ValidateUser(id, uniqueID)
+	err := model.User{Email: id}.ValidateUser(uniqueID)
 	if err != nil {
 		log.Println("No id was specified while searching for user")
 		http.Error(w, "Not found", 404)

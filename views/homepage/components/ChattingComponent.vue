@@ -30,6 +30,7 @@
                           v-model="searchText"
                           outlined
                           append-icon="mdi-magnify"
+                          @click="getUsers"
                           @click:append="getUsers"
                         ></v-text-field>
                       </v-col>
