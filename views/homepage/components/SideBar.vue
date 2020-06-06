@@ -28,7 +28,11 @@
                         <span>Create New Room</span>
                       </v-col>
                       <v-col cols="12">
-                        <v-text-field label="Specify Room Name" v-model="newRoomName"></v-text-field>
+                        <v-text-field
+                          label="Specify Room Name"
+                          @keyup.enter.exact="createRoom"
+                          v-model="newRoomName"
+                        ></v-text-field>
                       </v-col>
                       <v-col cols="12">
                         <v-spacer></v-spacer>

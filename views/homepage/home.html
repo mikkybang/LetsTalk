@@ -79,7 +79,8 @@
                                                                 </v-col>
                                                                 <v-col cols="12">
                                                                     <v-text-field label="Specify Room Name"
-                                                                        v-model="newRoomName"></v-text-field>
+                                                                        v-model="newRoomName"
+                                                                        @keyup.enter.exact="getUsers"></v-text-field>
                                                                 </v-col>
                                                                 <v-col cols="12">
                                                                     <v-spacer></v-spacer>
