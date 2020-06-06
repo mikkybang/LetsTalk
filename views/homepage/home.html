@@ -581,30 +581,34 @@
         }
 
         var onSocketOpened = function (msg) {
-            vueComponent.messages = []
-            for (var i = 0; i < msg.requests.length; i++) {
-                var data = msg.requests[i]
-                var message = {
-                    "requestingUserName": data.requestingUserName,
-                    "requestingUserID": data.requestingUserID,
-                    "roomName": data.roomName,
-                    "roomID": data.roomID,
-                }
+            if (msg.requests !== null) {
+                vueComponent.messages = []
+                for (var i = 0; i < msg.requests.length; i++) {
+                    var data = msg.requests[i]
+                    var message = {
+                        "requestingUserName": data.requestingUserName,
+                        "requestingUserID": data.requestingUserID,
+                        "roomName": data.roomName,
+                        "roomID": data.roomID,
+                    }
 
-                vueComponent.messages.push(message)
+                    vueComponent.messages.push(message)
+                }
             }
 
-            vueComponent.rooms = []
-            for (var i = 0; i < msg.rooms.length; i++) {
-                var data = msg.rooms[i]
+            if (msg.rooms !== null) {
+                vueComponent.rooms = []
+                for (var i = 0; i < msg.rooms.length; i++) {
+                    var data = msg.rooms[i]
 
-                var roomID = data.roomID
-                vueComponent.chatspreview[roomID] = {
-                    "message": "",
-                    "roomName": data.roomName
-                };
+                    var roomID = data.roomID
+                    vueComponent.chatspreview[roomID] = {
+                        "message": "",
+                        "roomName": data.roomName
+                    };
 
-                vueComponent.rooms.push(roomID)
+                    vueComponent.rooms.push(roomID)
+                }
             }
 
             vueComponent.socketClosed = false
