@@ -191,6 +191,7 @@
             prepend-inner-icon="mdi-emoticon"
             prepend-icon="mdi-paperclip"
             append-outer-icon="mdi-send"
+            @click:prepend="openFileDialog"
             @click:append-outer="sendMessage"
             @keyup.enter.exact="sendMessage"
             solo
@@ -200,10 +201,13 @@
             rows="1"
             rounded
             clearable
+            :readonly="disableTextField"
           ></v-textarea>
         </v-container>
       </v-col>
     </v-row>
+
+    <input type="file" id="myFileInput" style="display:none" @change="onFileUpdate" />
   </div>
 
   <div align="center" v-else>
