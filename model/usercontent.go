@@ -69,24 +69,26 @@ func (b *User) GetAllUsersAssociates() ([]string, error) {
 	}
 
 	usersChannel := make(chan []string)
-	users := make([]string, 0)
 	done := make(chan bool)
+	users := make([]string, 0)
 	registeredUser := make(map[string]bool)
 
 	go func() {
 		for {
-			select {
-			case e := <-usersChannel:
-				for _, user := range e {
+			data, ok := <-usersChannel
+			if ok {
+				for _, user := range data {
 					if _, exist := registeredUser[user]; !exist && user != b.Email {
 						users = append(users, user)
 						registeredUser[user] = true
 					}
 				}
 
-			case <-done:
-				break
+				continue
 			}
+
+			done <- true
+			break
 		}
 	}()
 
@@ -97,13 +99,16 @@ func (b *User) GetAllUsersAssociates() ([]string, error) {
 		})
 
 		if err := result.Decode(&room); err != nil {
-			done <- true
+			close(usersChannel)
+			<-done
 			return nil, err
 		}
 
 		usersChannel <- room.RegisteredUsers
 	}
-	done <- true
+
+	close(usersChannel)
+	<-done
 
 	return users, nil
 }
