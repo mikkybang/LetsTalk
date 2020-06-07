@@ -123,6 +123,7 @@ func (b User) ExitRoom(roomID string) ([]string, error) {
 	for _, roomJoined := range b.RoomsJoined {
 		if roomJoined.RoomID == roomID {
 			roomExist = true
+			break
 		}
 	}
 	if !roomExist {
