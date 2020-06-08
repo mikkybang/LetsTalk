@@ -225,7 +225,6 @@
                     uuid: ''.concat("(%.UUID %)"),
                     userID: ''.concat('(%.Email %)'),
                     userName: ''.concat('(%.Name %)'),
-                    fileContent: null,
                 }
             },
 
@@ -300,8 +299,8 @@
                     if (!files.length)
                         return;
 
-                    this.fileContent = files[0]
-                    this.messageContent = this.fileContent.name
+                    vueComponent.fileContent = files[0]
+                    this.messageContent = vueComponent.fileContent.name
                 },
 
                 openFileDialog: function () {
@@ -312,11 +311,11 @@
             computed: {
                 disableTextField: function () {
                     if (this.messageContent !== null && this.messageContent.length > 1
-                        && this.fileContent !== null) {
+                        && vueComponent.fileContent !== null) {
                         return true
                     }
 
-                    this.fileContent = null
+                    vueComponent.fileContent = null
                     return false
                 }
             },
@@ -340,6 +339,9 @@
                 chatspreview: {},
                 currentChatContent: [],
                 onlineUsers: {},
+                downloadProgress: 0,
+                isUserDownloading: true,
+                fileContent: null,
 
                 drawer: false,
                 socketClosed: false,
@@ -405,6 +407,8 @@
                     this.openMessageDialog = false
                     this.removeMessage(notificationIndex);
                 },
+
+
             },
 
             vuetify: new Vuetify(),
