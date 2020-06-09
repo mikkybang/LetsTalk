@@ -48,7 +48,7 @@ func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func HomePageLoginGet(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	data := setLoginDetails(false, false, "/login")
+	data := setLoginDetails(false, false, "", "/login")
 
 	tmpl, terr := template.New("login.html").Delims("(%", "%)").ParseFiles("views/loginpage/login.html")
 	if terr != nil {
@@ -71,7 +71,7 @@ func HomePageLoginPost(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	}.CreateUserLogin(password, w)
 
 	if err != nil {
-		data := setLoginDetails(true, false, "/login")
+		data := setLoginDetails(true, false, "", "/login")
 
 		tmpl, terr := template.New("login.html").Delims("(%", "%)").ParseFiles("views/loginpage/login.html")
 		if terr != nil {
@@ -85,23 +85,6 @@ func HomePageLoginPost(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	}
 
 	http.Redirect(w, r, "/", 302)
-}
-
-func setLoginDetails(errors, isAdmin bool, link string) struct {
-	SigninError bool
-	Admin       bool
-	Login       string
-} {
-
-	return struct {
-		SigninError bool
-		Admin       bool
-		Login       string
-	}{
-		errors,
-		isAdmin,
-		link,
-	}
 }
 
 // TODO: Use as API instead..
@@ -123,11 +106,13 @@ func SearchUser(w http.ResponseWriter, r *http.Request, params httprouter.Params
 		return
 	}
 
-	users := model.GetUser(key, id)
-	data := map[string][]string{
-		"UsersFound": users,
+	data := struct {
+		UsersFound []string
+	}{
+		model.GetUser(key, id),
 	}
-	bytes, err := json.MarshalIndent(&data, "", "\t")
+
+	bytes, err := json.Marshal(&data)
 	if err != nil {
 		http.Error(w, values.ErrMarshal.Error(), 400)
 		return
@@ -136,5 +121,25 @@ func SearchUser(w http.ResponseWriter, r *http.Request, params httprouter.Params
 	if err != nil {
 		http.Error(w, values.ErrWrite.Error(), 400)
 		return
+	}
+}
+
+func setLoginDetails(errors, isAdmin bool, errorDetail, link string) struct {
+	SigninError bool
+	Admin       bool
+	Login       string
+	ErrorDetail string
+} {
+
+	return struct {
+		SigninError bool
+		Admin       bool
+		Login       string
+		ErrorDetail string
+	}{
+		errors,
+		isAdmin,
+		link,
+		errorDetail,
 	}
 }
