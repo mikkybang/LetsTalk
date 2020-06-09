@@ -20,20 +20,13 @@ func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	uuid, ok := cookie.Data["UUID"].(string)
-	if !ok {
-		http.Error(w, values.ErrRetrieveUUID.Error(), 404)
-		log.Println("Could not retrieve UUID/ in homepage")
-		return
-	}
-
 	data := struct {
 		Email string
 		UUID  string
 		Name  string
 	}{
 		cookie.Email,
-		uuid,
+		cookie.Data.UUID,
 		values.MapEmailToName[cookie.Email],
 	}
 

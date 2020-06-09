@@ -15,28 +15,27 @@ var cookieHandler = securecookie.New(securecookie.GenerateRandomKey(64), securec
 
 func (b CookieDetail) CreateCookie(w http.ResponseWriter) error {
 	exitTime := time.Now().Add(time.Hour * 2)
-	b.Data["exitTime"] = exitTime.Local()
-	b.Data["UUID"] = uuid.New().String()
+	b.Data.ExitTime = exitTime.Local()
+	b.Data.UUID = uuid.New().String()
 
 	_, err := db.Collection(b.Collection).UpdateOne(context.TODO(), map[string]interface{}{"_id": b.Email},
-		bson.M{"$set": bson.M{"loginUUID": b.Data["UUID"], "expires": exitTime}})
+		bson.M{"$set": bson.M{"loginUUID": b.Data.UUID, "expires": exitTime}})
 	if err != nil {
 		return err
 	}
 
-	if encoded, err := cookieHandler.Encode(b.CookieName, b.Data); err == nil {
-		cookie := &http.Cookie{
-			Name:    b.CookieName,
-			Value:   encoded,
-			Expires: exitTime,
-			Path:    b.Path,
-		}
-
-		http.SetCookie(w, cookie)
-	} else {
+	encoded, err := cookieHandler.Encode(b.CookieName, b.Data)
+	if err != nil {
 		return err
 	}
+	cookie := &http.Cookie{
+		Name:    b.CookieName,
+		Value:   encoded,
+		Expires: exitTime,
+		Path:    b.Path,
+	}
 
+	http.SetCookie(w, cookie)
 	return nil
 }
 
@@ -56,13 +55,8 @@ func (b *CookieDetail) CheckCookie(r *http.Request, w http.ResponseWriter) error
 		return err
 	}
 
-	email, ok := b.Data["Email"].(string)
-	if !ok {
-		email = ""
-	}
-
-	b.Email = email
-	result := db.Collection(b.Collection).FindOne(context.TODO(), map[string]interface{}{"_id": email})
+	b.Email = b.Data.Email
+	result := db.Collection(b.Collection).FindOne(context.TODO(), map[string]string{"_id": b.Email})
 
 	if err := result.Err(); err != nil {
 		return err
@@ -73,7 +67,7 @@ func (b *CookieDetail) CheckCookie(r *http.Request, w http.ResponseWriter) error
 		return err
 	}
 
-	if data["loginUUID"] != b.Data["UUID"] {
+	if data["loginUUID"] != b.Data.UUID {
 		return values.ErrIncorrectUUID
 	}
 

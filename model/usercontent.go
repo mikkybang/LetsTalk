@@ -196,9 +196,10 @@ func (b User) CreateUserLogin(password string, w http.ResponseWriter) error {
 		Collection: values.UsersCollectionName,
 		CookieName: values.UserCookieName,
 		Path:       "/",
-		Data: map[string]interface{}{
-			"Email": b.Email,
-		}}.CreateCookie(w)
+		Data: CookieData{
+			Email: b.Email,
+		},
+	}.CreateCookie(w)
 
 	return err
 }
