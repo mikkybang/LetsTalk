@@ -27,10 +27,14 @@ func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	data := map[string]interface{}{
-		"Email": cookie.Email,
-		"UUID":  uuid,
-		"Name":  values.MapEmailToName[cookie.Email],
+	data := struct {
+		Email string
+		UUID  string
+		Name  string
+	}{
+		cookie.Email,
+		uuid,
+		values.MapEmailToName[cookie.Email],
 	}
 
 	// Use (%%) instead of {{}} for templates.
@@ -44,11 +48,7 @@ func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func HomePageLoginGet(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	data := map[string]interface{}{
-		"SigninError": false,
-		"Login":       "/login",
-		"Admin":       false,
-	}
+	data := setLoginDetails(false, false, "/login")
 
 	tmpl, terr := template.New("login.html").Delims("(%", "%)").ParseFiles("views/loginpage/login.html")
 	if terr != nil {
@@ -71,11 +71,7 @@ func HomePageLoginPost(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	}.CreateUserLogin(password, w)
 
 	if err != nil {
-		data := map[string]interface{}{
-			"SigninError": true,
-			"Login":       "/login",
-			"Admin":       false,
-		}
+		data := setLoginDetails(true, false, "/login")
 
 		tmpl, terr := template.New("login.html").Delims("(%", "%)").ParseFiles("views/loginpage/login.html")
 		if terr != nil {
@@ -89,6 +85,23 @@ func HomePageLoginPost(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	}
 
 	http.Redirect(w, r, "/", 302)
+}
+
+func setLoginDetails(errors, isAdmin bool, link string) struct {
+	SigninError bool
+	Admin       bool
+	Login       string
+} {
+
+	return struct {
+		SigninError bool
+		Admin       bool
+		Login       string
+	}{
+		errors,
+		isAdmin,
+		link,
+	}
 }
 
 // TODO: Use as API instead..
@@ -111,7 +124,7 @@ func SearchUser(w http.ResponseWriter, r *http.Request, params httprouter.Params
 	}
 
 	users := model.GetUser(key, id)
-	data := map[string]interface{}{
+	data := map[string][]string{
 		"UsersFound": users,
 	}
 	bytes, err := json.MarshalIndent(&data, "", "\t")
