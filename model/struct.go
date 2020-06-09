@@ -1,6 +1,8 @@
 package model
 
 import (
+	"time"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -9,7 +11,14 @@ type CookieDetail struct {
 	Collection string
 	CookieName string
 	Path       string
-	Data       map[string]interface{}
+	Data       CookieData
+}
+
+type CookieData struct {
+	ExitTime time.Time
+	UUID     string
+	Email    string
+	Super    bool
 }
 
 type User struct {

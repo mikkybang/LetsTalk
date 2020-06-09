@@ -46,9 +46,9 @@ func AdminLoginPOST(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 		Collection: values.AdminCollectionName,
 		CookieName: values.AdminCookieName,
 		Path:       "/admin",
-		Data: map[string]interface{}{
-			"Super": admin.Super,
-			"Email": admin.StaffDetails.Email,
+		Data: model.CookieData{
+			Super: admin.Super,
+			Email: admin.StaffDetails.Email,
 		},
 	}
 
