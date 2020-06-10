@@ -69,7 +69,7 @@ func (b *User) GetAllUsersAssociates() ([]string, error) {
 	}
 
 	usersChannel := make(chan []string)
-	done := make(chan bool)
+	done := make(chan struct{})
 	users := make([]string, 0)
 	registeredUser := make(map[string]bool)
 
@@ -87,7 +87,7 @@ func (b *User) GetAllUsersAssociates() ([]string, error) {
 				continue
 			}
 
-			done <- true
+			close(done)
 			break
 		}
 	}()
