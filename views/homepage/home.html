@@ -116,7 +116,7 @@
                             <chatting-component :currentchatcontentsloaded="currentChatContentsNotLoaded"
                                 :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
                                 :currentviewedroomname="currentViewedRoomName" :removewelcomepage="removeWelcomePage"
-                                :onlineusers="onlineUsers" />
+                                :onlineusers="onlineUsers" :usersfound="usersFound" />
                         </v-col>
                     </v-row>
                 </template>
@@ -135,7 +135,7 @@
                             <chatting-component :currentchatcontentsloaded=" currentChatContentsNotLoaded"
                                 :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
                                 :currentviewedroomname="currentViewedRoomName" :removewelcomepage="removeWelcomePage"
-                                :onlineusers="onlineUsers" />
+                                :onlineusers="onlineUsers" :usersfound="usersFound" />
                         </v-col>
                     </v-row>
                 </template>
@@ -162,7 +162,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
-    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 
     <script>
         Vue.component('side-bar', {
@@ -209,7 +208,8 @@
                 currentchatcontent: Array,
                 currentviewedroomid: String,
                 currentviewedroomname: String,
-                onlineusers: {}
+                onlineusers: {},
+                usersfound: Array,
             },
 
             data: function () {
@@ -217,7 +217,6 @@
                     addUserDialog: false,
                     showRoomUsersDialog: false,
                     addedUsers: [],
-                    usersFound: [],
                     selected: [],
                     messageContent: '',
                     searchUserTextValue: '',
@@ -241,22 +240,18 @@
                 },
 
                 getUsers: function () {
-                    var url = location.protocol + "//" + document.location.host + "/search/" + this.userID + "/" + this.uuid + "/" + this.searchText
-                    console.log(url)
-                    axios.get(url)
-                        .then((response) => {
-                            var obj = JSON.parse(JSON.stringify(response.data));
-                            console.log(obj);
-                            console.log(obj.Users);
-                            this.usersFound = obj.UsersFound;
-                        });
+                    var message = {
+                        "msgType": "SearchUser",
+                        "searchText": this.searchText,
+                    }
+                    socket.send(JSON.stringify(message))
                 },
 
                 closeSearchDialog: function () {
                     this.searchText = ''
                     this.addUserDialog = false
                     this.addedUsers = []
-                    this.usersFound = []
+                    vueComponent.usersFound = []
                 },
 
                 requestUsersToJoinRoom: function () {
@@ -278,6 +273,13 @@
                 },
 
                 sendMessage: function () {
+                    // Send if it's a file.
+                    if (vueComponent.fileContent !== null && vueComponent.fileContent.name === this.messageContent) {
+
+                        this.messageContent = ""
+                        return
+                    }
+
                     if (!this.messageContent.match(/\S/)) {
                         return
                     }
@@ -338,9 +340,9 @@
                 userID: ''.concat('(%.Email %)'),
                 chatspreview: {},
                 currentChatContent: [],
+                usersFound: [],
                 onlineUsers: {},
-                downloadProgress: 0,
-                isUserDownloading: true,
+                downloadInfo: { "name": "", "progress": 0, "roomID": "" },
                 fileContent: null,
 
                 drawer: false,
@@ -452,6 +454,11 @@
                         "message": message
                     })
                 }
+
+            } else if (msgType === "getUsers") {
+                vueComponent.usersFound = jsonContent.UsersFound;
+                console.log(vueComponent.usersFound)
+                console.log("DOne")
             }
         };
     </script>
@@ -541,14 +548,25 @@
 
             var messageArray = msg.messages
             if (messageArray === null) {
-                return
+                vueComponent.currentChatContent = []
+            } else {
+                vueComponent.currentChatContent = messageArray
             }
 
-            vueComponent.currentChatContent = messageArray
             vueComponent.currentViewedRoomName = msg.roomName
             vueComponent.currentChatContentsNotLoaded = false
 
             vueComponent.removeFromRoomNotification(msg.roomID)
+
+            // Show file to upload or download at the bottom of page.
+            if (vueComponent.downloadInfo.roomID == msg.roomID) {
+                vueComponent.currentChatContent.push({
+                    "type": "fileGet",
+                    "userID": '(%.Email%)',
+                    "file": vueComponent.fileContent.name
+                })
+            }
+
             Vue.set(vueComponent.rooms, 0, vueComponent.rooms[0])
             scrollChatToBottom()
         }

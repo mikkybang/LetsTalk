@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
 	"html/template"
 	"log"
 	"net/http"
@@ -75,43 +74,6 @@ func HomePageLoginPost(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	}
 
 	http.Redirect(w, r, "/", 302)
-}
-
-// TODO: Use as API instead..
-func SearchUser(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	w.Header().Set("Content-Type", "application/json")
-	id := params.ByName("ID")
-	uniqueID := params.ByName("UUID")
-	key := params.ByName("Key")
-	if id == "" {
-		log.Println("No id was specified while searching for user")
-		http.Error(w, "Not found", 404)
-		return
-	}
-
-	err := model.User{Email: id}.ValidateUser(uniqueID)
-	if err != nil {
-		log.Println("No id was specified while searching for user")
-		http.Error(w, "Not found", 404)
-		return
-	}
-
-	data := struct {
-		UsersFound []string
-	}{
-		model.GetUser(key, id),
-	}
-
-	bytes, err := json.Marshal(&data)
-	if err != nil {
-		http.Error(w, values.ErrMarshal.Error(), 400)
-		return
-	}
-	_, err = w.Write(bytes)
-	if err != nil {
-		http.Error(w, values.ErrWrite.Error(), 400)
-		return
-	}
 }
 
 func setLoginDetails(errors, isAdmin bool, errorDetail, link string) struct {
