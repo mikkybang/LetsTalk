@@ -21,12 +21,9 @@ func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	data := struct {
-		Email string
-		UUID  string
-		Name  string
+		Email, UUID, Name string
 	}{
-		cookie.Email,
-		cookie.Data.UUID,
+		cookie.Email, cookie.Data.UUID,
 		values.MapEmailToName[cookie.Email],
 	}
 
@@ -118,17 +115,13 @@ func SearchUser(w http.ResponseWriter, r *http.Request, params httprouter.Params
 }
 
 func setLoginDetails(errors, isAdmin bool, errorDetail, link string) struct {
-	SigninError bool
-	Admin       bool
-	Login       string
-	ErrorDetail string
+	SigninError, Admin bool
+	Login, ErrorDetail string
 } {
 
 	return struct {
-		SigninError bool
-		Admin       bool
-		Login       string
-		ErrorDetail string
+		SigninError, Admin bool
+		Login, ErrorDetail string
 	}{
 		errors,
 		isAdmin,

@@ -58,13 +58,16 @@ func (msg messageBytes) handleRequestUserToJoinRoom() {
 			continue
 		}
 
-		data := map[string]interface{}{
-			"requesterID":   request.RequestingUserID,
-			"requesterName": request.RequestingUserName,
-			"userRequested": user,
-			"roomID":        request.RoomID,
-			"roomName":      request.RoomName,
-			"msgType":       "RequestUsersToJoinRoom",
+		data := struct {
+			RequesterID   string `json:"requesterID"`
+			RequesterName string `json:"requesterName"`
+			UserRequested string `json:"userRequested"`
+			RoomID        string `json:"roomID"`
+			RoomName      string `json:"roomName"`
+			MsgType       string `json:"msgType"`
+		}{
+			request.RequestingUserID, request.RequestingUserName,
+			user, request.RoomID, request.RoomName, "RequestUsersToJoinRoom",
 		}
 
 		jsonContent, err := json.Marshal(data)
@@ -121,7 +124,7 @@ func (msg messageBytes) handleNewMessage(requester string) {
 		return
 	}
 
-	// Do not send if registered WS user is not same and message sender.
+	// Do not send if registered WS user is not same as message sender.
 	if requester != newMessage.UserID {
 		return
 	}
@@ -150,30 +153,23 @@ func (msg messageBytes) handleNewMessage(requester string) {
 }
 
 func (msg messageBytes) handleExitRoom(requester string) {
-	data := make(map[string]interface{})
+	// data := make(map[string]interface{})
+	data := struct {
+		Email  string `json:"email"`
+		RoomID string `json:"roomID"`
+	}{}
+
 	if err := json.Unmarshal(msg, &data); err != nil {
 		log.Println("Could not retrieve json on exit room request", err)
 		return
 	}
 
-	email, ok := data["email"].(string)
-	if !ok {
-		log.Println("Could not retrieve required email to exit room")
+	if requester != data.Email {
 		return
 	}
 
-	roomID, ok := data["roomID"].(string)
-	if !ok {
-		log.Println("Could not retrieve required room ID to exit room")
-		return
-	}
-
-	if requester != email {
-		return
-	}
-
-	user := User{Email: email}
-	registeredUsers, err := user.ExitRoom(roomID)
+	user := User{Email: data.Email}
+	registeredUsers, err := user.ExitRoom(data.RoomID)
 	if err != nil {
 		log.Println("Error exiting room", err)
 		return
@@ -186,8 +182,14 @@ func (msg messageBytes) handleExitRoom(requester string) {
 			HubConstruct.Broadcast <- m
 		}
 	}
+
+	if HubConstruct.Users[requester] != nil {
+		m := WSMessage{msg, requester}
+		HubConstruct.Broadcast <- m
+	}
 }
 
+// handleSearchUser returns registered users that match searchText
 func handleSearchUser(searchText, user string) {
 	data := struct {
 		UsersFound []string
