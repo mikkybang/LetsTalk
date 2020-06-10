@@ -177,6 +177,11 @@ func (s Subscription) ReadPump(user string) {
 				handleRequestAllMessages(roomID, user)
 			}
 
+		case "SearchUser":
+			if searchText, ok := data["searchText"].(string); ok {
+				handleSearchUser(searchText, user)
+			}
+
 		case "NewMessage":
 			msg.handleNewMessage(user)
 

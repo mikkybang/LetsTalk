@@ -193,7 +193,7 @@ func (msg messageBytes) handleExitRoom(requester string) {
 func handleSearchUser(searchText, user string) {
 	data := struct {
 		UsersFound []string
-		msgType    string
+		MsgType    string `json:"msgType"`
 	}{
 		GetUser(searchText, user),
 		"getUsers",

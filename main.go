@@ -25,7 +25,6 @@ func main() {
 	router.GET("/login", controller.HomePageLoginGet)
 	router.GET("/admin/login", controller.AdminLoginGET)
 	router.GET("/admin", controller.AdminPage)
-	router.GET("/search/:ID/:UUID/:Key", controller.SearchUser)
 
 	router.POST("/login", controller.HomePageLoginPost)
 	router.POST("/admin/login", controller.AdminLoginPOST)

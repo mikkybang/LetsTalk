@@ -37,7 +37,7 @@
 
                       <v-col cols="12">
                         <v-checkbox
-                          v-for="(user,i) in usersFound"
+                          v-for="(user,i) in usersfound"
                           :key="i"
                           :label="user"
                           :value="user"
@@ -117,6 +117,12 @@
           <v-row>
             <v-col cols="12" v-for="(chat,i) in currentchatcontent" :key="i">
               <div align="center" justify="center" v-if="chat['type']==='info'">
+                <v-card tile class="justify-center" outlined>
+                  <v-card-text>{{chat['message']}}</v-card-text>
+                </v-card>
+              </div>
+
+              <div align="right" justify="center" v-else-if="chat['type']==='file'">
                 <v-card tile class="justify-center" outlined>
                   <v-card-text>{{chat['message']}}</v-card-text>
                 </v-card>
