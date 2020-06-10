@@ -32,14 +32,16 @@ func (msg messageBytes) handleCreateNewRoom() {
 		MessageType: "UserJoinedRoom",
 	}
 
-	jsonByte, err := json.Marshal(userJoinedMessage)
+	jsonContent, err := json.Marshal(userJoinedMessage)
 	if err != nil {
 		log.Println("Could not marshal to jsonByte while creating room", err.Error())
 		return
 	}
 
-	m := WSMessage{jsonByte, newRoom.Email}
-	HubConstruct.Broadcast <- m
+	if HubConstruct.Users[newRoom.Email] != nil {
+		m := WSMessage{jsonContent, newRoom.Email}
+		HubConstruct.Broadcast <- m
+	}
 }
 
 func (msg messageBytes) handleRequestUserToJoinRoom() {
@@ -79,8 +81,10 @@ func (msg messageBytes) handleRequestUserToJoinRoom() {
 			}
 		}
 
-		m := WSMessage{jsonContent, user}
-		HubConstruct.Broadcast <- m
+		if HubConstruct.Users[user] != nil {
+			m := WSMessage{jsonContent, user}
+			HubConstruct.Broadcast <- m
+		}
 	}
 }
 
@@ -184,6 +188,27 @@ func (msg messageBytes) handleExitRoom(requester string) {
 	}
 }
 
+func handleSearchUser(searchText, user string) {
+	data := struct {
+		UsersFound []string
+		msgType    string
+	}{
+		GetUser(searchText, user),
+		"getUsers",
+	}
+
+	jsonContent, err := json.Marshal(&data)
+	if err != nil {
+		log.Println("Error while converting search user result to json", err)
+		return
+	}
+
+	if HubConstruct.Users[user] != nil {
+		m := WSMessage{jsonContent, user}
+		HubConstruct.Broadcast <- m
+	}
+}
+
 // handleRequestAllMessages coallates all messages in a particular room
 func handleRequestAllMessages(roomID, requester string) {
 	room := Room{RoomID: roomID}
@@ -208,14 +233,20 @@ func handleRequestAllMessages(roomID, requester string) {
 		"onlineUsers": onlineUsers,
 	}
 
-	jsonContent, err := json.Marshal(data)
+	jsonContent, err := json.Marshal(&data)
 	if err != nil {
 		log.Println("could not marshal images, err:", err)
 		return
 	}
 
-	m := WSMessage{jsonContent, requester}
-	HubConstruct.Broadcast <- m
+	// TODO: There's a check to see if user is truly online,
+	// before sending broadcast this is to reduce the number
+	// of requests to HUB worker.
+	// We can remove this per if we increase number of worker.
+	if HubConstruct.Users[requester] != nil {
+		m := WSMessage{jsonContent, requester}
+		HubConstruct.Broadcast <- m
+	}
 }
 
 // handleLoadUserContent loads all users contents on page load.
@@ -233,7 +264,7 @@ func handleLoadUserContent(email string) {
 		"requests": userInfo.JoinRequest,
 	}
 
-	if data, err := json.Marshal(request); err == nil {
+	if data, err := json.Marshal(request); err == nil && HubConstruct.Users[email] != nil {
 		m := WSMessage{data, email}
 		HubConstruct.Broadcast <- m
 	}
