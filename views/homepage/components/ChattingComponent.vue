@@ -123,7 +123,7 @@
               </div>
 
               <div align="right" justify="center" v-else-if="chat['type']==='file'">
-                <v-card tile class="justify-center" outlined>
+                <v-card tile shaped style="max-width: 70vw;" class="d-inline-block mx-auto">
                   <v-card-text>{{chat['message']}}</v-card-text>
                 </v-card>
               </div>
@@ -152,7 +152,52 @@
                       </v-col>
                     </v-row>
                   </v-card-title>
-                  <v-card-text align="start">{{chat['message']}}</v-card-text>
+
+                  <template v-if="chat['type']==='file'">
+                    <v-card-text>
+                      <v-row>
+                        <v-col cols="mx-auto"></v-col>
+                        <v-col cols="auto">
+                          <v-progress-circular
+                            :rotate="360"
+                            :size="20"
+                            :width="10"
+                            :value="0"
+                            color="teal"
+                          >
+                            <v-btn>
+                              <v-icon>md-download</v-icon>
+                            </v-btn>
+                          </v-progress-circular>
+                        </v-col>
+                      </v-row>
+                    </v-card-text>
+                  </template>
+
+                  <template v-if="chat['type']==='upload'">
+                    <v-card-text>
+                      <v-row align="center" justify="center">
+                        <v-col cols="mx-auto">{{chat.message}}</v-col>
+                        <v-col cols="auto">
+                          <v-progress-circular
+                            :rotate="360"
+                            :size="50"
+                            :width="5"
+                            :value="downloadinfo[chat.message].progress"
+                            color="teal"
+                          >
+                            <v-btn depressed text>
+                              <v-icon>mdi-upload</v-icon>
+                            </v-btn>
+                          </v-progress-circular>
+                        </v-col>
+                      </v-row>
+                    </v-card-text>
+                  </template>
+
+                  <template v-else>
+                    <v-card-text align="start">{{chat['message']}}</v-card-text>
+                  </template>
                   <v-card-subtitle>{{chat['time']}}</v-card-subtitle>
                 </v-card>
               </div>

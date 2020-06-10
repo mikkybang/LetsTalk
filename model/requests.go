@@ -11,6 +11,7 @@ import (
 
 type messageBytes []byte
 
+// handleCreateNewRoom creates a new room for user.
 func (msg messageBytes) handleCreateNewRoom() {
 	var newRoom NewRoomRequest
 	if err := json.Unmarshal(msg, &newRoom); err != nil {
@@ -91,6 +92,7 @@ func (msg messageBytes) handleRequestUserToJoinRoom() {
 	}
 }
 
+// handleUserAcceptRoomRequest accepts room join request.
 func (msg messageBytes) handleUserAcceptRoomRequest(joiner string) {
 	var roomRequest Joined
 	if err := json.Unmarshal(msg, &roomRequest); err != nil {
@@ -152,8 +154,8 @@ func (msg messageBytes) handleNewMessage(requester string) {
 	}
 }
 
+// handleExitRoom exits requesters joined room and also notifies all room users.
 func (msg messageBytes) handleExitRoom(requester string) {
-	// data := make(map[string]interface{})
 	data := struct {
 		Email  string `json:"email"`
 		RoomID string `json:"roomID"`
@@ -189,7 +191,7 @@ func (msg messageBytes) handleExitRoom(requester string) {
 	}
 }
 
-// handleSearchUser returns registered users that match searchText
+// handleSearchUser returns registered users that match searchText.
 func handleSearchUser(searchText, user string) {
 	data := struct {
 		UsersFound []string
@@ -211,7 +213,7 @@ func handleSearchUser(searchText, user string) {
 	}
 }
 
-// handleRequestAllMessages coallates all messages in a particular room
+// handleRequestAllMessages coallates all messages in a particular room.
 func handleRequestAllMessages(roomID, requester string) {
 	room := Room{RoomID: roomID}
 	if err := room.GetAllMessageInRoom(); err != nil {
@@ -252,7 +254,7 @@ func handleRequestAllMessages(roomID, requester string) {
 }
 
 // handleLoadUserContent loads all users contents on page load.
-// All rooms joined and users requests are loaded through WS.å
+// All rooms joined and users requests are loaded through WS.
 func handleLoadUserContent(email string) {
 	userInfo := User{Email: email}
 	if err := userInfo.GetAllUserRooms(); err != nil {
