@@ -116,7 +116,7 @@
                             <chatting-component :currentchatcontentsloaded="currentChatContentsNotLoaded"
                                 :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
                                 :currentviewedroomname="currentViewedRoomName" :removewelcomepage="removeWelcomePage"
-                                :onlineusers="onlineUsers" :usersfound="usersFound" />
+                                :onlineusers="onlineUsers" :usersfound="usersFound" :downloadinfo="downloadInfo" />
                         </v-col>
                     </v-row>
                 </template>
@@ -135,7 +135,7 @@
                             <chatting-component :currentchatcontentsloaded=" currentChatContentsNotLoaded"
                                 :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
                                 :currentviewedroomname="currentViewedRoomName" :removewelcomepage="removeWelcomePage"
-                                :onlineusers="onlineUsers" :usersfound="usersFound" />
+                                :onlineusers="onlineUsers" :usersfound="usersFound" :downloadinfo="downloadInfo" />
                         </v-col>
                     </v-row>
                 </template>
@@ -209,6 +209,7 @@
                 currentviewedroomid: String,
                 currentviewedroomname: String,
                 onlineusers: {},
+                downloadinfo: {},
                 usersfound: Array,
             },
 
@@ -244,6 +245,7 @@
                         "msgType": "SearchUser",
                         "searchText": this.searchText,
                     }
+
                     socket.send(JSON.stringify(message))
                 },
 
@@ -258,6 +260,7 @@
                     if (this.addedUsers.length === 0) {
                         return
                     }
+
                     var message = {
                         "msgType": 'RequestUsersToJoinRoom',
                         "users": this.addedUsers,
@@ -275,6 +278,20 @@
                 sendMessage: function () {
                     // Send if it's a file.
                     if (vueComponent.fileContent !== null && vueComponent.fileContent.name === this.messageContent) {
+                        vueComponent.downloadInfo[vueComponent.fileContent.name] = { "progress": 0 }
+                        var message = vueComponent.fileContent.name
+                        vueComponent.currentChatContent.push({
+                            "type": "upload",
+                            "userID": '(%.Email%)',
+                            "message": message,
+                            name: '(%.Name%)',
+                        })
+
+                        setTimeout(() => {
+                            vueComponent.downloadInfo[message].progress = 10
+                            Vue.set(vueComponent.currentChatContent, 0, vueComponent.currentChatContent[0])
+                            console.log("done")
+                        }, (2000));
 
                         this.messageContent = ""
                         return
@@ -337,12 +354,13 @@
                 removeWelcomePage: false,
                 currentViewedRoomID: '',
                 currentViewedRoomName: '',
-                userID: ''.concat('(%.Email %)'),
+                userID: '(%.Email %)',
                 chatspreview: {},
                 currentChatContent: [],
                 usersFound: [],
                 onlineUsers: {},
-                downloadInfo: { "name": "", "progress": 0, "roomID": "" },
+                downloadCount: 0,
+                downloadInfo: {}, //[{ "name": "", "progress": 0, "roomID": "" }],
                 fileContent: null,
 
                 drawer: false,

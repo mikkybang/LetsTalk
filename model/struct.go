@@ -91,6 +91,7 @@ type NewRoomRequest struct {
 type FileType struct {
 	Downloaded bool   `bson:"downloaded" json:"downloaded"`
 	Sha256     string `bson:"_id" json:"sha256"`
+	Name       string
 }
 
 type WSMessage struct {

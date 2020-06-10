@@ -390,6 +390,8 @@ func getContentType(contentType values.MessageType) string {
 		return "info"
 	case values.TXT:
 		return "txt"
+	case values.FILE:
+		return "file"
 	}
 
 	return ""
