@@ -120,26 +120,20 @@ func (b User) ExitRoom(roomID string) ([]string, error) {
 
 	// Confirm if indeed user is registered to room
 	var roomExist bool
-	for _, roomJoined := range b.RoomsJoined {
+	for i, roomJoined := range b.RoomsJoined {
 		if roomJoined.RoomID == roomID {
 			roomExist = true
-			break
-		}
-	}
-	if !roomExist {
-		return nil, values.ErrUserNotRegisteredToRoom
-	}
 
-	for i, room := range b.RoomsJoined {
-		if room.RoomID == roomID {
 			if len(b.RoomsJoined)-1 > i {
 				b.RoomsJoined = append(b.RoomsJoined[:i], b.RoomsJoined[i+1:]...)
 			} else {
 				b.RoomsJoined = b.RoomsJoined[:i]
 			}
-
 			break
 		}
+	}
+	if !roomExist {
+		return nil, values.ErrUserNotRegisteredToRoom
 	}
 
 	// Update room joined by user in DB.
@@ -161,7 +155,6 @@ func (b User) ExitRoom(roomID string) ([]string, error) {
 		Message: b.Email + " left the room",
 	}
 	room.Messages = append(room.Messages, exitMessage)
-	registeredUsers := room.RegisteredUsers
 
 	for i, user := range room.RegisteredUsers {
 		if user == b.Email {
@@ -179,7 +172,7 @@ func (b User) ExitRoom(roomID string) ([]string, error) {
 		"_id": room.RoomID,
 	}, bson.M{"$set": bson.M{"registeredUsers": room.RegisteredUsers, "messages": room.Messages}})
 
-	return registeredUsers, err
+	return room.RegisteredUsers, err
 }
 
 func (b User) CreateUserLogin(password string, w http.ResponseWriter) error {
