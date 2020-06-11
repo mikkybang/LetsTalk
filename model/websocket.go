@@ -153,7 +153,7 @@ func (s Subscription) ReadPump(user string) {
 		msgType, ok := data["msgType"].(string)
 		if !ok {
 			log.Println("user did not send a valid message type", user, data)
-			return
+			continue
 		}
 
 		switch msgType {
