@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/metaclips/LetsTalk/values"
 )
 
 const (
@@ -159,37 +160,40 @@ func (s Subscription) ReadPump(user string) {
 		switch msgType {
 		// TODO: add support to remove message.
 		// TODO: users should choose if to join chat.
-		case "NewRoomCreated":
+		case values.NewRoomCreatedMsgType:
 			msg.handleCreateNewRoom()
 
-		case "ExitRoom":
+		case values.ExitRoomMsgType:
 			msg.handleExitRoom(user)
 
-		case "RequestUsersToJoinRoom":
+		case values.RequestUsersToJoinRoomMsgType:
 			msg.handleRequestUserToJoinRoom()
 
-		case "UserJoinedRoom":
+		case values.UserJoinedRoomMsgType:
 			msg.handleUserAcceptRoomRequest(user)
 
-		case "RequestAllMessages":
+		case values.NewFileUploadMsgType:
+			msg.handleNewFileUpload()
+
+		case values.NewMessageMsgType:
+			msg.handleNewMessage(user)
+
+		case values.RequestAllMessagesMsgType:
 			roomID, ok := data["roomID"].(string)
 			if ok {
 				handleRequestAllMessages(roomID, user)
 			}
 
-		case "SearchUser":
+		case values.SearchUserMsgType:
 			if searchText, ok := data["searchText"].(string); ok {
 				handleSearchUser(searchText, user)
 			}
 
-		case "NewMessage":
-			msg.handleNewMessage(user)
-
-		case "WebsocketOpen":
+		case values.WebsocketOpenMsgType:
 			handleLoadUserContent(user)
 
 		default:
-			log.Println("Could not convert required type", msgType)
+			log.Println("Could not convert required type", msgType, data)
 		}
 	}
 }

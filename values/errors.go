@@ -14,4 +14,5 @@ var (
 	ErrUserExistInRoom         = errors.New("User already exist in room")
 	ErrUserAlreadyRequested    = errors.New("User already requested to join room")
 	ErrUserNotRegisteredToRoom = errors.New("User was not registered to room")
+	ErrFileUpload              = errors.New("Error while uploading file to server")
 )
