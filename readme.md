@@ -73,6 +73,7 @@ set db_host environment variable for mongo database
 go run .
 ```
 Admin(You) need to generate login details to use web chat platform. Default admin email and password is admin@email.com and admin 
+Users will login through generated email addresses and a password of the first name used to register (surname) with the first letter titled e.g Kaduru
 
 
 # Configuration
