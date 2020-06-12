@@ -142,22 +142,23 @@ func (s Subscription) ReadPump(user string) {
 				log.Printf("error: %v\n", err)
 			}
 			log.Println(err)
+
 			break
 		}
 
-		var data map[string]interface{}
+		//	var data map[string]interface{}
+		data := struct {
+			MsgType    string `json:"msgType"`
+			RoomID     string `json:"roomID"`
+			SearchText string `json:"searchText"`
+		}{}
+
 		err = json.Unmarshal(msg, &data)
 		if err != nil {
 			log.Println("could not unmarshal json")
 		}
 
-		msgType, ok := data["msgType"].(string)
-		if !ok {
-			log.Println("user did not send a valid message type", user, data)
-			continue
-		}
-
-		switch msgType {
+		switch data.MsgType {
 		// TODO: add support to remove message.
 		// TODO: users should choose if to join chat.
 		case values.NewRoomCreatedMsgType:
@@ -179,21 +180,16 @@ func (s Subscription) ReadPump(user string) {
 			msg.handleNewMessage(user)
 
 		case values.RequestAllMessagesMsgType:
-			roomID, ok := data["roomID"].(string)
-			if ok {
-				handleRequestAllMessages(roomID, user)
-			}
+			handleRequestAllMessages(data.RoomID, user)
 
 		case values.SearchUserMsgType:
-			if searchText, ok := data["searchText"].(string); ok {
-				handleSearchUser(searchText, user)
-			}
+			handleSearchUser(data.SearchText, user)
 
 		case values.WebsocketOpenMsgType:
 			handleLoadUserContent(user)
 
 		default:
-			log.Println("Could not convert required type", msgType, data)
+			log.Println("Could not convert required type", data.MsgType)
 		}
 	}
 }
