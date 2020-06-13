@@ -1,12 +1,15 @@
 package model
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 
 	"github.com/metaclips/LetsTalk/values"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type messageBytes []byte
@@ -188,6 +191,187 @@ func (msg messageBytes) handleExitRoom(requester string) {
 	if HubConstruct.Users[requester] != nil {
 		m := WSMessage{msg, requester}
 		HubConstruct.Broadcast <- m
+	}
+}
+
+// handleNewFileUpload creates a new file content in database.
+// If file create is a success, a file upload success is sent to client to send next chunk.
+// next chunk could be the next preceding file chunk if another user has uploaded file content.
+// If file upload error, send back error message to user
+func (msg messageBytes) handleNewFileUpload() {
+	file := File{}
+	if err := json.Unmarshal(msg, &file); err != nil {
+		log.Println(err)
+		return
+	}
+
+	data := struct {
+		MsgType      string `json:"msgType"`
+		ErrorMessage string `json:"errorMsg,omitempty"`
+		RecentHash   string `json:"recentHash"`
+		FileName     string `json:"fileName,omitempty"`
+		Chunk        int    `json:"nextChunk"`
+	}{}
+
+	if err := file.UploadNewFile(); err == mongo.ErrNoDocuments || err == nil {
+		// Send next file chunk and current hash which is a "".
+		data.MsgType = values.UploadFileChunkMsgType
+		data.FileName = file.FileName
+
+		// Resume file chunk upload if Current chunk is greater than 0.
+		if file.CurrentChunk > 0 {
+			data.Chunk = file.CurrentChunk + 1
+		} else {
+			data.Chunk = file.CurrentChunk
+		}
+
+	} else {
+		log.Println("Error on handle new file upload calling UploadNewFile", err)
+		data.ErrorMessage = values.ErrFileUpload.Error()
+		data.MsgType = values.UploadFileErrorMsgType
+	}
+
+	jsonContent, err := json.Marshal(&data)
+	if err != nil {
+		log.Println("Error sending marshalled ")
+		return
+	}
+
+	if HubConstruct.Users[file.User] != nil {
+		m := WSMessage{jsonContent, file.User}
+		HubConstruct.Broadcast <- m
+	}
+}
+
+func (msg messageBytes) handleUploadFileChunk() {
+	data := struct {
+		MsgType            string `json:"msgType"`
+		User               string `json:"userID"`
+		FileName           string `json:"fileName"`
+		File               string `json:"file,omitempty"`
+		NewChunkHash       string `json:"newChunkHash,omitempty"`
+		RecentChunkHash    string `json:"recentChunkHash,omitempty"`
+		ChunkIndex         int    `json:"chunkIndex,omitempty"`
+		NextChunk          int    `json:"nextChunk"`
+		CompressedFileHash string `json:"compressedFileHash"`
+	}{}
+
+	if err := json.Unmarshal(msg, &data); err != nil {
+		log.Println(err)
+		return
+	}
+
+	file := FileChunks{
+		UniqueFileHash:     data.NewChunkHash,
+		FileBinary:         data.File,
+		ChunkIndex:         data.ChunkIndex,
+		CompressedFileHash: data.CompressedFileHash,
+	}
+
+	userID := data.User
+	var recentFileExist bool
+	// If file upload is a new file, set recent file exist as true.
+	if data.RecentChunkHash == "" {
+		recentFileExist = true
+	} else {
+		recentFileExist = FileChunks{UniqueFileHash: data.RecentChunkHash}.FileChunkExists()
+	}
+
+	data.User, data.RecentChunkHash = "", ""
+	data.File, data.NewChunkHash = "", ""
+	data.NextChunk, data.ChunkIndex = 0, 0
+
+	fileHash := md5.Sum([]byte(file.FileBinary))
+	// Check if client sent file hash is same as server generated Hash.
+	if hex.EncodeToString(fileHash[:]) != file.UniqueFileHash || !recentFileExist {
+		fmt.Println(hex.EncodeToString(fileHash[:]))
+		data.MsgType = "UploadError"
+
+		// Re-request for current chunk index.
+		jsonContent, err := json.Marshal(&data)
+		if err != nil {
+			log.Println("Could not generate jsonContent to re-request file chunk")
+			return
+		}
+
+		if HubConstruct.Users[data.User] != nil {
+			m := WSMessage{jsonContent, data.User}
+			HubConstruct.Broadcast <- m
+		}
+
+		return
+	}
+
+	if err := file.AddFileChunk(); err != nil {
+		// What could be cases where err is not nil.
+		// File could have already been added to database?.
+		// We still request for next file chunk, if when we receive a new fille chunk,
+		// so that when we notice file corruption, we re-request from corrupted stage.
+		log.Println(err)
+	}
+
+	data.NextChunk = file.ChunkIndex + 1
+
+	jsonContent, err := json.Marshal(&data)
+	if err != nil {
+		log.Println("Error sending marshalled ")
+		return
+	}
+
+	if HubConstruct.Users[userID] != nil {
+		m := WSMessage{jsonContent, userID}
+		HubConstruct.Broadcast <- m
+	}
+}
+
+// handleUploadFileUploadComplete is called when file chunk uploads is complete.
+// File accessibility is broadcasted to other users in the room so as to download
+// file.
+func (msg messageBytes) handleUploadFileUploadComplete() {
+	data := struct {
+		MsgType  string `json:"msgType"`
+		UserID   string `json:"userID"`
+		UserName string `json:"name"`
+		FileName string `json:"fileName"`
+		FileSize string `json:"fileSize"`
+		RoomID   string `json:"roomID"`
+	}{}
+
+	if err := json.Unmarshal(msg, &data); err != nil {
+		log.Println(err)
+		return
+	}
+
+	data.MsgType = values.UploadFileSuccessMsgType
+
+	roomUsers, err := Message{
+		RoomID:   data.RoomID,
+		UserID:   data.UserID,
+		Name:     data.UserName,
+		Message:  data.FileName,
+		Time:     time.Now().Format(values.TimeLayout),
+		Type:     "file",
+		FileSize: data.FileSize,
+	}.SaveMessageContent()
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	jsonContent, err := json.Marshal(&data)
+	if err != nil {
+		log.Println(err)
+	}
+
+	for _, roomUser := range roomUsers {
+		if roomUser == data.UserID {
+			continue
+		}
+
+		if HubConstruct.Users[roomUser] != nil {
+			m := WSMessage{jsonContent, roomUser}
+			HubConstruct.Broadcast <- m
+		}
 	}
 }
 

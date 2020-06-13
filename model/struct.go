@@ -65,6 +65,7 @@ type Room struct {
 type Message struct {
 	RoomID      string `bson:"-" json:"roomID"`
 	Message     string `bson:"message" json:"message"`
+	FileSize    string `bson:"fileSize,omitempty" json:"fileSize,omitempty"`
 	UserID      string `bson:"userID" json:"userID"`
 	Name        string `bson:"name" json:"name"`
 	Index       int    `bson:"index" json:"index"`
@@ -87,11 +88,21 @@ type NewRoomRequest struct {
 	MessageType string `bson:"-" json:"msgType"`
 }
 
-// FileType save files separately and make sure they are distinct
-type FileType struct {
-	Downloaded bool   `bson:"downloaded" json:"downloaded"`
-	Sha256     string `bson:"_id" json:"sha256"`
-	Name       string
+// File save files making sure they are distinct
+type File struct {
+	UniqueFileHash string `bson:"_id" json:"fileHash"`
+	FileName       string `bson:"fileName" json:"fileName"`
+	User           string `bson:"userID" json:"userID"`
+	FileSize       string `bson:"fileSize" json:"fileSize"`
+	UploadComplete bool   `bson:"uploadComplete" json:"uploadComplete"`
+	CurrentChunk   int    `bson:"chunkIndex" json:"chunkIndex"`
+}
+
+type FileChunks struct {
+	UniqueFileHash     string `bson:"_id" json:"fileHash"`
+	CompressedFileHash string `bson:"compressedFileHash" json:"compressedFileHash"`
+	FileBinary         string `bson:"fileChunk" json:"fileChunk"`
+	ChunkIndex         int    `bson:"chunkIndex" json:"chunkIndex"`
 }
 
 type WSMessage struct {
@@ -104,16 +115,14 @@ type Subscription struct {
 	User string
 }
 
-// connection is an middleman between the websocket connection and the hub.
+// Connection is an middleman between the websocket connection and the hub.
 type Connection struct {
-	// The websocket connection.
 	WS *websocket.Conn
 
-	// Buffered channel of outbound messages.
 	Send chan []byte
 }
 
-// hub maintains the set of active connections and broadcasts messages to the
+// Hub maintains the set of active connections and broadcasts messages to the
 // connections.
 type Hub struct {
 	// Registered connections.
