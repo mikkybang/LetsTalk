@@ -10,7 +10,7 @@ const (
 )
 
 // All request message types both clients and server
-var (
+const (
 	NewFileUploadMsgType          = "NewFileUpload"
 	NewMessageMsgType             = "NewMessage"
 	RequestAllMessagesMsgType     = "RequestAllMessages"
@@ -21,7 +21,10 @@ var (
 	RequestUsersToJoinRoomMsgType = "RequestUsersToJoinRoom"
 	UserJoinedRoomMsgType         = "UserJoinedRoom"
 
-	UploadFileErrorMsgType = "UploadFileError"
+	UploadFileErrorMsgType   = "UploadFileError"   // UploadFileErrorMsgType is sent to client only.
+	UploadFileSuccessMsgType = "FileUploadSuccess" // UploadFileSuccess is sent to client only.
+	UploadFileChunkMsgType   = "UploadFileChunk"
+	// UploadFileComplete     = "UploadFileComplete"
 )
 
 var (
