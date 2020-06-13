@@ -162,6 +162,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/core.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/md5.js"></script>
 
     <script>
         Vue.component('side-bar', {
@@ -209,7 +211,7 @@
                 currentviewedroomid: String,
                 currentviewedroomname: String,
                 onlineusers: {},
-                downloadinfo: {},
+                downloadinfo: Object,
                 usersfound: Array,
             },
 
@@ -275,29 +277,101 @@
                     this.closeSearchDialog()
                 },
 
+                startDownload: function (id) {
+                    if (vueComponent.downloadInfo[id] === undefined) {
+                        vueComponent.downloadInfo[vueComponent.fileContent.name] = {
+                            "roomID": this.currentviewedroomid,
+                            "progress": 0,
+                            "completed": false,
+                            "downloading": true,
+                            "fileSize": fileSize,
+                            "fileContent": vueComponent.fileContent,
+                            "chunk": 0,
+                            "chunks": chunks,
+                            "recentChunkHash": "",
+                        }
+                    }
+                },
+
+                stopUpload: function (id) {
+                    vueComponent.downloadInfo[id].downloading = false
+                    Vue.set(vueComponent.currentChatContent, 0, vueComponent.currentChatContent[0])
+                },
+
+                startUpload: function (id) {
+                    vueComponent.downloadInfo[id].downloading = true
+                    Vue.set(vueComponent.currentChatContent, 0, vueComponent.currentChatContent[0])
+                    onSendFile(id)
+                },
+
+                bytesToSize: function (bytes) {
+                    var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+                    if (bytes == 0) return '0 Byte';
+                    var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+                    return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
+                },
+
                 sendMessage: function () {
-                    // Send if it's a file.
-                    if (vueComponent.fileContent !== null && vueComponent.fileContent.name === this.messageContent) {
-                        vueComponent.downloadInfo[vueComponent.fileContent.name] = { "progress": 0 }
-                        var message = vueComponent.fileContent.name
-                        vueComponent.currentChatContent.push({
-                            "type": "upload",
-                            "userID": '(%.Email%)',
-                            "message": message,
-                            name: '(%.Name%)',
-                        })
-
-                        setTimeout(() => {
-                            vueComponent.downloadInfo[message].progress = 10
-                            Vue.set(vueComponent.currentChatContent, 0, vueComponent.currentChatContent[0])
-                            console.log("done")
-                        }, (2000));
-
-                        this.messageContent = ""
+                    if (!this.messageContent.match(/\S/)) {
                         return
                     }
 
-                    if (!this.messageContent.match(/\S/)) {
+                    // Send file if indicated.
+                    if (vueComponent.fileContent !== null && vueComponent.fileContent.name === this.messageContent) {
+                        if (vueComponent.fileContent.size > 256 * 1024 * 1024) {
+                            console.log("file too large");
+                            this.messageContent = ""
+                            return
+                        }
+
+                        var chunkSize = 1024 * 1024;
+                        var chunks = Math.ceil(vueComponent.fileContent.size / chunkSize, chunkSize);
+                        var fileSize = this.bytesToSize(vueComponent.fileContent.size)
+                        var fileName = vueComponent.fileContent.name;
+
+                        var reader = new FileReader();
+                        reader.onload = function (event) {
+                            var data = event.target.result;
+                            var fileUniqueHash = CryptoJS.MD5(data).toString();
+
+                            // Send new file upload information to server, indicating file information.
+                            vueComponent.downloadInfo[fileName].fileHash = fileUniqueHash
+
+                            var message = {
+                                "fileName": fileName,
+                                "fileHash": fileUniqueHash,
+                                "fileSize": fileSize,
+                                "msgType": "NewFileUpload",
+                                "userID": '(%.Email%)',
+                            }
+
+                            socket.send(JSON.stringify(message))
+                        };
+                        reader.readAsBinaryString(vueComponent.fileContent);
+
+                        vueComponent.downloadInfo[vueComponent.fileContent.name] = {
+                            "roomID": this.currentviewedroomid,
+                            "progress": 0,
+                            "completed": false,
+                            "downloading": true,
+                            "fileSize": fileSize,
+                            "fileContent": vueComponent.fileContent,
+                            "chunk": 0,
+                            "chunks": chunks,
+                            "recentChunkHash": "",
+                        }
+
+                        // Update chat content or upload report.
+                        vueComponent.currentChatContent.push({
+                            "type": "upload",
+                            "userID": '(%.Email%)',
+                            "message": vueComponent.fileContent.name,
+                            "name": '(%.Name%)',
+                            "fileSize": fileSize,
+                        })
+                        scrollChatToBottom()
+
+                        this.messageContent = ""
                         return
                     }
 
@@ -440,43 +514,79 @@
             var jsonContent = JSON.parse(e.data);
             var msgType = jsonContent.msgType;
 
-            if (msgType === "UserJoinedRoom") {
-                onUserJoinedRoom(jsonContent)
+            switch (msgType) {
+                case "UserJoinedRoom":
+                    onUserJoinedRoom(jsonContent);
+                    break
 
-            } else if (msgType === "RequestAllMessages") {
-                onRquestAllMessages(jsonContent)
+                case "RequestAllMessages":
+                    onRquestAllMessages(jsonContent);
+                    console.log(jsonContent);
+                    break
 
-            } else if (msgType === "RequestUsersToJoinRoom") {
-                onUserJoined(jsonContent)
+                case "RequestUsersToJoinRoom":
+                    onUserJoined(jsonContent);
+                    break
 
-            } else if (msgType === "NewMessage") {
-                onMessageReceived(jsonContent)
+                case "NewMessage":
+                    onMessageReceived(jsonContent);
+                    break
 
-            } else if (msgType === "WebsocketOpen") {
-                onSocketOpened(jsonContent)
+                case "WebsocketOpen":
+                    onSocketOpened(jsonContent);
+                    break
 
-            } else if (msgType === "OnlineStatus") {
-                if (vueComponent.onlineUsers[jsonContent.username] !== undefined) {
-                    vueComponent.onlineUsers[jsonContent.username] = jsonContent.status
-                    Vue.set(vueComponent.rooms, 0, vueComponent.rooms[0])
-                }
-            } else if (msgType === "ExitRoom") {
-                var message = jsonContent.email + " exited room"
-                if (jsonContent.email === '(%.Email %)') {
-                    message = "You exited room"
-                }
+                case "OnlineStatus":
+                    if (vueComponent.onlineUsers[jsonContent.username] !== undefined) {
+                        vueComponent.onlineUsers[jsonContent.username] = jsonContent.status;
+                        Vue.set(vueComponent.rooms, 0, vueComponent.rooms[0]);
+                    };
+                    break
 
-                if (jsonContent.roomID === vueComponent.currentViewedRoomID) {
-                    vueComponent.currentChatContent.push({
-                        "type": "info",
-                        "message": message
-                    })
-                }
+                case "ExitRoom":
+                    var message = jsonContent.email + " exited room";
+                    if (jsonContent.email === '(%.Email %)') {
+                        message = "You exited room";
+                    };
 
-            } else if (msgType === "getUsers") {
-                vueComponent.usersFound = jsonContent.UsersFound;
-                console.log(vueComponent.usersFound)
-                console.log("DOne")
+                    if (jsonContent.roomID === vueComponent.currentViewedRoomID) {
+                        vueComponent.currentChatContent.push({
+                            "type": "info",
+                            "message": message
+                        });
+                    };
+                    break
+
+                case "getUsers":
+                    vueComponent.usersFound = jsonContent.UsersFound;
+                    break
+
+                case "UploadFileChunk":
+                    onUploadFileChunk(jsonContent);
+                    break
+
+                case "UploadError":
+                    // On UploadErrror, stop download so user have to re-upload from corrupted stage.
+                    var id = jsonContent.fileName
+                    vueComponent.downloadInfo[id].completed = false
+                    vueComponent.downloadInfo[id].downloading = false
+                    break
+
+                case "FileUploadSuccess":
+                    if (jsonContent.roomID === vueComponent.currentViewedRoomID && jsonContent.userID !== '(%.Email%)') {
+                        var id = jsonContent.fileName
+                        vueComponent.currentChatContent.push({
+                            "type": "file",
+                            "message": jsonContent.fileName,
+                            "fileSize": jsonContent.fileSize,
+                            "name": jsonContent.name,
+                            "fileName": jsonContent.fileName,
+                            "userID": jsonContent.userID,
+                        })
+
+                        scrollChatToBottom()
+                    }
+                    break
             }
         };
     </script>
@@ -500,9 +610,9 @@
                 if (vueComponent.currentViewedRoomID !== "") {
                     var message = {
                         'msgType': 'RequestAllMessages',
-                        "roomID": vueComponent.currentViewedRoomID
+                        "roomID": vueComponent.currentViewedRoomID,
                     }
-
+                    console.log(vueComponent.currentViewedRoomID)
                     socket.send(JSON.stringify(message))
                 }
             };
@@ -576,16 +686,18 @@
 
             vueComponent.removeFromRoomNotification(msg.roomID)
 
-            // Show file to upload or download at the bottom of page.
-            if (vueComponent.downloadInfo.roomID == msg.roomID) {
-                vueComponent.currentChatContent.push({
-                    "type": "fileGet",
-                    "userID": '(%.Email%)',
-                    "file": vueComponent.fileContent.name
-                })
-            }
+            // // Show file to upload or download at the bottom of page.
+            // // TODO: if fetched from server, it should be added already. Right?.
+            // if (vueComponent.downloadInfo.roomID == msg.roomID) {
+            //     vueComponent.currentChatContent.push({
+            //         "type": "fileGet",
+            //         "userID": '(%.Email%)',
+            //         "file": vueComponent.fileContent.name
+            //     })
+            // }
 
-            Vue.set(vueComponent.rooms, 0, vueComponent.rooms[0])
+            // Vue.set(vueComponent.rooms, 0, vueComponent.rooms[0])
+            console.log("Culprit is request all message")
             scrollChatToBottom()
         }
 
@@ -639,6 +751,7 @@
             }
 
             if (msg.userID === '(%.Email%)') {
+                console.log("Culprit is new message")
                 scrollChatToBottom()
                 return
             }
@@ -648,7 +761,7 @@
         }
 
         var onSocketOpened = function (msg) {
-            if (msg.requests !== null) {
+            if (msg.requests) {
                 vueComponent.messages = []
                 for (var i = 0; i < msg.requests.length; i++) {
                     var data = msg.requests[i]
@@ -663,7 +776,7 @@
                 }
             }
 
-            if (msg.rooms !== null) {
+            if (msg.rooms) {
                 vueComponent.rooms = []
                 for (var i = 0; i < msg.rooms.length; i++) {
                     var data = msg.rooms[i]
@@ -679,6 +792,94 @@
             }
 
             vueComponent.socketClosed = false
+        }
+
+        // On final file upload, file checks if completed.
+        // If complete, it sends the next chunk.
+        var onUploadFileChunk = function (e) {
+            console.log("jejj")
+            var id = e.fileName
+            if (vueComponent.downloadInfo[id].completed) {
+                return
+            }
+            // Check if server current chunk is same as to client.
+            vueComponent.downloadInfo[id].chunk = e.nextChunk
+
+            vueComponent.downloadInfo[id].progress = (vueComponent.downloadInfo[id].chunk / vueComponent.downloadInfo[id].chunks) * 100
+            Vue.set(vueComponent.currentChatContent, 0, vueComponent.currentChatContent[0])
+
+            onSendFile(e.fileName)
+        }
+
+
+        var onSendFile = function (id) {
+            var chunkSize = 1024 * 1024;
+
+            if (vueComponent.downloadInfo[id].chunk >= vueComponent.downloadInfo[id].chunks) {
+                vueComponent.downloadInfo[id].completed = true
+                vueComponent.downloadInfo[id].downloading = false
+
+                // Send upload success to server so that server can broadcast file to other
+                // users in room.
+                var message = {
+                    "msgType": "FileUploadSuccess",
+                    "userID": '(%.Email%)',
+                    "name": '(%.Name%)',
+                    "fileName": id,
+                    "roomID": vueComponent.downloadInfo[id].roomID,
+                    "fileSize": vueComponent.downloadInfo[id].fileSize,
+                }
+
+                socket.send(JSON.stringify(message))
+                Vue.set(vueComponent.currentChatContent, 0, vueComponent.currentChatContent[0])
+                return
+            }
+
+            // Check if stop download was called.
+            if (vueComponent.downloadInfo[id].downloading === false) {
+                return
+            }
+
+            var offset = vueComponent.downloadInfo[id].chunk * chunkSize;
+            var reader = new FileReader();
+            reader.onload = function (event) {
+                var data = event.target.result;
+                data = data.toString()
+                var fileUniqueHash = CryptoJS.MD5(data).toString();
+
+                var message = {
+                    "msgType": "UploadFileChunk",
+                    "userID": '(%.Email%)',
+                    "file": data,
+                    "fileName": id,
+                    "compressedFileHash": vueComponent.downloadInfo[id].fileHash,
+                    "newChunkHash": fileUniqueHash,
+                    "recentChunkHash": "",
+                    "chunkIndex": vueComponent.downloadInfo[id].chunk,
+                }
+
+                if (vueComponent.downloadInfo[id].chunk === 0) {
+                    // Send new file upload information to server,
+                    // chunk == 0 indicates a new file.
+                    socket.send(JSON.stringify(message))
+                    return
+                }
+
+                var recentOffset = (vueComponent.downloadInfo[id].chunk - 1) * chunkSize;
+
+                var recentFileReader = new FileReader();
+                recentFileReader.onload = function (e) {
+                    var recentData = e.target.result;
+                    recentData = recentData.toString()
+                    var recentFileUniqueHash = CryptoJS.MD5(recentData).toString();
+
+                    message.recentChunkHash = recentFileUniqueHash
+                    socket.send(JSON.stringify(message))
+                }
+                recentFileReader.readAsBinaryString(vueComponent.downloadInfo[id].fileContent.slice(recentOffset, recentOffset + chunkSize));
+            };
+
+            reader.readAsBinaryString(vueComponent.downloadInfo[id].fileContent.slice(offset, offset + chunkSize));
         }
     </script>
 </body>

@@ -11,6 +11,8 @@ import (
 	"github.com/metaclips/LetsTalk/values"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -379,9 +381,44 @@ func (b JoinRequest) RequestUserToJoinRoom(userToJoinEmail string) ([]string, er
 	}
 	room.Messages = append(room.Messages, message)
 
-	_, err = db.Collection(values.RoomsCollectionName).UpdateOne(context.TODO(), bson.M{"_id": b.RoomID},
-		bson.M{"$set": bson.M{"messages": room.Messages}})
+	_, err = db.Collection(values.RoomsCollectionName).
+		UpdateOne(context.TODO(), bson.M{"_id": b.RoomID}, bson.M{"$set": bson.M{"messages": room.Messages}})
 	return room.RegisteredUsers, err
+}
+
+// UploadNewFile create a NewFile content to database and returns file content if one
+// has already been created.
+func (b *File) UploadNewFile() error {
+	result := db.Collection(values.FilesCollectionName).
+		FindOneAndReplace(context.TODO(), bson.M{"_id": b.UniqueFileHash}, b, options.FindOneAndReplace().SetUpsert(true))
+
+	if err := result.Decode(&b); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b FileChunks) FileChunkExists() bool {
+	result := db.Collection(values.FileChunksCollectionName).FindOne(context.TODO(), bson.M{"_id": b.UniqueFileHash})
+	if result.Err() == nil {
+		return true
+	}
+	return false
+}
+
+func (b FileChunks) AddFileChunk() error {
+	result := db.Collection(values.FileChunksCollectionName).
+		FindOneAndReplace(context.TODO(), bson.M{"_id": b.UniqueFileHash}, b, options.FindOneAndReplace().SetUpsert(true))
+
+	// Update original file index.
+	if result.Err() == nil || result.Err() == mongo.ErrNoDocuments {
+		_, err := db.Collection(values.FilesCollectionName).UpdateOne(context.TODO(),
+			bson.M{"_id": b.CompressedFileHash}, bson.M{"$set": bson.M{"chunkIndex": b.ChunkIndex}})
+		return err
+	}
+
+	return result.Err()
 }
 
 func getContentType(contentType values.MessageType) string {

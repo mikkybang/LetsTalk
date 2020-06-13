@@ -146,7 +146,7 @@ func (s Subscription) ReadPump(user string) {
 			break
 		}
 
-		//	var data map[string]interface{}
+		// TODO: Always enquire for userID.
 		data := struct {
 			MsgType    string `json:"msgType"`
 			RoomID     string `json:"roomID"`
@@ -175,6 +175,12 @@ func (s Subscription) ReadPump(user string) {
 
 		case values.NewFileUploadMsgType:
 			msg.handleNewFileUpload()
+
+		case values.UploadFileChunkMsgType:
+			msg.handleUploadFileChunk()
+
+		case values.UploadFileSuccessMsgType:
+			msg.handleUploadFileUploadComplete()
 
 		case values.NewMessageMsgType:
 			msg.handleNewMessage(user)

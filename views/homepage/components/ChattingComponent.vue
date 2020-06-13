@@ -122,16 +122,66 @@
                 </v-card>
               </div>
 
-              <div align="right" justify="center" v-else-if="chat['type']==='file'">
-                <v-card tile shaped style="max-width: 70vw;" class="d-inline-block mx-auto">
-                  <v-card-text>{{chat['message']}}</v-card-text>
+              <div
+                :align="chat.userID==='(%.Email%)' ? 'right' : 'left'"
+                justify="center"
+                v-else-if="chat['type']==='file'"
+              >
+                <v-card shaped style="max-width: 70vw;" class="d-inline-block mx-auto">
+                  <v-card-title class="text--secondary">
+                    <v-row align="center">
+                      <v-col :cols="chat.userID==='(%.Email%)' ? 'auto' : 'mx-auto'">
+                        <h5>{{chat['name']}}</h5>
+                      </v-col>
+
+                      <v-col :cols="chat.userID==='(%.Email%)' ? 'mx-auto' : 'auto'">
+                        <v-menu absolute bottom left>
+                          <template v-slot:activator="{ on }">
+                            <v-btn icon v-on="on">
+                              <v-icon>mdi-chevron-down</v-icon>
+                            </v-btn>
+                          </template>
+
+                          <v-list>
+                            <v-list-item v-for="i in 5" :key="i">
+                              <v-list-item-title>{{i}}</v-list-item-title>
+                            </v-list-item>
+                          </v-list>
+                        </v-menu>
+                      </v-col>
+                    </v-row>
+                  </v-card-title>
+
+                  <v-card-text>
+                    <v-row align="center">
+                      <v-col cols="mx-auto">{{chat.message}} ({{chat.fileSize}})</v-col>
+                      <v-col cols="auto">
+                        <v-progress-circular
+                          :rotate="360"
+                          :size="50"
+                          :width="5"
+                          :value="downloadinfo[chat.message].progress"
+                          color="teal"
+                          v-if="downloadinfo[chat.message]&&downloadinfo[chat.message].downloading"
+                        >
+                          <v-btn icon>
+                            <v-icon>mdi-close</v-icon>
+                          </v-btn>
+                        </v-progress-circular>
+
+                        <v-btn v-else icon>
+                          <v-icon>mdi-cloud-download</v-icon>
+                        </v-btn>
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
                 </v-card>
               </div>
 
               <div align="right" v-else-if="chat['userID']==='(%.Email%)'">
                 <v-card shaped style="max-width: 70vw;" class="d-inline-block mx-auto">
                   <v-card-title class="text--secondary">
-                    <v-row>
+                    <v-row align="center">
                       <v-col cols="auto">
                         <h5>{{chat['name']}}</h5>
                       </v-col>
@@ -153,65 +203,45 @@
                     </v-row>
                   </v-card-title>
 
-                  <template v-if="chat['type']==='file'">
-                    <v-card-text>
-                      <v-row>
-                        <v-col cols="mx-auto"></v-col>
-                        <v-col cols="auto">
-                          <v-progress-circular
-                            :rotate="360"
-                            :size="20"
-                            :width="10"
-                            :value="0"
-                            color="teal"
-                          >
-                            <v-btn>
-                              <v-icon>md-download</v-icon>
-                            </v-btn>
-                          </v-progress-circular>
-                        </v-col>
-                      </v-row>
-                    </v-card-text>
-                  </template>
+                  <v-card-text v-if="chat['type']==='upload'">
+                    <v-row align="center">
+                      <v-col cols="mx-auto">{{chat.message}} ({{chat.fileSize}})</v-col>
+                      <v-col cols="auto">
+                        <v-btn
+                          @click="startDownload(chat.message)"
+                          depressed
+                          text
+                          v-if="downloadinfo[chat.message].completed"
+                        >
+                          <v-icon>mdi-cloud-download</v-icon>
+                        </v-btn>
 
-                  <template v-if="chat['type']==='upload'">
-                    <v-card-text>
-                      <v-row align="center" justify="center">
-                        <v-col cols="mx-auto">{{chat.message}} ({{chat.fileSize}})</v-col>
-                        <v-col cols="auto">
-                          <v-btn depressed text v-if="downloadinfo[chat.message].completed">
-                            <v-icon>mdi-cloud-download</v-icon>
+                        <v-progress-circular
+                          v-else
+                          :rotate="360"
+                          :size="50"
+                          :width="5"
+                          :value="downloadinfo[chat.message].progress"
+                          color="teal"
+                        >
+                          <v-btn
+                            @click="stopUpload(chat.message)"
+                            v-if="downloadinfo[chat.message].downloading"
+                            depressed
+                            icon
+                          >
+                            <v-icon>mdi-close</v-icon>
                           </v-btn>
 
-                          <v-progress-circular
-                            v-else
-                            :rotate="360"
-                            :size="50"
-                            :width="5"
-                            :value="downloadinfo[chat.message].progress"
-                            color="teal"
-                          >
-                            <v-btn
-                              @click="stopUpload(chat.message)"
-                              v-if="downloadinfo[chat.message].downloading"
-                              depressed
-                              text
-                            >
-                              <v-icon>mdi-close</v-icon>
-                            </v-btn>
+                          <v-btn icon v-else @click="startUpload(chat.message)">
+                            <v-icon>mdi-upload</v-icon>
+                          </v-btn>
+                        </v-progress-circular>
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
 
-                            <v-btn v-else @click="startUpload(chat.message)" depressed text>
-                              <v-icon>mdi-upload</v-icon>
-                            </v-btn>
-                          </v-progress-circular>
-                        </v-col>
-                      </v-row>
-                    </v-card-text>
-                  </template>
-
-                  <template v-else>
-                    <v-card-text align="start">{{chat['message']}}</v-card-text>
-                  </template>
+                  <v-card-text v-else align="start">{{chat['message']}}</v-card-text>
                   <v-card-subtitle>{{chat['time']}}</v-card-subtitle>
                 </v-card>
               </div>
