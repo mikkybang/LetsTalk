@@ -129,7 +129,7 @@
               </div>
 
               <div align="right" v-else-if="chat['userID']==='(%.Email%)'">
-                <v-card tile shaped style="max-width: 70vw;" class="d-inline-block mx-auto">
+                <v-card shaped style="max-width: 70vw;" class="d-inline-block mx-auto">
                   <v-card-title class="text--secondary">
                     <v-row>
                       <v-col cols="auto">
@@ -177,16 +177,30 @@
                   <template v-if="chat['type']==='upload'">
                     <v-card-text>
                       <v-row align="center" justify="center">
-                        <v-col cols="mx-auto">{{chat.message}}</v-col>
+                        <v-col cols="mx-auto">{{chat.message}} ({{chat.fileSize}})</v-col>
                         <v-col cols="auto">
+                          <v-btn depressed text v-if="downloadinfo[chat.message].completed">
+                            <v-icon>mdi-cloud-download</v-icon>
+                          </v-btn>
+
                           <v-progress-circular
+                            v-else
                             :rotate="360"
                             :size="50"
                             :width="5"
                             :value="downloadinfo[chat.message].progress"
                             color="teal"
                           >
-                            <v-btn depressed text>
+                            <v-btn
+                              @click="stopUpload(chat.message)"
+                              v-if="downloadinfo[chat.message].downloading"
+                              depressed
+                              text
+                            >
+                              <v-icon>mdi-close</v-icon>
+                            </v-btn>
+
+                            <v-btn v-else @click="startUpload(chat.message)" depressed text>
                               <v-icon>mdi-upload</v-icon>
                             </v-btn>
                           </v-progress-circular>
@@ -203,7 +217,7 @@
               </div>
 
               <div v-else align="left">
-                <v-card tile shaped style="max-width: 70vw;" class="d-inline-block mx-auto">
+                <v-card shaped style="max-width: 70vw;" class="d-inline-block mx-auto">
                   <v-card-title class="text--secondary">
                     <v-row align="center">
                       <v-col cols="mx-auto">
