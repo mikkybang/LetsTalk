@@ -175,6 +175,7 @@
                       </v-col>
                     </v-row>
                   </v-card-text>
+                  <v-card-subtitle>{{chat['time']}}</v-card-subtitle>
                 </v-card>
               </div>
 
