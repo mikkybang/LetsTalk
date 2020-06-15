@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/julienschmidt/httprouter"
 
 	"github.com/metaclips/LetsTalk/controller"
@@ -15,6 +16,10 @@ import (
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+	  log.Fatal("Error loading .env file")
+	}
 	gob.Register(time.Time{})
 	model.InitDB()
 	router := httprouter.New()
