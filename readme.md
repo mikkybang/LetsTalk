@@ -69,7 +69,7 @@ See [go.mod](go.mod) for more information
 ```bash
 git clone https://github.com/metaclips/LetsTalk.git
 cd LetsTalk
-set db_host environment variable for mongo database
+create a .env file to store your environment variables. See the .env.example file for sample
 go run .
 ```
 Admin(You) need to generate login details to use web chat platform. Default admin email and password is admin@email.com and admin 
