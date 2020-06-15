@@ -21,10 +21,14 @@ const (
 	RequestUsersToJoinRoomMsgType = "RequestUsersToJoinRoom"
 	UserJoinedRoomMsgType         = "UserJoinedRoom"
 
-	UploadFileErrorMsgType   = "UploadFileError"   // UploadFileErrorMsgType is sent to client only.
-	UploadFileSuccessMsgType = "FileUploadSuccess" // UploadFileSuccess is sent to client only.
+	UploadFileErrorMsgType   = "UploadFileError" // UploadFileErrorMsgType is sent to client only.
+	UploadFileSuccessMsgType = "FileUploadSuccess"
 	UploadFileChunkMsgType   = "UploadFileChunk"
-	// UploadFileComplete     = "UploadFileComplete"
+
+	RequestDownloadMsgType     = "RequestDownload"
+	DownloadFileChunkMsgType   = "DownloadFileChunk"
+	DownloadFileErrorMsgType   = "DownloadFileError"   // DownloadFileErrorMsgType is sent to client only.
+	DownloadFileSuccessMsgType = "DownloadFileSuccess" // DownloadFileSuccessMsgType is sent to client only.
 )
 
 var (

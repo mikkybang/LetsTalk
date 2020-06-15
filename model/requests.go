@@ -1,7 +1,7 @@
 package model
 
 import (
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -213,16 +213,17 @@ func (msg messageBytes) handleNewFileUpload() {
 		Chunk        int    `json:"nextChunk"`
 	}{}
 
+	data.FileName = file.FileName
+
 	if err := file.UploadNewFile(); err == mongo.ErrNoDocuments || err == nil {
 		// Send next file chunk and current hash which is a "".
 		data.MsgType = values.UploadFileChunkMsgType
-		data.FileName = file.FileName
 
 		// Resume file chunk upload if Current chunk is greater than 0.
-		if file.CurrentChunk > 0 {
-			data.Chunk = file.CurrentChunk + 1
+		if file.Chunks > 0 {
+			data.Chunk = file.Chunks + 1
 		} else {
-			data.Chunk = file.CurrentChunk
+			data.Chunk = file.Chunks
 		}
 
 	} else {
@@ -257,6 +258,7 @@ func (msg messageBytes) handleUploadFileChunk() {
 	}{}
 
 	if err := json.Unmarshal(msg, &data); err != nil {
+		fmt.Println(string(msg))
 		log.Println(err)
 		return
 	}
@@ -281,7 +283,7 @@ func (msg messageBytes) handleUploadFileChunk() {
 	data.File, data.NewChunkHash = "", ""
 	data.NextChunk, data.ChunkIndex = 0, 0
 
-	fileHash := md5.Sum([]byte(file.FileBinary))
+	fileHash := sha256.Sum256([]byte(file.FileBinary))
 	// Check if client sent file hash is same as server generated Hash.
 	if hex.EncodeToString(fileHash[:]) != file.UniqueFileHash || !recentFileExist {
 		fmt.Println(hex.EncodeToString(fileHash[:]))
@@ -334,6 +336,7 @@ func (msg messageBytes) handleUploadFileUploadComplete() {
 		UserName string `json:"name"`
 		FileName string `json:"fileName"`
 		FileSize string `json:"fileSize"`
+		FileHash string `json:"fileHash"`
 		RoomID   string `json:"roomID"`
 	}{}
 
@@ -352,6 +355,7 @@ func (msg messageBytes) handleUploadFileUploadComplete() {
 		Time:     time.Now().Format(values.TimeLayout),
 		Type:     "file",
 		FileSize: data.FileSize,
+		FileHash: data.FileHash,
 	}.SaveMessageContent()
 
 	if err != nil {
@@ -372,6 +376,62 @@ func (msg messageBytes) handleUploadFileUploadComplete() {
 			m := WSMessage{jsonContent, roomUser}
 			HubConstruct.Broadcast <- m
 		}
+	}
+}
+
+func (msg messageBytes) handleRequestDownload(requester string) {
+	file := File{}
+	if err := json.Unmarshal(msg, &file); err != nil {
+		log.Println(err)
+		return
+	}
+
+	fileName := file.FileName
+
+	if err := file.RetrieveFileInformation(); err != nil {
+		file.MsgType = values.DownloadFileErrorMsgType
+	}
+	file.FileName = fileName
+
+	jsonContent, err := json.Marshal(&file)
+	if err != nil {
+		log.Println(err)
+	}
+
+	if HubConstruct.Users[requester] != nil {
+		m := WSMessage{jsonContent, requester}
+		HubConstruct.Broadcast <- m
+	}
+}
+
+func (msg messageBytes) handleFileDownload(requester string) {
+	file := FileChunks{}
+	if err := json.Unmarshal(msg, &file); err != nil {
+		log.Println(err)
+		return
+	}
+
+	fileName := file.FileName
+
+	if err := file.RetrieveFileChunk(); err != nil {
+		log.Println("error retrieving file", err)
+		// Send download file error message to client so as to stop download.
+		file = FileChunks{}
+		file.MsgType = values.DownloadFileErrorMsgType
+	} else {
+		file.MsgType = values.DownloadFileChunkMsgType
+	}
+
+	file.FileName = fileName
+
+	jsonContent, err := json.Marshal(&file)
+	if err != nil {
+		log.Println(err)
+	}
+
+	if HubConstruct.Users[requester] != nil {
+		m := WSMessage{jsonContent, requester}
+		HubConstruct.Broadcast <- m
 	}
 }
 

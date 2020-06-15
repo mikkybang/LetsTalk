@@ -66,6 +66,7 @@ type Message struct {
 	RoomID      string `bson:"-" json:"roomID"`
 	Message     string `bson:"message" json:"message"`
 	FileSize    string `bson:"fileSize,omitempty" json:"fileSize,omitempty"`
+	FileHash    string `bson:"fileHash,omitempty" json:"fileHash,omitempty"`
 	UserID      string `bson:"userID" json:"userID"`
 	Name        string `bson:"name" json:"name"`
 	Index       int    `bson:"index" json:"index"`
@@ -90,18 +91,21 @@ type NewRoomRequest struct {
 
 // File save files making sure they are distinct
 type File struct {
+	MsgType        string `bson:"-" json:"msgType,omitempty"`
 	UniqueFileHash string `bson:"_id" json:"fileHash"`
 	FileName       string `bson:"fileName" json:"fileName"`
 	User           string `bson:"userID" json:"userID"`
 	FileSize       string `bson:"fileSize" json:"fileSize"`
-	UploadComplete bool   `bson:"uploadComplete" json:"uploadComplete"`
-	CurrentChunk   int    `bson:"chunkIndex" json:"chunkIndex"`
+	FileType       string `bson:"fileType" json:"fileType"`
+	Chunks         int    `bson:"chunks,omitempty" json:"chunks"`
 }
 
 type FileChunks struct {
-	UniqueFileHash     string `bson:"_id" json:"fileHash"`
-	CompressedFileHash string `bson:"compressedFileHash" json:"compressedFileHash"`
-	FileBinary         string `bson:"fileChunk" json:"fileChunk"`
+	MsgType            string `bson:"-" json:"msgType,omitempty"`
+	FileName           string `bson:"-" json:"fileName,omitempty"`
+	UniqueFileHash     string `bson:"_id" json:"fileHash,omitempty"`
+	CompressedFileHash string `bson:"compressedFileHash" json:"compressedFileHash,omitempty"`
+	FileBinary         string `bson:"fileChunk" json:"fileChunk,omitempty"`
 	ChunkIndex         int    `bson:"chunkIndex" json:"chunkIndex"`
 }
 

@@ -388,9 +388,14 @@ func (b JoinRequest) RequestUserToJoinRoom(userToJoinEmail string) ([]string, er
 
 // UploadNewFile create a NewFile content to database and returns file content if one
 // has already been created.
+// Chunks is set to zero so that if user wants to retrieve
 func (b *File) UploadNewFile() error {
-	result := db.Collection(values.FilesCollectionName).
-		FindOneAndReplace(context.TODO(), bson.M{"_id": b.UniqueFileHash}, b, options.FindOneAndReplace().SetUpsert(true))
+	result := db.Collection(values.FilesCollectionName).FindOne(context.TODO(), bson.M{"_id": b.UniqueFileHash}) //, b, options.FindOneAndReplace().SetUpsert(true))
+
+	if result.Err() == mongo.ErrNoDocuments {
+		_, err := db.Collection(values.FilesCollectionName).InsertOne(context.TODO(), b)
+		return err
+	}
 
 	if err := result.Decode(&b); err != nil {
 		return err
@@ -399,9 +404,14 @@ func (b *File) UploadNewFile() error {
 	return nil
 }
 
+func (b *File) RetrieveFileInformation() error {
+	result := db.Collection(values.FilesCollectionName).FindOne(context.TODO(), bson.M{"_id": b.UniqueFileHash})
+	return result.Decode(&b)
+}
+
 func (b FileChunks) FileChunkExists() bool {
 	result := db.Collection(values.FileChunksCollectionName).FindOne(context.TODO(), bson.M{"_id": b.UniqueFileHash})
-	if result.Err() == nil {
+	if err := result.Err(); err == nil {
 		return true
 	}
 	return false
@@ -412,13 +422,20 @@ func (b FileChunks) AddFileChunk() error {
 		FindOneAndReplace(context.TODO(), bson.M{"_id": b.UniqueFileHash}, b, options.FindOneAndReplace().SetUpsert(true))
 
 	// Update original file index.
-	if result.Err() == nil || result.Err() == mongo.ErrNoDocuments {
+	if err := result.Err(); err == nil || err == mongo.ErrNoDocuments {
 		_, err := db.Collection(values.FilesCollectionName).UpdateOne(context.TODO(),
-			bson.M{"_id": b.CompressedFileHash}, bson.M{"$set": bson.M{"chunkIndex": b.ChunkIndex}})
+			bson.M{"_id": b.CompressedFileHash}, bson.M{"$set": bson.M{"chunks": b.ChunkIndex}})
 		return err
 	}
 
 	return result.Err()
+}
+
+func (b *FileChunks) RetrieveFileChunk() error {
+	result := db.Collection(values.FileChunksCollectionName).
+		FindOne(context.TODO(), bson.M{"compressedFileHash": b.CompressedFileHash, "chunkIndex": b.ChunkIndex})
+
+	return result.Decode(&b)
 }
 
 func getContentType(contentType values.MessageType) string {

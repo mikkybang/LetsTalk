@@ -162,14 +162,14 @@
                           :width="5"
                           :value="downloadinfo[chat.message].progress"
                           color="teal"
-                          v-if="downloadinfo[chat.message]&&downloadinfo[chat.message].downloading"
+                          v-if="downloadinfo[chat.message]!==undefined&&downloadinfo[chat.message].downloading===true"
                         >
-                          <v-btn icon>
+                          <v-btn @click="stopDownload(chat.message)" icon>
                             <v-icon>mdi-close</v-icon>
                           </v-btn>
                         </v-progress-circular>
 
-                        <v-btn v-else icon>
+                        <v-btn @click="startDownload(chat.message,chat.fileHash)" v-else icon>
                           <v-icon>mdi-cloud-download</v-icon>
                         </v-btn>
                       </v-col>
@@ -209,7 +209,7 @@
                       <v-col cols="mx-auto">{{chat.message}} ({{chat.fileSize}})</v-col>
                       <v-col cols="auto">
                         <v-btn
-                          @click="startDownload(chat.message)"
+                          @click="startDownload(chat.message,chat.fileHash)"
                           depressed
                           text
                           v-if="downloadinfo[chat.message].completed"

@@ -137,6 +137,7 @@ func (s Subscription) ReadPump(user string) {
 		var err error
 		var msg messageBytes
 		_, msg, err = c.WS.ReadMessage()
+
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
 				log.Printf("error: %v\n", err)
@@ -181,6 +182,12 @@ func (s Subscription) ReadPump(user string) {
 
 		case values.UploadFileSuccessMsgType:
 			msg.handleUploadFileUploadComplete()
+
+		case values.RequestDownloadMsgType:
+			msg.handleRequestDownload(user)
+
+		case values.DownloadFileChunkMsgType:
+			msg.handleFileDownload(user)
 
 		case values.NewMessageMsgType:
 			msg.handleNewMessage(user)
