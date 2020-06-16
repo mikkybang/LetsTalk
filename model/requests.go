@@ -214,6 +214,7 @@ func (msg messageBytes) handleNewFileUpload() {
 	}{}
 
 	data.FileName = file.FileName
+	user := file.User
 
 	if err := file.UploadNewFile(); err == mongo.ErrNoDocuments || err == nil {
 		// Send next file chunk and current hash which is a "".
@@ -238,7 +239,7 @@ func (msg messageBytes) handleNewFileUpload() {
 		return
 	}
 
-	if HubConstruct.Users[file.User] != nil {
+	if HubConstruct.Users[user] != nil {
 		m := WSMessage{jsonContent, file.User}
 		HubConstruct.Broadcast <- m
 	}

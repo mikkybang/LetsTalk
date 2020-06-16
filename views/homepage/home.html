@@ -315,7 +315,18 @@
                 startUpload: function (id) {
                     vueComponent.downloadInfo[id].downloading = true
                     Vue.set(vueComponent.currentChatContent, 0, vueComponent.currentChatContent[0])
-                    onSendFile(id)
+
+                    // Re-request New file upload if upload was interrupted.
+                    var message = {
+                        "fileName": id,
+                        "fileHash": vueComponent.downloadInfo[id].fileHash,
+                        "fileSize": vueComponent.downloadInfo[id].fileSize,
+                        "fileType": vueComponent.downloadInfo[id].fileType,
+                        "msgType": "NewFileUpload",
+                        "userID": '(%.Email%)',
+                    }
+
+                    socket.send(JSON.stringify(message))
                 },
 
                 bytesToSize: function (bytes) {
@@ -341,7 +352,6 @@
 
                         var chunkSize = 1024 * 1024;
                         var chunks = Math.ceil(vueComponent.fileContent.size / chunkSize, chunkSize);
-                        console.log(vueComponent.fileContent.type)
                         var fileSize = this.bytesToSize(vueComponent.fileContent.size)
                         var fileName = vueComponent.fileContent.name;
                         var fileType = vueComponent.fileContent.type
@@ -353,6 +363,7 @@
                                 "completed": false,
                                 "downloading": true,
                                 "fileSize": fileSize,
+                                "fileType": fileType,
                                 "fileContent": vueComponent.fileContent,
                                 "chunk": 0,
                                 "chunks": chunks,
@@ -601,6 +612,7 @@
                             "message": jsonContent.fileName,
                             "fileSize": jsonContent.fileSize,
                             "fileName": jsonContent.fileName,
+                            "fileHash": jsonContent.fileHash,
                             "userID": jsonContent.userID,
                         })
 
@@ -646,7 +658,6 @@
                         'msgType': 'RequestAllMessages',
                         "roomID": vueComponent.currentViewedRoomID,
                     }
-                    console.log(vueComponent.currentViewedRoomID)
                     socket.send(JSON.stringify(message))
                 }
             };
@@ -706,7 +717,6 @@
 
         var onRquestAllMessages = function (msg) {
             vueComponent.onlineUsers = msg.onlineUsers
-            console.log(msg.onlineUsers)
 
             var messageArray = msg.messages
             if (messageArray === null) {
@@ -720,7 +730,6 @@
 
             vueComponent.removeFromRoomNotification(msg.roomID)
 
-            console.log("Culprit is request all message")
             scrollChatToBottom()
         }
 
@@ -763,6 +772,8 @@
             if (roomID === vueComponent.currentViewedRoomID) {
                 vueComponent.currentChatContent.push({
                     "type": msg.type,
+                    "fileHash": msg.fileHash,
+                    "fileSize": msg.fileSize,
                     "message": msg.message,
                     "userID": msg.userID,
                     "time": msg.time,
@@ -774,7 +785,6 @@
             }
 
             if (msg.userID === '(%.Email%)') {
-                console.log("Culprit is new message")
                 scrollChatToBottom()
                 return
             }
