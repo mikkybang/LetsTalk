@@ -350,7 +350,7 @@
                             return
                         }
 
-                        var chunkSize = 1024 * 1024;
+                        var chunkSize = 125 * 1024;
                         var chunks = Math.ceil(vueComponent.fileContent.size / chunkSize, chunkSize);
                         var fileSize = this.bytesToSize(vueComponent.fileContent.size)
                         var fileName = vueComponent.fileContent.name;
@@ -867,7 +867,7 @@
 
             e.fileChunk = e.fileChunk.substr(e.fileChunk.indexOf(',') + 1);
 
-            var chunkSize = 1024 * 1024;
+            var chunkSize = 125 * 1024;
             var byteCharacters = atob(e.fileChunk);
             var byteArrays = [];
 
@@ -926,7 +926,7 @@
 
         var onSendFile = function (e) {
             var id = e.fileName
-            var chunkSize = 1024 * 1024;
+            var chunkSize = 125 * 1024;
             vueComponent.downloadInfo[id].chunk = e.nextChunk
 
             // If chunk is same as chunks, indicate file upload complete.
