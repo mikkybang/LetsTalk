@@ -285,10 +285,12 @@
                             "progress": 0,
                             "completed": false,
                             "downloading": false,
+                            "downloadType": "download",
                             "fileContent": [],
                             "fileHash": fileHash,
                             "chunk": 0,
                             "chunks": 0,
+                            "roomID": this.currentviewedroomid,
                         }
                     }
 
@@ -305,6 +307,11 @@
                     }
 
                     socket.send(JSON.stringify(message))
+                },
+
+                stopDownload: function (id) {
+                    vueComponent.downloadInfo[id].downloading = false
+                    Vue.set(vueComponent.currentChatContent, 0, vueComponent.currentChatContent[0])
                 },
 
                 stopUpload: function (id) {
@@ -362,6 +369,7 @@
                                 "progress": 0,
                                 "completed": false,
                                 "downloading": true,
+                                "downloadType": "upload",
                                 "fileSize": fileSize,
                                 "fileType": fileType,
                                 "fileContent": vueComponent.fileContent,
@@ -697,8 +705,7 @@
 
             vueComponent.chatspreview[roomID] = { "message": message, "roomName": roomName }
 
-            // Append to rooms option if same user joined
-            // else notify others in room 
+            // Append to rooms option if same user joined else notify others in room.
             if (msg.email === '(%.Email %)') {
                 vueComponent.rooms.push(roomID)
             } else {
@@ -718,11 +725,24 @@
         var onRquestAllMessages = function (msg) {
             vueComponent.onlineUsers = msg.onlineUsers
 
-            var messageArray = msg.messages
-            if (messageArray === null) {
+            if (msg.messages === null) {
                 vueComponent.currentChatContent = []
             } else {
-                vueComponent.currentChatContent = messageArray
+                vueComponent.currentChatContent = msg.messages
+            }
+
+            // Show download progress.
+            for (const id in vueComponent.downloadInfo) {
+                if (vueComponent.downloadInfo[id].roomID === vueComponent.currentViewedRoomID && !vueComponent.downloadInfo[id].completed
+                    && vueComponent.downloadInfo[id].downloadType === "upload") {
+                    vueComponent.currentChatContent.push({
+                        "type": "upload",
+                        "userID": '(%.Email%)',
+                        "message": id,
+                        "name": '(%.Name%)',
+                        "fileSize": vueComponent.downloadInfo[id].fileSize,
+                    })
+                }
             }
 
             vueComponent.currentViewedRoomName = msg.roomName
@@ -887,14 +907,14 @@
             const blob = new Blob(byteArrays, { type: "" }); // use file type too
             vueComponent.downloadInfo[id].fileContent.push(blob)
 
-            if (vueComponent.downloadInfo[id].downloading === false) {
-                return
-            }
-
             vueComponent.downloadInfo[id].progress = (vueComponent.downloadInfo[id].chunk / vueComponent.downloadInfo[id].chunks) * 100
 
             if (vueComponent.downloadInfo[id].chunk === vueComponent.downloadInfo[id].chunks) {
                 downloadBlob(id)
+                return
+            }
+
+            if (vueComponent.downloadInfo[id].downloading === false) {
                 return
             }
 
@@ -1004,9 +1024,11 @@
             vueComponent.downloadInfo[id].completed = true
             vueComponent.downloadInfo[id].downloading = false
             vueComponent.downloadInfo[id].progress = 0
+            vueComponent.downloadInfo[id].chunk = 0
             Vue.set(vueComponent.currentChatContent, 0, vueComponent.currentChatContent[0])
 
             const blobB = new Blob(vueComponent.downloadInfo[id].fileContent, { type: vueComponent.downloadInfo[id].fileType });
+            vueComponent.downloadInfo[id].fileContent = []
             let a = document.createElement("a");
             a.href = URL.createObjectURL(blobB);
             a.download = id;

@@ -280,14 +280,13 @@ func (msg messageBytes) handleUploadFileChunk() {
 		recentFileExist = FileChunks{UniqueFileHash: data.RecentChunkHash}.FileChunkExists()
 	}
 
-	data.User, data.RecentChunkHash = "", ""
-	data.File, data.NewChunkHash = "", ""
+	data.RecentChunkHash, data.File, data.NewChunkHash = "", "", ""
 	data.NextChunk, data.ChunkIndex = 0, 0
 
 	fileHash := sha256.Sum256([]byte(file.FileBinary))
 	// Check if client sent file hash is same as server generated Hash.
 	if hex.EncodeToString(fileHash[:]) != file.UniqueFileHash || !recentFileExist {
-		fmt.Println(hex.EncodeToString(fileHash[:]))
+		fmt.Println("Invalid unique hash", hex.EncodeToString(fileHash[:]), recentFileExist)
 		data.MsgType = "UploadError"
 
 		// Re-request for current chunk index.
