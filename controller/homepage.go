@@ -29,7 +29,7 @@ func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// Use (%%) instead of {{}} for templates.
 	tmpl := template.Must(template.New("home.html").Delims("(%", "%)").ParseFiles(
 		"views/homepage/home.html",
-		"views/homepage/components/SideBar.vue", "views/homepage/components/ChattingComponent.vue"))
+		"views/homepage/components/SideBar.vue", "views/homepage/components/ChattingComponent.vue", "views/homepage/components/CallUI.vue"))
 
 	if err := tmpl.Execute(w, data); err != nil {
 		log.Println(err)

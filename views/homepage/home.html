@@ -20,142 +20,152 @@
     <div id="app">
         <v-app>
             <v-content>
-                <template v-if=" $vuetify.breakpoint.smAndDown">
-                    <v-row style="height: 100%;" no-gutters>
-                        <v-col cols="auto">
-                            <v-card height="100%">
-                                <v-navigation-drawer :mini-variant="mini" :expand-on-hover="expand" permanent>
-                                    <v-list dense nav class="py-0">
-                                        <v-list-item two-line class="px-1">
-                                            <v-icon @click="drawer=true">mdi-menu</v-icon>
-                                        </v-list-item>
+                <template v-if="call_session===false">
+                    <template v-if=" $vuetify.breakpoint.smAndDown">
+                        <v-row style="height: 100%;" no-gutters>
+                            <v-col cols="auto">
+                                <v-card height="100%">
+                                    <v-navigation-drawer :mini-variant="mini" :expand-on-hover="expand" permanent>
+                                        <v-list dense nav class="py-0">
+                                            <v-list-item two-line class="px-1">
+                                                <v-icon @click="drawer=true">mdi-menu</v-icon>
+                                            </v-list-item>
 
-                                        <v-divider></v-divider>
-                                        <v-list-item></v-list-item>
+                                            <v-divider></v-divider>
+                                            <v-list-item></v-list-item>
 
-                                        <v-list-item>
-                                            <v-badge overlap color="red" :content="messages.length"
-                                                :value="messages.length">
-                                                <v-icon @click="openMessageDialog=true">mdi-email</v-icon>
-                                            </v-badge>
-                                            <v-dialog scrollable v-model="openMessageDialog" width="600px">
-                                                <v-card>
-                                                    <v-card-title>Messages</v-card-title>
-                                                    <v-divider></v-divider>
-                                                    <v-card-text style="max-height: 500px;">
-                                                        <v-container>
-                                                            <span v-if="messages.length==0">No Message</span>
-                                                            <v-row>
-                                                                <v-col v-for="(message,i) in messages" :key="i"
-                                                                    cols="12">
-                                                                    <span>{{message.requestingUserName}}
-                                                                        ({{message.requestingUserID}}) wants to add
-                                                                        you
-                                                                        to a room ({{message.roomName}})</span>
-                                                                    <v-spacer></v-spacer>
-                                                                    <v-btn color="green darken-1"
-                                                                        @click="acceptJoinRequest(message.roomID,message.roomName,i)"
-                                                                        text>Accept</v-btn>
-                                                                    <v-btn color="green darken-1" text>Decline</v-btn>
-                                                                </v-col>
-                                                            </v-row>
-                                                        </v-container>
-                                                    </v-card-text>
-                                                </v-card>
-                                            </v-dialog>
-                                        </v-list-item>
+                                            <v-list-item>
+                                                <v-badge overlap color="red" :content="messages.length"
+                                                    :value="messages.length">
+                                                    <v-icon @click="openMessageDialog=true">mdi-email</v-icon>
+                                                </v-badge>
+                                                <v-dialog scrollable v-model="openMessageDialog" width="600px">
+                                                    <v-card>
+                                                        <v-card-title>Messages</v-card-title>
+                                                        <v-divider></v-divider>
+                                                        <v-card-text style="max-height: 500px;">
+                                                            <v-container>
+                                                                <span v-if="messages.length==0">No Message</span>
+                                                                <v-row>
+                                                                    <v-col v-for="(message,i) in messages" :key="i"
+                                                                        cols="12">
+                                                                        <span>{{message.requestingUserName}}
+                                                                            ({{message.requestingUserID}}) wants to add
+                                                                            you
+                                                                            to a room ({{message.roomName}})</span>
+                                                                        <v-spacer></v-spacer>
+                                                                        <v-btn color="green darken-1"
+                                                                            @click="acceptJoinRequest(message.roomID,message.roomName,i)"
+                                                                            text>Accept</v-btn>
+                                                                        <v-btn color="green darken-1" text>Decline
+                                                                        </v-btn>
+                                                                    </v-col>
+                                                                </v-row>
+                                                            </v-container>
+                                                        </v-card-text>
+                                                    </v-card>
+                                                </v-dialog>
+                                            </v-list-item>
 
-                                        <v-list-item>
-                                            <v-badge overlap color="white" value=0>
-                                                <v-icon @click="createRoomDialog=true">mdi-plus</v-icon>
-                                            </v-badge>
-                                            <v-dialog v-model="createRoomDialog">
-                                                <v-card>
-                                                    <v-card-text>
-                                                        <v-container fluid>
-                                                            <v-row>
-                                                                <v-col cols="12">
-                                                                    <span>Create New Room</span>
-                                                                </v-col>
-                                                                <v-col cols="12">
-                                                                    <v-text-field label="Specify Room Name"
-                                                                        v-model="newRoomName"
-                                                                        @keyup.enter.exact="getUsers"></v-text-field>
-                                                                </v-col>
-                                                                <v-col cols="12">
-                                                                    <v-spacer></v-spacer>
-                                                                    <v-btn @click="createRoom(newRoomName)"
-                                                                        color="green darken-1" text>
-                                                                        Create Room</v-btn>
-                                                                </v-col>
-                                                            </v-row>
-                                                        </v-container>
-                                                    </v-card-text>
-                                                </v-card>
-                                            </v-dialog>
-                                        </v-list-item>
+                                            <v-list-item>
+                                                <v-badge overlap color="white" value=0>
+                                                    <v-icon @click="createRoomDialog=true">mdi-plus</v-icon>
+                                                </v-badge>
+                                                <v-dialog v-model="createRoomDialog">
+                                                    <v-card>
+                                                        <v-card-text>
+                                                            <v-container fluid>
+                                                                <v-row>
+                                                                    <v-col cols="12">
+                                                                        <span>Create New Room</span>
+                                                                    </v-col>
+                                                                    <v-col cols="12">
+                                                                        <v-text-field label="Specify Room Name"
+                                                                            v-model="newRoomName"
+                                                                            @keyup.enter.exact="getUsers">
+                                                                        </v-text-field>
+                                                                    </v-col>
+                                                                    <v-col cols="12">
+                                                                        <v-spacer></v-spacer>
+                                                                        <v-btn @click="createRoom(newRoomName)"
+                                                                            color="green darken-1" text>
+                                                                            Create Room</v-btn>
+                                                                    </v-col>
+                                                                </v-row>
+                                                            </v-container>
+                                                        </v-card-text>
+                                                    </v-card>
+                                                </v-dialog>
+                                            </v-list-item>
 
-                                        <v-list-item>
-                                            <v-badge overlap color="red"
-                                                :content="Object.keys(onreadRoomMessageCount).length"
-                                                :value="Object.keys(onreadRoomMessageCount).length">
-                                                <v-icon>mdi-account-group-outline</v-icon>
-                                            </v-badge>
-                                        </v-list-item>
-                                    </v-list>
+                                            <v-list-item>
+                                                <v-badge overlap color="red"
+                                                    :content="Object.keys(onreadRoomMessageCount).length"
+                                                    :value="Object.keys(onreadRoomMessageCount).length">
+                                                    <v-icon>mdi-account-group-outline</v-icon>
+                                                </v-badge>
+                                            </v-list-item>
+                                        </v-list>
+                                    </v-navigation-drawer>
+                                </v-card>
+                                <v-navigation-drawer v-model="drawer" absolute temporary>
+                                    <side-bar :rooms="rooms" :chatspreview="chatspreview"
+                                        @update-current-chat-contents-loaded="loadChatContent"
+                                        :onreadroommessagecount="onreadRoomMessageCount" />
                                 </v-navigation-drawer>
-                            </v-card>
-                            <v-navigation-drawer v-model="drawer" absolute temporary>
+                            </v-col>
+
+                            <v-col cols="mx-auto">
+                                <chatting-component :currentchatcontentsloaded="currentChatContentsNotLoaded"
+                                    :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
+                                    :currentviewedroomname="currentViewedRoomName"
+                                    :removewelcomepage="removeWelcomePage" :onlineusers="onlineUsers"
+                                    :usersfound="usersFound" :downloadinfo="downloadInfo" />
+                            </v-col>
+                        </v-row>
+                    </template>
+
+                    <template v-else>
+                        <v-row style="height: 100%;" no-gutters>
+                            <v-col cols="auto">
                                 <side-bar :rooms="rooms" :chatspreview="chatspreview"
                                     @update-current-chat-contents-loaded="loadChatContent"
+                                    @accept-join-request="acceptJoinRequest" :messages="messages"
+                                    :createroomdialog="createRoomDialog" @create-room="createRoom"
                                     :onreadroommessagecount="onreadRoomMessageCount" />
-                            </v-navigation-drawer>
-                        </v-col>
+                            </v-col>
+                            <v-divider vertical></v-divider>
+                            <v-col cols="mx-auto">
+                                <chatting-component :currentchatcontentsloaded=" currentChatContentsNotLoaded"
+                                    :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
+                                    :currentviewedroomname="currentViewedRoomName"
+                                    :removewelcomepage="removeWelcomePage" :onlineusers="onlineUsers"
+                                    :usersfound="usersFound" :downloadinfo="downloadInfo" />
+                            </v-col>
+                        </v-row>
+                    </template>
 
-                        <v-col cols="mx-auto">
-                            <chatting-component :currentchatcontentsloaded="currentChatContentsNotLoaded"
-                                :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
-                                :currentviewedroomname="currentViewedRoomName" :removewelcomepage="removeWelcomePage"
-                                :onlineusers="onlineUsers" :usersfound="usersFound" :downloadinfo="downloadInfo" />
-                        </v-col>
-                    </v-row>
+                    <v-dialog persistent width="400px" v-model="socketClosed">
+                        <v-card>
+                            <v-card-text>
+                                <div align="center" justify="center">
+                                    <v-row>
+                                        <v-col cols="12">
+                                            <v-progress-circular indeterminate color="green"></v-progress-circular>
+                                        </v-col>
+                                        <v-col cols="12">
+                                            <span>Websocket disconnected. Reconnecting.</span>
+                                        </v-col>
+                                    </v-row>
+                                </div>
+                            </v-card-text>
+                        </v-card>
+                    </v-dialog>
                 </template>
 
                 <template v-else>
-                    <v-row style="height: 100%;" no-gutters>
-                        <v-col cols="auto">
-                            <side-bar :rooms="rooms" :chatspreview="chatspreview"
-                                @update-current-chat-contents-loaded="loadChatContent"
-                                @accept-join-request="acceptJoinRequest" :messages="messages"
-                                :createroomdialog="createRoomDialog" @create-room="createRoom"
-                                :onreadroommessagecount="onreadRoomMessageCount" />
-                        </v-col>
-                        <v-divider vertical></v-divider>
-                        <v-col cols="mx-auto">
-                            <chatting-component :currentchatcontentsloaded=" currentChatContentsNotLoaded"
-                                :currentchatcontent="currentChatContent" :currentviewedroomid="currentViewedRoomID"
-                                :currentviewedroomname="currentViewedRoomName" :removewelcomepage="removeWelcomePage"
-                                :onlineusers="onlineUsers" :usersfound="usersFound" :downloadinfo="downloadInfo" />
-                        </v-col>
-                    </v-row>
+                    <call-ui />
                 </template>
-
-                <v-dialog persistent width="400px" v-model="socketClosed">
-                    <v-card>
-                        <v-card-text>
-                            <div align="center" justify="center">
-                                <v-row>
-                                    <v-col cols="12">
-                                        <v-progress-circular indeterminate color="green"></v-progress-circular>
-                                    </v-col>
-                                    <v-col cols="12">
-                                        <span>Websocket disconnected. Reconnecting.</span>
-                                    </v-col>
-                                </v-row>
-                            </div>
-                        </v-card-text>
-                    </v-card>
-                </v-dialog>
             </v-content>
         </v-app>
     </div>
@@ -166,6 +176,58 @@
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/sha256.js"></script>
 
     <script>
+        Vue.component('call-ui', {
+            data: function () {
+                return {
+                    show_video_options: true,
+                    audio_on: false,
+                    video_on: true,
+
+                    video_icon: "mdi-video",
+                    audio_icon: "mdi-microphone",
+                    screen_mode: "mdi-fullscreen",
+                    caller_name_initials: "MU",
+                    caller_names: "Michael Uti"
+                }
+            },
+
+            methods: {
+                end_call: function () {
+                    vueComponent.call_session = false
+                },
+
+
+                request_full_screen: function () {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen();
+                    } else if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                },
+
+                change_audio_status: function () {
+                    if (this.audio_on) {
+                        this.audio_icon = 'mdi-microphone-off'
+                    } else {
+                        this.audio_icon = 'mdi-microphone'
+                    }
+
+                    this.audio_on = !this.audio_on
+                },
+
+                change_video_status: function () {
+                    if (this.audio_on) {
+                        this.audioIcon = 'mdi-microphone-off'
+                    } else {
+                        this.audioIcon = 'mdi-microphone'
+                    }
+                    this.audio_on = !this.audio_on
+                },
+            },
+
+            template: `(% template "callUI" .%)`,
+        })
+
         Vue.component('side-bar', {
             props: {
                 rooms: Array,
@@ -231,6 +293,94 @@
             },
 
             methods: {
+                start_class_session: function () {
+                    vueComponent.call_session = true
+                },
+
+                sendMessage: function () {
+                    if (!this.messageContent.match(/\S/)) {
+                        return
+                    }
+
+                    // Send file if indicated.
+                    if (vueComponent.fileContent !== null && vueComponent.fileContent.name === this.messageContent) {
+                        if (vueComponent.fileContent.size > 256 * 1024 * 1024) {
+                            // TODO: Show file too large dialog instead.
+                            console.log("file too large");
+                            this.messageContent = ""
+
+                            return
+                        }
+
+                        var chunkSize = 125 * 1024;
+                        var chunks = Math.ceil(vueComponent.fileContent.size / chunkSize, chunkSize);
+                        var fileSize = this.bytesToSize(vueComponent.fileContent.size)
+                        var fileName = vueComponent.fileContent.name;
+                        var fileType = vueComponent.fileContent.type
+
+                        if (vueComponent.downloadInfo[fileName] === undefined) {
+                            vueComponent.downloadInfo[fileName] = {
+                                "roomID": this.currentviewedroomid,
+                                "progress": 0,
+                                "completed": false,
+                                "downloading": true,
+                                "downloadType": "upload",
+                                "fileSize": fileSize,
+                                "fileType": fileType,
+                                "fileContent": vueComponent.fileContent,
+                                "chunk": 0,
+                                "chunks": chunks,
+                            }
+                        }
+
+                        var reader = new FileReader();
+                        reader.onloadend = function (event) {
+                            var data = event.target.result;
+
+                            // We are to experiment splicing file with this same experiment.
+                            var fileUniqueHash = CryptoJS.SHA256(data).toString();
+                            vueComponent.downloadInfo[fileName].fileHash = fileUniqueHash
+
+                            // Send new file upload information to server, indicating file information.
+                            var message = {
+                                "fileName": fileName,
+                                "fileHash": fileUniqueHash,
+                                "fileSize": fileSize,
+                                "fileType": fileType,
+                                "msgType": "NewFileUpload",
+                                "userID": '(%.Email%)',
+                            }
+
+                            socket.send(JSON.stringify(message))
+                        };
+                        reader.readAsDataURL(vueComponent.fileContent);
+
+                        // Update chat content or upload report.
+                        vueComponent.currentChatContent.push({
+                            "type": "upload",
+                            "userID": '(%.Email%)',
+                            "message": vueComponent.fileContent.name,
+                            "name": '(%.Name%)',
+                            "fileSize": fileSize,
+                        })
+                        scrollChatToBottom()
+
+                        this.messageContent = ""
+                        return
+                    }
+
+                    var message = {
+                        "msgType": "NewMessage",
+                        "roomID": this.currentviewedroomid,
+                        "message": this.messageContent,
+                        "userID": '(%.Email%)', "name": '(%.Name%)',
+                        "type": "txt",
+                    }
+
+                    socket.send(JSON.stringify(message))
+                    this.messageContent = ''
+                },
+
                 exitRoom: function () {
                     var message = {
                         "msgType": "ExitRoom",
@@ -343,89 +493,6 @@
                     return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
                 },
 
-                sendMessage: function () {
-                    if (!this.messageContent.match(/\S/)) {
-                        return
-                    }
-
-                    // Send file if indicated.
-                    if (vueComponent.fileContent !== null && vueComponent.fileContent.name === this.messageContent) {
-                        if (vueComponent.fileContent.size > 256 * 1024 * 1024) {
-                            // TODO: Show file too large dialog instead.
-                            console.log("file too large");
-                            this.messageContent = ""
-                            return
-                        }
-
-                        var chunkSize = 125 * 1024;
-                        var chunks = Math.ceil(vueComponent.fileContent.size / chunkSize, chunkSize);
-                        var fileSize = this.bytesToSize(vueComponent.fileContent.size)
-                        var fileName = vueComponent.fileContent.name;
-                        var fileType = vueComponent.fileContent.type
-
-                        if (vueComponent.downloadInfo[fileName] === undefined) {
-                            vueComponent.downloadInfo[fileName] = {
-                                "roomID": this.currentviewedroomid,
-                                "progress": 0,
-                                "completed": false,
-                                "downloading": true,
-                                "downloadType": "upload",
-                                "fileSize": fileSize,
-                                "fileType": fileType,
-                                "fileContent": vueComponent.fileContent,
-                                "chunk": 0,
-                                "chunks": chunks,
-                            }
-                        }
-
-                        var reader = new FileReader();
-                        reader.onloadend = function (event) {
-                            var data = event.target.result;
-
-                            // We are to experiment splicing file with this same experiment.
-                            var fileUniqueHash = CryptoJS.SHA256(data).toString();
-                            vueComponent.downloadInfo[fileName].fileHash = fileUniqueHash
-
-                            // Send new file upload information to server, indicating file information.
-                            var message = {
-                                "fileName": fileName,
-                                "fileHash": fileUniqueHash,
-                                "fileSize": fileSize,
-                                "fileType": fileType,
-                                "msgType": "NewFileUpload",
-                                "userID": '(%.Email%)',
-                            }
-
-                            socket.send(JSON.stringify(message))
-                        };
-                        reader.readAsDataURL(vueComponent.fileContent);
-
-                        // Update chat content or upload report.
-                        vueComponent.currentChatContent.push({
-                            "type": "upload",
-                            "userID": '(%.Email%)',
-                            "message": vueComponent.fileContent.name,
-                            "name": '(%.Name%)',
-                            "fileSize": fileSize,
-                        })
-                        scrollChatToBottom()
-
-                        this.messageContent = ""
-                        return
-                    }
-
-                    var message = {
-                        "msgType": "NewMessage",
-                        "roomID": this.currentviewedroomid,
-                        "message": this.messageContent,
-                        "userID": '(%.Email%)', "name": '(%.Name%)',
-                        "type": "txt",
-                    }
-
-                    socket.send(JSON.stringify(message))
-                    this.messageContent = ''
-                },
-
                 onFileUpdate: function (e) {
                     var files = e.target.files || e.dataTransfer.files;
                     if (!files.length)
@@ -477,9 +544,13 @@
                 fileContent: null,
 
                 drawer: false,
+                call_session: false,
                 socketClosed: false,
                 expand: false,
                 mini: true,
+
+                caller_name_initials: "",
+                caller_names: "",
             },
 
             methods: {
@@ -643,6 +714,52 @@
                     break
             }
         };
+    </script>
+
+    <script>
+        var peer_connection
+
+        var start_class_video_session = function (room_ID) {
+            if (peer_connection === undefined) {
+                peer_connection = new RTCPeerConnection({
+                    iceServers: [
+                        {
+                            urls: 'stun:stun.l.google.com:19302'
+                        }
+                    ]
+                })
+            }
+
+            navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+                .then(function (stream) {
+                    console.log(stream)
+                    document.getElementById("videoTest").srcObject = stream
+                })
+                .catch(function (error) {
+                    console.log("something bad happened", error);
+                })
+        }
+
+        var join_class_session = function (room_ID) {
+            if (peer_connection === undefined) {
+                peer_connection = new RTCPeerConnection({
+                    iceServers: [
+                        {
+                            urls: 'stun:stun.l.google.com:19302'
+                        }
+                    ]
+                })
+            }
+
+            navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+                .then(function (stream) {
+                    console.log(stream)
+                    document.getElementById("videoTest").srcObject = stream
+                })
+                .catch(function (error) {
+                    console.log("something bad happened", error);
+                })
+        }
     </script>
 
     <script>

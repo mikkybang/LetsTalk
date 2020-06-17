@@ -81,7 +81,7 @@
                 </v-card>
               </v-dialog>
 
-              <v-btn fab depressed>
+              <v-btn @click="start_class_session()" fab depressed>
                 <v-icon>mdi-phone</v-icon>
               </v-btn>
             </v-col>
