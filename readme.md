@@ -27,7 +27,7 @@ Users also can not register to the platform. Registration is done by the adminis
 
 - [x] Seamless websocket connection
 
-- [ ] File transfer over websocket for file < 1gb and over webRTC for > 1gb
+- [x] Resumable file transfer
 
 - [ ] Desktop screen sharing support
 

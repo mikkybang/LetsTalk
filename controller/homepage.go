@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
 	"html/template"
 	"log"
 	"net/http"
@@ -20,17 +19,11 @@ func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	uuid, ok := cookie.Data["UUID"].(string)
-	if !ok {
-		http.Error(w, values.ErrRetrieveUUID.Error(), 404)
-		log.Println("Could not retrieve UUID/ in homepage")
-		return
-	}
-
-	data := map[string]interface{}{
-		"Email": cookie.Email,
-		"UUID":  uuid,
-		"Name":  values.MapEmailToName[cookie.Email],
+	data := struct {
+		Email, UUID, Name string
+	}{
+		cookie.Email, cookie.Data.UUID,
+		values.MapEmailToName[cookie.Email],
 	}
 
 	// Use (%%) instead of {{}} for templates.
@@ -44,11 +37,7 @@ func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func HomePageLoginGet(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	data := map[string]interface{}{
-		"SigninError": false,
-		"Login":       "/login",
-		"Admin":       false,
-	}
+	data := setLoginDetails(false, false, "", "/login")
 
 	tmpl, terr := template.New("login.html").Delims("(%", "%)").ParseFiles("views/loginpage/login.html")
 	if terr != nil {
@@ -71,11 +60,7 @@ func HomePageLoginPost(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	}.CreateUserLogin(password, w)
 
 	if err != nil {
-		data := map[string]interface{}{
-			"SigninError": true,
-			"Login":       "/login",
-			"Admin":       false,
-		}
+		data := setLoginDetails(true, false, "", "/login")
 
 		tmpl, terr := template.New("login.html").Delims("(%", "%)").ParseFiles("views/loginpage/login.html")
 		if terr != nil {
@@ -91,37 +76,18 @@ func HomePageLoginPost(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	http.Redirect(w, r, "/", 302)
 }
 
-// TODO: Use as API instead..
-func SearchUser(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	w.Header().Set("Content-Type", "application/json")
-	id := params.ByName("ID")
-	uniqueID := params.ByName("UUID")
-	key := params.ByName("Key")
-	if id == "" {
-		log.Println("No id was specified while searching for user")
-		http.Error(w, "Not found", 404)
-		return
-	}
+func setLoginDetails(errors, isAdmin bool, errorDetail, link string) struct {
+	SigninError, Admin bool
+	Login, ErrorDetail string
+} {
 
-	err := model.User{Email: id}.ValidateUser(uniqueID)
-	if err != nil {
-		log.Println("No id was specified while searching for user")
-		http.Error(w, "Not found", 404)
-		return
-	}
-
-	users := model.GetUser(key, id)
-	data := map[string]interface{}{
-		"UsersFound": users,
-	}
-	bytes, err := json.MarshalIndent(&data, "", "\t")
-	if err != nil {
-		http.Error(w, values.ErrMarshal.Error(), 400)
-		return
-	}
-	_, err = w.Write(bytes)
-	if err != nil {
-		http.Error(w, values.ErrWrite.Error(), 400)
-		return
+	return struct {
+		SigninError, Admin bool
+		Login, ErrorDetail string
+	}{
+		errors,
+		isAdmin,
+		link,
+		errorDetail,
 	}
 }
