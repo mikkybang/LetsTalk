@@ -19,7 +19,7 @@
 <body>
     <div id="app">
         <v-app>
-            <v-content>
+            <v-main>
                 <template v-if="call_session===false">
                     <template v-if=" $vuetify.breakpoint.smAndDown">
                         <v-row style="height: 100%;" no-gutters>
@@ -166,7 +166,7 @@
                 <template v-else>
                     <call-ui />
                 </template>
-            </v-content>
+            </v-main>
         </v-app>
     </div>
 
@@ -180,8 +180,10 @@
             data: function () {
                 return {
                     show_video_options: true,
-                    audio_on: false,
+                    audio_on: true,
                     video_on: true,
+                    full_screen: false,
+                    is_desktop_shared: false,
 
                     video_icon: "mdi-video",
                     audio_icon: "mdi-microphone",
@@ -203,6 +205,8 @@
                     } else if (document.exitFullscreen) {
                         document.exitFullscreen();
                     }
+
+                    this.full_screen = !this.full_screen
                 },
 
                 change_audio_status: function () {
@@ -213,16 +217,30 @@
                     }
 
                     this.audio_on = !this.audio_on
+                    change_audio(this.audio_on)
                 },
 
                 change_video_status: function () {
-                    if (this.audio_on) {
-                        this.audioIcon = 'mdi-microphone-off'
+                    if (this.video_on) {
+                        this.video_icon = 'mdi-video-off'
                     } else {
-                        this.audioIcon = 'mdi-microphone'
+                        this.video_icon = 'mdi-video'
                     }
-                    this.audio_on = !this.audio_on
+
+                    this.video_on = !this.video_on
+                    change_video(this.video_on)
                 },
+
+                desktop_share: function () {
+                    console.log("Starting desktop share")
+                    if (!this.is_desktop_shared) {
+                        start_desktop_sharing()
+                    } else {
+                        stop_desktop_sharing()
+                    }
+
+                    this.is_desktop_shared = !this.is_desktop_shared
+                }
             },
 
             template: `(% template "callUI" .%)`,
@@ -295,6 +313,7 @@
             methods: {
                 start_class_session: function () {
                     vueComponent.call_session = true
+                    start_class_video_session(vueComponent.currentViewedRoomID)
                 },
 
                 sendMessage: function () {
@@ -617,6 +636,7 @@
 
             vuetify: new Vuetify(),
         })
+
     </script>
 
     <script>
@@ -718,6 +738,7 @@
 
     <script>
         var peer_connection
+        var stream
 
         var start_class_video_session = function (room_ID) {
             if (peer_connection === undefined) {
@@ -730,14 +751,12 @@
                 })
             }
 
-            navigator.mediaDevices.getUserMedia({ audio: true, video: true })
-                .then(function (stream) {
-                    console.log(stream)
-                    document.getElementById("videoTest").srcObject = stream
-                })
-                .catch(function (error) {
-                    console.log("something bad happened", error);
-                })
+            get_user_media({ audio: true, video: true }, function (e) {
+                stream = e
+                console.log(stream)
+                console.log("Done")
+                document.getElementById("videoID").srcObject = stream
+            })
         }
 
         var join_class_session = function (room_ID) {
@@ -751,15 +770,87 @@
                 })
             }
 
-            navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-                .then(function (stream) {
+            var on_media = function (e) {
+                stream = e
+                console.log(stream)
+                document.getElementById("videoID").srcObject = stream
+            }
+
+            get_user_media({ audio: true, video: false }, on_media)
+        }
+
+        var start_desktop_sharing = function () {
+            navigator.mediaDevices.getDisplayMedia({ audio: true, video: true })
+                .then(function (e) {
+                    stream = e
                     console.log(stream)
-                    document.getElementById("videoTest").srcObject = stream
+                    document.getElementById("videoID").srcObject = e
+                })
+                .catch(function (error) {
+                    console.log(error)
+                })
+        }
+
+        var stop_desktop_sharing = function () {
+            var on_media = function (e) {
+                stream = e
+                console.log(stream)
+                document.getElementById("videoID").srcObject = stream
+            }
+
+            get_user_media({ audio: true, video: true }, on_media)
+        }
+
+        var change_audio = function (start_audio) {
+            if (!start_audio) {
+                var tracks = stream.getAudioTracks()
+                if (tracks.length > 0) {
+                    stream.removeTrack(tracks[0])
+                }
+
+                return
+            }
+
+            var on_media = function (e) {
+                var tracks = e.getAudioTracks()
+                if (tracks.length > 0) {
+                    stream.addTrack(tracks[0])
+                }
+            }
+
+            get_user_media({ audio: true, video: false }, on_media)
+        }
+
+        var change_video = function (start_video) {
+            if (!start_video) {
+                var tracks = stream.getVideoTracks()
+                if (tracks.length > 0) {
+                    stream.removeTrack(tracks[0])
+                }
+
+                return
+            }
+
+            var on_media = function (e) {
+                var tracks = e.getVideoTracks()
+                if (tracks.length > 0) {
+                    stream.addTrack(tracks[0])
+                }
+            }
+
+            get_user_media({ audio: false, video: true }, on_media)
+        }
+
+        var get_user_media = function (media_options, on_media) {
+            navigator.mediaDevices.getUserMedia(media_options)
+                .then(function (e) {
+                    on_media(e)
                 })
                 .catch(function (error) {
                     console.log("something bad happened", error);
                 })
         }
+
     </script>
 
     <script>
@@ -796,6 +887,7 @@
 
             socket.onmessage = onMessage
         }
+
         console.log("starting up WS")
         connectWebsocket()
     </script>

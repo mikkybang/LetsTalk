@@ -8,7 +8,7 @@
     @click="show_video_options=!show_video_options"
   >
     <!-- shown if video is disabled. -->
-    <div align="center" justify="center" class="mx-auto my-auto">
+    <div v-if="!video_on" align="center" justify="center" class="mx-auto my-auto">
       <v-row>
         <v-col cols="12">
           <svg height="100" width="100">
@@ -30,8 +30,10 @@
     </div>
 
     <video
+      v-else
       style="min-width: 100%; min-height: 100%;right: 0;bottom: 0;position: fixed; "
       id="videoID"
+      muted="muted"
       autoplay
       playsinline
     ></video>
@@ -42,7 +44,14 @@
         v-if="show_video_options"
         style="bottom: 1rem; padding: 20px; left: 50%; margin-left: -150px; position: absolute;"
       >
-        <v-btn style="position: relative;" class="ml-2" small fab dark @click="end_call()">
+        <v-btn
+          class="ml-2"
+          small
+          fab
+          dark
+          @click="desktop_share()"
+          :color="is_desktop_shared? 'blue' : ''"
+        >
           <v-icon>mdi-desktop-mac</v-icon>
         </v-btn>
 
@@ -58,7 +67,14 @@
           <v-icon>{{audio_icon}}</v-icon>
         </v-btn>
 
-        <v-btn class="ml-2" small fab dark @click="request_full_screen()">
+        <v-btn
+          :color="full_screen ? 'blue' : ''"
+          class="ml-2"
+          small
+          fab
+          dark
+          @click="request_full_screen()"
+        >
           <v-icon>mdi-fullscreen</v-icon>
         </v-btn>
       </v-row>
