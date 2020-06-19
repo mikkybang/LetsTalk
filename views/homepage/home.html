@@ -195,6 +195,16 @@
 
             methods: {
                 end_call: function () {
+                    end_class_session()
+                    this.full_screen = false
+                    this.is_desktop_shared = false
+                    this.audio_on = true
+                    this.video_on = true
+
+                    this.video_icon = "mdi-video"
+                    this.audio_icon = "mdi-microphone"
+                    this.screen_mode = "mdi-fullscreen"
+
                     vueComponent.call_session = false
                 },
 
@@ -223,6 +233,7 @@
                 change_video_status: function () {
                     if (this.video_on) {
                         this.video_icon = 'mdi-video-off'
+                        this.is_desktop_shared = false
                     } else {
                         this.video_icon = 'mdi-video'
                     }
@@ -751,12 +762,22 @@
                 })
             }
 
-            get_user_media({ audio: true, video: true }, function (e) {
+            var media_constraints = { video: { width: { min: 640 }, height: { min: 480 } }, audio: true }
+
+            get_user_media(media_constraints, function (e) {
                 stream = e
                 console.log(stream)
                 console.log("Done")
                 document.getElementById("videoID").srcObject = stream
             })
+        }
+
+        var end_class_session = function (room_ID) {
+            var tracks = stream.getAudioTracks()
+            remove_track(tracks)
+
+            var tracks = stream.getVideoTracks()
+            remove_track(tracks)
         }
 
         var join_class_session = function (room_ID) {
@@ -776,15 +797,20 @@
                 document.getElementById("videoID").srcObject = stream
             }
 
-            get_user_media({ audio: true, video: false }, on_media)
+            var media_constraints = { video: { width: { min: 640 }, height: { min: 480 } }, audio: true }
+
+            get_user_media(media_constraints, on_media)
         }
 
         var start_desktop_sharing = function () {
-            navigator.mediaDevices.getDisplayMedia({ audio: true, video: true })
+            var media_constraints = { video: true, audio: true }
+
+            navigator.mediaDevices.getDisplayMedia(media_constraints)
                 .then(function (e) {
-                    stream = e
-                    console.log(stream)
-                    document.getElementById("videoID").srcObject = e
+                    var tracks = stream.getVideoTracks()
+                    remove_track(tracks)
+                    tracks = e.getVideoTracks()
+                    add_track(tracks)
                 })
                 .catch(function (error) {
                     console.log(error)
@@ -792,31 +818,31 @@
         }
 
         var stop_desktop_sharing = function () {
+            var media_constraints = { video: { width: { min: 640 }, height: { min: 480 } }, audio: true }
+
             var on_media = function (e) {
                 stream = e
                 console.log(stream)
                 document.getElementById("videoID").srcObject = stream
             }
 
-            get_user_media({ audio: true, video: true }, on_media)
+            get_user_media(media_constraints, on_media)
         }
 
         var change_audio = function (start_audio) {
             if (!start_audio) {
                 var tracks = stream.getAudioTracks()
-                if (tracks.length > 0) {
-                    stream.removeTrack(tracks[0])
-                }
+                remove_track(tracks)
 
                 return
             }
 
             var on_media = function (e) {
                 var tracks = e.getAudioTracks()
-                if (tracks.length > 0) {
-                    stream.addTrack(tracks[0])
-                }
+                add_track(tracks)
             }
+
+            var media_constraints = { audio: true }
 
             get_user_media({ audio: true, video: false }, on_media)
         }
@@ -824,18 +850,15 @@
         var change_video = function (start_video) {
             if (!start_video) {
                 var tracks = stream.getVideoTracks()
-                if (tracks.length > 0) {
-                    stream.removeTrack(tracks[0])
-                }
+                remove_track(tracks)
 
                 return
             }
 
             var on_media = function (e) {
                 var tracks = e.getVideoTracks()
-                if (tracks.length > 0) {
-                    stream.addTrack(tracks[0])
-                }
+                add_track(tracks)
+                document.getElementById("videoID").srcObject = stream
             }
 
             get_user_media({ audio: false, video: true }, on_media)
@@ -851,6 +874,17 @@
                 })
         }
 
+        var remove_track = function (tracks) {
+            for (var i = 0; i < tracks.length; i++) {
+                stream.removeTrack(tracks[i])
+            }
+        }
+
+        var add_track = function (tracks) {
+            for (var i = 0; i < tracks.length; i++) {
+                stream.addTrack(tracks[i])
+            }
+        }
     </script>
 
     <script>
