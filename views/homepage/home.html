@@ -164,7 +164,7 @@
                 </template>
 
                 <template v-else>
-                    <call-ui />
+                    <call-ui :caller_names="caller_names" :caller_name_initials="caller_name_initials" />
                 </template>
             </v-main>
         </v-app>
@@ -177,6 +177,11 @@
 
     <script>
         Vue.component('call-ui', {
+            props: {
+                caller_name_initials: String,
+                caller_names: String,
+            },
+
             data: function () {
                 return {
                     show_video_options: true,
@@ -188,8 +193,6 @@
                     video_icon: "mdi-video",
                     audio_icon: "mdi-microphone",
                     screen_mode: "mdi-fullscreen",
-                    caller_name_initials: "MU",
-                    caller_names: "Michael Uti"
                 }
             },
 
@@ -584,8 +587,8 @@
                 expand: false,
                 mini: true,
 
-                caller_name_initials: "",
-                caller_names: "",
+                caller_name_initials: "MU",
+                caller_names: "Michael Uti",
             },
 
             methods: {
