@@ -589,6 +589,7 @@
 
                 caller_name_initials: "MU",
                 caller_names: "Michael Uti",
+
             },
 
             methods: {
@@ -660,8 +661,8 @@
 
     <script>
         var onMessage = function (e) {
-            var jsonContent = JSON.parse(e.data);
-            var msgType = jsonContent.msgType;
+            const jsonContent = JSON.parse(e.data);
+            const msgType = jsonContent.msgType;
 
             switch (msgType) {
                 case "UserJoinedRoom":
@@ -756,28 +757,63 @@
     </script>
 
     <script>
-        var peer_connection
+        var peer_connection = new RTCPeerConnection({
+            iceServers: [
+                {
+                    urls: 'stun:stun.l.google.com:19302'
+                }
+            ]
+        })
+
         var stream
 
-        var start_class_video_session = function (room_ID) {
-            if (peer_connection === undefined) {
-                peer_connection = new RTCPeerConnection({
-                    iceServers: [
-                        {
-                            urls: 'stun:stun.l.google.com:19302'
-                        }
-                    ]
-                })
+        var start_class_video_session = function (publisher, room_ID) {
+            on_ice_connection("Create Session")
+
+            var media_constraints = { video: { width: { max: 640 }, height: { max: 480 } }, audio: true }
+            get_user_media(media_constraints, function (e) {
+                stream = e
+                peer_connection.addTransceiver(stream.getAudioTracks()[0], { streams: [stream] })
+                peer_connection.addTransceiver(stream.getVideoTracks()[0], { streams: [stream] })
+
+                stream.removeTrack(stream.getVideoTracks()[0])
+                document.getElementById("videoID").srcObject = stream
+            })
+
+            // ToDo: I passed transceiver so that I can get stream content.
+            // We can later add features to both use desktop and webcam sharing at same time.
+            // ToDo: Detect if webcam is disable and show caller initials.
+            peer_connection.ontrack = function ({ transceiver, streams: [event] }) {
+                console.log(transceiver)
+                document.getElementById('video1').srcObject = event
+            }
+        }
+
+        var join_class_session = function (room_ID) {
+            on_ice_connection("Join Session")
+
+            peer_connection.addTransceiver('video', { direction: "recvonly" })
+
+            var on_media = function (e) {
+                stream = e
+                console.log(stream)
+                document.getElementById("videoID").srcObject = stream
+
+                peer_connection.addTransceiver(stream.getAudioTracks()[0], { streams: [stream], direction: "sendrecv" })
+
+                peer_connection.createOffer()
+                    .then(d => peer_connection.setLocalDescription(d))
+                    .catch(log => console.log(log))
             }
 
             var media_constraints = { video: { width: { max: 640 }, height: { max: 480 } }, audio: true }
 
-            get_user_media(media_constraints, function (e) {
-                stream = e
-                console.log(stream)
-                console.log("Done")
-                document.getElementById("videoID").srcObject = stream
-            })
+            get_user_media(media_constraints, on_media)
+
+            peer_connection.ontrack = function ({ transceiver, streams: [event] }) {
+                console.log(transceiver)
+                document.getElementById('video1').srcObject = event
+            }
         }
 
         var end_class_session = function (room_ID) {
@@ -786,28 +822,7 @@
 
             var tracks = stream.getVideoTracks()
             remove_track(tracks)
-        }
-
-        var join_class_session = function (room_ID) {
-            if (peer_connection === undefined) {
-                peer_connection = new RTCPeerConnection({
-                    iceServers: [
-                        {
-                            urls: 'stun:stun.l.google.com:19302'
-                        }
-                    ]
-                })
-            }
-
-            var on_media = function (e) {
-                stream = e
-                console.log(stream)
-                document.getElementById("videoID").srcObject = stream
-            }
-
-            var media_constraints = { video: { width: { max: 640 }, height: { max: 480 } }, audio: true }
-
-            get_user_media(media_constraints, on_media)
+            peer_connection.close()
         }
 
         var start_desktop_sharing = function () {
@@ -881,9 +896,28 @@
             get_user_media({ audio: false, video: true }, on_media)
         }
 
+        var on_ice_connection = function (session_type) {
+            peer_connection.oniceconnectionstatechange = e => console.log(peer_connection.iceConnectionState)
+            peer_connection.onicecandidate = event => {
+                if (event.candidate === null) {
+                    console.log(peer_connection.localDescription.sdp);
+                    var message = {
+                        "msgType": "ClassCallSession",
+                        "sdp": peer_connection.localDescription.sdp,
+                        "session_type": session_type,
+                        "roomID": vueComponent.currentViewedRoomID,
+                        "Author": vueComponent.userID,
+                    }
+
+                    socket.send(JSON.stringify(message));
+                }
+            }
+        }
+
         var get_user_media = function (media_options, on_media) {
             navigator.mediaDevices.getUserMedia(media_options)
                 .then(function (e) {
+                    e.getTracks()
                     on_media(e)
                 })
                 .catch(function (error) {
