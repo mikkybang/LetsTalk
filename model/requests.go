@@ -42,10 +42,7 @@ func (msg messageBytes) handleCreateNewRoom() {
 		return
 	}
 
-	if HubConstruct.Users[newRoom.Email] != nil {
-		m := WSMessage{jsonContent, newRoom.Email}
-		HubConstruct.Broadcast <- m
-	}
+	HubConstruct.sendMessage(jsonContent, newRoom.Email)
 }
 
 func (msg messageBytes) handleRequestUserToJoinRoom() {
@@ -82,16 +79,10 @@ func (msg messageBytes) handleRequestUserToJoinRoom() {
 
 		// Send back RequestUsersToJoinRoom signal to everyone registered in room.
 		for _, roomRegisteredUser := range roomRegisteredUser {
-			if HubConstruct.Users[roomRegisteredUser] != nil {
-				m := WSMessage{jsonContent, roomRegisteredUser}
-				HubConstruct.Broadcast <- m
-			}
+			HubConstruct.sendMessage(jsonContent, roomRegisteredUser)
 		}
 
-		if HubConstruct.Users[user] != nil {
-			m := WSMessage{jsonContent, user}
-			HubConstruct.Broadcast <- m
-		}
+		HubConstruct.sendMessage(jsonContent, user)
 	}
 }
 
@@ -114,15 +105,12 @@ func (msg messageBytes) handleUserAcceptRoomRequest(joiner string) {
 	}
 
 	for _, user := range users {
-		if HubConstruct.Users[user] != nil {
-			m := WSMessage{msg, user}
-			HubConstruct.Broadcast <- m
-		}
+		HubConstruct.sendMessage(msg, user)
 	}
 }
 
 // handleNewMessage broadcasts users message to all online users and also saves to database.
-func (msg messageBytes) handleNewMessage(requester string) {
+func (msg messageBytes) handleNewMessage(author string) {
 	var newMessage Message
 	if err := json.Unmarshal(msg, &newMessage); err != nil {
 		log.Println("Could not convert to required New Message struct", err)
@@ -130,7 +118,7 @@ func (msg messageBytes) handleNewMessage(requester string) {
 	}
 
 	// Do not send if registered WS user is not same as message sender.
-	if requester != newMessage.UserID {
+	if author != newMessage.UserID {
 		return
 	}
 
@@ -138,7 +126,7 @@ func (msg messageBytes) handleNewMessage(requester string) {
 	// Save message to database ensuring user is registered to room.
 	registeredUsers, err := newMessage.SaveMessageContent()
 	if err != nil {
-		log.Println("Error saving msg to db", err, requester)
+		log.Println("Error saving msg to db", err, author)
 		return
 	}
 
@@ -150,15 +138,12 @@ func (msg messageBytes) handleNewMessage(requester string) {
 
 	// Message is sent back to all online users including sender.
 	for _, registeredUser := range registeredUsers {
-		if HubConstruct.Users[registeredUser] != nil {
-			m := WSMessage{jsonContent, registeredUser}
-			HubConstruct.Broadcast <- m
-		}
+		HubConstruct.sendMessage(jsonContent, registeredUser)
 	}
 }
 
 // handleExitRoom exits requesters joined room and also notifies all room users.
-func (msg messageBytes) handleExitRoom(requester string) {
+func (msg messageBytes) handleExitRoom(author string) {
 	data := struct {
 		Email  string `json:"email"`
 		RoomID string `json:"roomID"`
@@ -169,7 +154,7 @@ func (msg messageBytes) handleExitRoom(requester string) {
 		return
 	}
 
-	if requester != data.Email {
+	if author != data.Email {
 		return
 	}
 
@@ -182,16 +167,10 @@ func (msg messageBytes) handleExitRoom(requester string) {
 
 	// Broadcast to all online users of a room exit.
 	for _, registeredUser := range registeredUsers {
-		if HubConstruct.Users[registeredUser] != nil {
-			m := WSMessage{msg, registeredUser}
-			HubConstruct.Broadcast <- m
-		}
+		HubConstruct.sendMessage(msg, registeredUser)
 	}
 
-	if HubConstruct.Users[requester] != nil {
-		m := WSMessage{msg, requester}
-		HubConstruct.Broadcast <- m
-	}
+	HubConstruct.sendMessage(msg, author)
 }
 
 // handleNewFileUpload creates a new file content in database.
@@ -239,10 +218,7 @@ func (msg messageBytes) handleNewFileUpload() {
 		return
 	}
 
-	if HubConstruct.Users[user] != nil {
-		m := WSMessage{jsonContent, file.User}
-		HubConstruct.Broadcast <- m
-	}
+	HubConstruct.sendMessage(jsonContent, user)
 }
 
 func (msg messageBytes) handleUploadFileChunk() {
@@ -296,10 +272,7 @@ func (msg messageBytes) handleUploadFileChunk() {
 			return
 		}
 
-		if HubConstruct.Users[data.User] != nil {
-			m := WSMessage{jsonContent, data.User}
-			HubConstruct.Broadcast <- m
-		}
+		HubConstruct.sendMessage(jsonContent, data.User)
 
 		return
 	}
@@ -320,10 +293,7 @@ func (msg messageBytes) handleUploadFileChunk() {
 		return
 	}
 
-	if HubConstruct.Users[userID] != nil {
-		m := WSMessage{jsonContent, userID}
-		HubConstruct.Broadcast <- m
-	}
+	HubConstruct.sendMessage(jsonContent, userID)
 }
 
 // handleUploadFileUploadComplete is called when file chunk uploads is complete.
@@ -372,14 +342,11 @@ func (msg messageBytes) handleUploadFileUploadComplete() {
 			continue
 		}
 
-		if HubConstruct.Users[roomUser] != nil {
-			m := WSMessage{jsonContent, roomUser}
-			HubConstruct.Broadcast <- m
-		}
+		HubConstruct.sendMessage(jsonContent, roomUser)
 	}
 }
 
-func (msg messageBytes) handleRequestDownload(requester string) {
+func (msg messageBytes) handleRequestDownload(author string) {
 	file := File{}
 	if err := json.Unmarshal(msg, &file); err != nil {
 		log.Println(err)
@@ -398,13 +365,10 @@ func (msg messageBytes) handleRequestDownload(requester string) {
 		log.Println(err)
 	}
 
-	if HubConstruct.Users[requester] != nil {
-		m := WSMessage{jsonContent, requester}
-		HubConstruct.Broadcast <- m
-	}
+	HubConstruct.sendMessage(jsonContent, author)
 }
 
-func (msg messageBytes) handleFileDownload(requester string) {
+func (msg messageBytes) handleFileDownload(author string) {
 	file := FileChunks{}
 	if err := json.Unmarshal(msg, &file); err != nil {
 		log.Println(err)
@@ -429,10 +393,7 @@ func (msg messageBytes) handleFileDownload(requester string) {
 		log.Println(err)
 	}
 
-	if HubConstruct.Users[requester] != nil {
-		m := WSMessage{jsonContent, requester}
-		HubConstruct.Broadcast <- m
-	}
+	HubConstruct.sendMessage(jsonContent, author)
 }
 
 // handleSearchUser returns registered users that match searchText.
@@ -451,14 +412,11 @@ func handleSearchUser(searchText, user string) {
 		return
 	}
 
-	if HubConstruct.Users[user] != nil {
-		m := WSMessage{jsonContent, user}
-		HubConstruct.Broadcast <- m
-	}
+	HubConstruct.sendMessage(jsonContent, user)
 }
 
 // handleRequestAllMessages coallates all messages in a particular room.
-func handleRequestAllMessages(roomID, requester string) {
+func handleRequestAllMessages(roomID, author string) {
 	room := Room{RoomID: roomID}
 	if err := room.GetAllMessageInRoom(); err != nil {
 		log.Println("could not get all messages in room, err:", err)
@@ -487,14 +445,7 @@ func handleRequestAllMessages(roomID, requester string) {
 		return
 	}
 
-	// TODO: There's a check to see if user is truly online,
-	// before sending broadcast this is to reduce the number
-	// of requests to HUB worker.
-	// We can remove this per if we increase number of worker.
-	if HubConstruct.Users[requester] != nil {
-		m := WSMessage{jsonContent, requester}
-		HubConstruct.Broadcast <- m
-	}
+	HubConstruct.sendMessage(jsonContent, author)
 }
 
 // handleLoadUserContent loads all users contents on page load.
@@ -513,13 +464,14 @@ func handleLoadUserContent(email string) {
 	}
 
 	if data, err := json.Marshal(request); err == nil && HubConstruct.Users[email] != nil {
-		m := WSMessage{data, email}
-		HubConstruct.Broadcast <- m
+		HubConstruct.sendMessage(data, email)
 	}
 }
 
-// broadcastOnlineStatusToAllUserRoom broadcasts users availability
-// status to all users joined rooms. Status are broadcasted timely.
+// broadcastOnlineStatusToAllUserRoom broadcasts users availability status to all users joined rooms.
+// Status are broadcasted timely.
+// Since we are calling broadcastOnlineStatusToAllUserRoom from HubRun, we should call it in a goroutine so as
+// not to block the hub channel
 func broadcastOnlineStatusToAllUserRoom(userEmail string, online bool) {
 	user := User{Email: userEmail}
 	associates, err := user.GetAllUsersAssociates()
@@ -541,11 +493,7 @@ func broadcastOnlineStatusToAllUserRoom(userEmail string, online bool) {
 		}
 
 		if data, err := json.Marshal(msg); err == nil {
-			m := WSMessage{data, assassociateEmail}
-			// Since we are calling broadcastOnlineStatusToAllUserRoom
-			// from HubRun, we should call it in a goroutine so as
-			// not to block the hub channel
-			HubConstruct.Broadcast <- m
+			HubConstruct.sendMessage(data, assassociateEmail)
 		}
 	}
 }

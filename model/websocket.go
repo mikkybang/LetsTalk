@@ -79,6 +79,13 @@ func (h *Hub) Run() {
 	}
 }
 
+func (h *Hub) sendMessage(msg []byte, user string) {
+	if HubConstruct.Users[user] != nil {
+		m := WSMessage{msg, user}
+		HubConstruct.Broadcast <- m
+	}
+}
+
 // WritePump pumps messages from the hub to the websocket connection.
 func (s *Subscription) WritePump() {
 	c := s.Conn
