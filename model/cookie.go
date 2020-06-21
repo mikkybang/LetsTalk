@@ -29,10 +29,12 @@ func (b CookieDetail) CreateCookie(w http.ResponseWriter) error {
 		return err
 	}
 	cookie := &http.Cookie{
-		Name:    b.CookieName,
-		Value:   encoded,
-		Expires: exitTime,
-		Path:    b.Path,
+		Name:     b.CookieName,
+		Value:    encoded,
+		Expires:  exitTime,
+		SameSite: http.SameSiteStrictMode,
+		Secure:   true,
+		Path:     b.Path,
 	}
 
 	http.SetCookie(w, cookie)
