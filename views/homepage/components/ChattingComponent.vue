@@ -122,6 +122,19 @@
                 </v-card>
               </div>
 
+              <div align="center" justify="center" v-if="chat['type']==='classSession'">
+                <v-card tile class="justify-center" outlined>
+                  <v-card-text>
+                    {{chat['userID']}} wants you to join a class session
+                    <v-btn
+                      text
+                      color="green"
+                      @click="joinClassSession(chat.fileHash)"
+                    >Click Here To Join</v-btn>
+                  </v-card-text>
+                </v-card>
+              </div>
+
               <div
                 :align="chat.userID==='(%.Email%)' ? 'right' : 'left'"
                 justify="center"

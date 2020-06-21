@@ -59,7 +59,7 @@
           <v-icon>{{videoIcon}}</v-icon>
         </v-btn>
 
-        <v-btn class="ml-2" color="red" small fab dark @click="requestFullScreen()">
+        <v-btn class="ml-2" color="red" small fab dark @click="endCall()">
           <v-icon>mdi-phone-hangup</v-icon>
         </v-btn>
 

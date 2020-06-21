@@ -336,16 +336,15 @@
                     startClassVideoSession()
                 },
 
-                joinClassSession: function () {
+                joinClassSession: function (sessionID) {
                     vueComponent.callSession = true
                     vueComponent.isPublisher = false
                     joinClassSession()
                 },
 
                 sendMessage: function () {
-                    if (!this.messageContent.match(/\S/)) {
+                    if (!this.messageContent.match(/\S/))
                         return
-                    }
 
                     // Send file if indicated.
                     if (vueComponent.fileContent !== null && vueComponent.fileContent.name === this.messageContent) {
@@ -593,8 +592,9 @@
                 expand: false,
                 mini: true,
 
-                callerNameInitials: "MU",
-                callerNames: "Michael Uti",
+                callerNameInitials: "",
+                callerNames: '(%.Name %)',
+                videoCallData: {},
                 isPublisher: false,
                 callSession: false,
             },
@@ -759,6 +759,26 @@
                     vueComponent.downloadInfo[id].downloading = false;
                     Vue.set(vueComponent.currentChatContent, 0, vueComponent.currentChatContent[0]);
                     break
+
+                case "StartClassSession":
+                    // Create a session description if you are the author else view in room.
+                    if (jsonContent.userID === vueComponent.userID) {
+                        try {
+                            peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: jsonContent.sdp }))
+                        } catch (e) {
+                            console.log(e)
+                            // ToDo: Have a popup that shows error.
+                        }
+
+                    } else if (jsonContent.roomID === vueComponent.currentViewedRoomID) {
+                        vueComponent.currentChatContent.push({
+                            "type": "classSession",
+                            "userID": jsonContent.userID,
+                            "fileHash": jsonContent.sessionID, // FileHash represents the sdp.
+                        })
+                    }
+
+                    break
             }
         };
     </script>
@@ -775,7 +795,21 @@
         var stream
 
         var startClassVideoSession = function () {
-            onIceConnection("Create Session")
+            peerConnection = new RTCPeerConnection({
+                iceServers: [
+                    {
+                        urls: 'stun:stun.l.google.com:19302'
+                    }
+                ]
+            })
+
+            var str = vueComponent.callerNames.split(' ')
+            vueComponent.callerNameInitials = ''
+            for (var i = 0; i < str.length; i++)
+                if (str[i].length > 0)
+                    vueComponent.callerNameInitials += str[i][0]
+
+            onIceConnection("StartClassSession")
 
             var mediaConstraints = { video: { width: { max: 640 }, height: { max: 480 } }, audio: true }
 
@@ -784,8 +818,11 @@
                 peerConnection.addTransceiver(stream.getAudioTracks()[0], { streams: [stream] })
                 peerConnection.addTransceiver(stream.getVideoTracks()[0], { streams: [stream] })
 
-                stream.removeTrack(stream.getAudioTracks()[0])
+                // stream.removeTrack(stream.getAudioTracks()[0])
                 document.getElementById("videoID").srcObject = stream
+                peerConnection.createOffer()
+                    .then(d => peerConnection.setLocalDescription(d))
+                    .catch(log => console.log(log))
             })
 
             // ToDo: I passed transceiver so that I can get stream content.
@@ -798,7 +835,15 @@
         }
 
         var joinClassSession = function () {
-            onIceConnection("Join Session")
+            peerConnection = new RTCPeerConnection({
+                iceServers: [
+                    {
+                        urls: 'stun:stun.l.google.com:19302'
+                    }
+                ]
+            })
+
+            onIceConnection("JoinClassSession")
 
             peerConnection.addTransceiver('video', { direction: "recvonly" })
 
@@ -828,7 +873,7 @@
             var tracks = stream.getAudioTracks()
             removeTrack(tracks)
 
-            var tracks = stream.getVideoTracks()
+            tracks = stream.getVideoTracks()
             removeTrack(tracks)
             peerConnection.close()
         }
@@ -908,11 +953,10 @@
                 if (event.candidate === null) {
                     console.log(peerConnection.localDescription.sdp);
                     var message = {
-                        "msgType": "ClassCallSession",
+                        "msgType": sessionType,
                         "sdp": peerConnection.localDescription.sdp,
-                        "session_type": sessionType,
                         "roomID": vueComponent.currentViewedRoomID,
-                        "Author": vueComponent.userID,
+                        "userID": vueComponent.userID,
                     }
 
                     socket.send(JSON.stringify(message));
@@ -966,6 +1010,7 @@
                         'msgType': 'RequestAllMessages',
                         "roomID": vueComponent.currentViewedRoomID,
                     }
+
                     socket.send(JSON.stringify(message))
                 }
             };
