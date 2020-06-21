@@ -153,6 +153,8 @@ type Hub struct {
 // If publisher logs off, all peer connections related to that room is closed.
 // Mutexes is integrated with video, audio and peerconnections to ensure data race free.
 type classSessionPeerConnections struct {
+	api *webrtc.API
+
 	publisherVideoTracks  map[string]*webrtc.Track // mapped sessionID to track
 	publisherTrackMutexes *sync.Mutex
 
@@ -169,7 +171,7 @@ type classSessionPeerConnections struct {
 type sdpConstruct struct {
 	MsgType        string `json:"msgType"`
 	ClassSessionID string `json:"sessionID"`
-	Author         string `json:"author"`
+	Author         string `json:"userID"`
 	RoomID         string `json:"roomID"`
 	SDP            string `json:"sdp"`
 	ErrorDetails   string `json:"errorDetails"`

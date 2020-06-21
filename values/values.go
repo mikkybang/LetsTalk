@@ -31,6 +31,8 @@ const (
 	DownloadFileChunkMsgType   = "DownloadFileChunk"
 	DownloadFileErrorMsgType   = "DownloadFileError"   // DownloadFileErrorMsgType is sent to client only.
 	DownloadFileSuccessMsgType = "DownloadFileSuccess" // DownloadFileSuccessMsgType is sent to client only.
+
+	StartClassSession = "StartClassSession"
 )
 
 var (

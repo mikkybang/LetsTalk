@@ -196,6 +196,9 @@ func (s Subscription) ReadPump(user string) {
 		case values.DownloadFileChunkMsgType:
 			msg.handleFileDownload(user)
 
+		case values.StartClassSession:
+			classSessions.startClassSession(msg)
+
 		case values.NewMessageMsgType:
 			msg.handleNewMessage(user)
 

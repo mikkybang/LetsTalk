@@ -15,19 +15,31 @@ import (
 	"github.com/pion/webrtc/v2"
 )
 
-var classSessions = classSessionPeerConnections{
-	publisherVideoTracks:  make(map[string]*webrtc.Track),
-	publisherTrackMutexes: &sync.Mutex{},
+func init() {
+	var m = webrtc.MediaEngine{}
+	// Setup the codecs you want to use.
+	m.RegisterCodec(webrtc.NewRTPVP8Codec(webrtc.DefaultPayloadTypeVP8, 90000))
+	m.RegisterCodec(webrtc.NewRTPOpusCodec(webrtc.DefaultPayloadTypeOpus, 48000))
 
-	audioTracks:       make(map[string][]*webrtc.Track),
-	audioTrackMutexes: &sync.Mutex{},
-
-	peerConnection:        make(map[string]*webrtc.PeerConnection),
-	peerConnectionMutexes: &sync.Mutex{},
-
-	publisher:      make(map[string][]string),
-	publisherMutex: &sync.Mutex{},
+	classSessions.api = webrtc.NewAPI(webrtc.WithMediaEngine(m))
 }
+
+var (
+	// Create a MediaEngine object to configure the supported codec
+	classSessions = classSessionPeerConnections{
+		publisherVideoTracks:  make(map[string]*webrtc.Track),
+		publisherTrackMutexes: &sync.Mutex{},
+
+		audioTracks:       make(map[string][]*webrtc.Track),
+		audioTrackMutexes: &sync.Mutex{},
+
+		peerConnection:        make(map[string]*webrtc.PeerConnection),
+		peerConnectionMutexes: &sync.Mutex{},
+
+		publisher:      make(map[string][]string),
+		publisherMutex: &sync.Mutex{},
+	}
+)
 
 func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 	sdp := sdpConstruct{}
@@ -45,7 +57,7 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 
 	s.peerConnectionMutexes.Lock()
 	var err error
-	s.peerConnection[sdp.Author], err = webrtc.NewPeerConnection(values.PeerConnectionConfig)
+	s.peerConnection[sdp.Author], err = classSessions.api.NewPeerConnection(values.PeerConnectionConfig)
 	if err != nil {
 		// Send back a class session error back to user
 		return
@@ -66,13 +78,12 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 
 	s.peerConnection[sdp.Author].OnConnectionStateChange(func(cc webrtc.PeerConnectionState) {
 		fmt.Printf("PeerConnection State has changed %s \n", cc.String())
-		if cc == webrtc.PeerConnectionStateFailed || cc == webrtc.PeerConnectionStateClosed {
+		if cc == webrtc.PeerConnectionStateFailed {
 			// Since this is the publisher, all video and audio tracks related to the user
 			// should be cleared and all peer connections closed.
 			// Note: We should check if audio track is nil BEFORE creating a peerconnection
 			// when joining session.
 			s.peerConnectionMutexes.Lock()
-			s.peerConnection[sessionID].Close()
 			for _, user := range s.publisher[sessionID] {
 				if s.peerConnection[user].ConnectionState() != webrtc.PeerConnectionStateClosed {
 					s.peerConnection[user].Close()
@@ -82,6 +93,7 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 			}
 
 			s.publisherMutex.Lock()
+
 			delete(s.publisher, sessionID)
 			s.publisherMutex.Unlock()
 
@@ -95,6 +107,14 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 
 			s.peerConnectionMutexes.Unlock()
 		}
+	})
+
+	s.peerConnection[sdp.Author].OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
+		fmt.Printf("Connection State has changed %s \n", connectionState.String())
+	})
+
+	s.peerConnection[sdp.Author].OnSignalingStateChange(func(cc webrtc.SignalingState) {
+		fmt.Println("singaling", cc.String())
 	})
 
 	s.peerConnection[sdp.Author].OnTrack(func(remoteTrack *webrtc.Track, receiver *webrtc.RTPReceiver) {
@@ -141,9 +161,8 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 					log.Println("publisher video packet writed break", err)
 					break
 				}
-
-				log.Println("Publisher video track exited")
 			}
+			log.Println("Publisher video track exited")
 
 		} else {
 			audioTrack, err := s.peerConnection[sdp.Author].NewTrack(remoteTrack.PayloadType(), remoteTrack.SSRC(), sessionID, sdp.Author)
@@ -204,9 +223,8 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 	// Send back answer SDP to client and also class notification to all users in room.
 	roomUsers, err := Message{
 		RoomID:   sdp.RoomID,
-		UserID:   sdp.ClassSessionID,
-		Name:     sdp.Author,
-		Type:     "info",
+		UserID:   sdp.Author,
+		Type:     "classSession",
 		FileHash: sdp.SDP,
 	}.SaveMessageContent()
 
