@@ -20,7 +20,7 @@
     <div id="app">
         <v-app>
             <v-main>
-                <template v-if="call_session===false">
+                <template v-if="callSession===false">
                     <template v-if=" $vuetify.breakpoint.smAndDown">
                         <v-row style="height: 100%;" no-gutters>
                             <v-col cols="auto">
@@ -164,7 +164,7 @@
                 </template>
 
                 <template v-else>
-                    <call-ui :caller_names="caller_names" :caller_name_initials="caller_name_initials" />
+                    <call-ui :caller_names="callerNames" :caller_name_initials="callerNameInitials" />
                 </template>
             </v-main>
         </v-app>
@@ -184,81 +184,81 @@
 
             data: function () {
                 return {
-                    show_video_options: true,
-                    audio_on: true,
-                    video_on: true,
-                    full_screen: false,
-                    is_desktop_shared: false,
+                    showVideoOptions: true,
+                    audioOn: true,
+                    videoOn: true,
+                    fullScreen: false,
+                    isDesktopShared: false,
 
-                    video_icon: "mdi-video",
-                    audio_icon: "mdi-microphone",
-                    screen_mode: "mdi-fullscreen",
+                    videoIcon: "mdi-video",
+                    audioIcon: "mdi-microphone",
+                    screenMode: "mdi-fullscreen",
                 }
             },
 
             methods: {
-                end_call: function () {
-                    this.full_screen = false
-                    this.is_desktop_shared = false
-                    this.audio_on = true
-                    this.video_on = true
+                endCall: function () {
+                    this.fullScreen = false
+                    this.isDesktopShared = false
+                    this.audioOn = true
+                    this.videoOn = true
 
-                    this.video_icon = "mdi-video"
-                    this.audio_icon = "mdi-microphone"
-                    this.screen_mode = "mdi-fullscreen"
+                    this.videoIcon = "mdi-video"
+                    this.audioIcon = "mdi-microphone"
+                    this.screenMode = "mdi-fullscreen"
 
-                    vueComponent.call_session = false
-                    end_class_session(vueComponent.currentViewedRoomID)
+                    vueComponent.callSession = false
+                    endClassSession(vueComponent.currentViewedRoomID)
                 },
 
 
-                request_full_screen: function () {
+                requestFullScreen: function () {
                     if (!document.fullscreenElement) {
                         document.documentElement.requestFullscreen();
                     } else if (document.exitFullscreen) {
                         document.exitFullscreen();
                     }
 
-                    this.full_screen = !this.full_screen
+                    this.fullScreen = !this.fullScreen
                 },
 
-                change_audio_status: function () {
-                    if (this.audio_on) {
-                        this.audio_icon = 'mdi-microphone-off'
+                changeAudioStatus: function () {
+                    if (this.audioOn) {
+                        this.audioIcon = 'mdi-microphone-off'
                     } else {
-                        this.audio_icon = 'mdi-microphone'
+                        this.audioIcon = 'mdi-microphone'
                     }
 
-                    this.audio_on = !this.audio_on
-                    change_audio(this.audio_on)
+                    this.audioOn = !this.audioOn
+                    changeAudio(this.audioOn)
                 },
 
-                change_video_status: function () {
-                    if (this.video_on) {
-                        this.video_icon = 'mdi-video-off'
-                        this.is_desktop_shared = false
+                changeVideoStatus: function () {
+                    if (this.videoOn) {
+                        this.videoIcon = 'mdi-video-off'
+                        this.isDesktopShared = false
                     } else {
-                        this.video_icon = 'mdi-video'
+                        this.videoIcon = 'mdi-video'
                     }
 
-                    this.video_on = !this.video_on
-                    change_video(this.video_on)
+                    this.videoOn = !this.videoOn
+                    changeVideo(this.videoOn)
                 },
 
-                desktop_share: function () {
+                desktopShare: function () {
                     // Do not enable screen share if video is disabled.
-                    if (!this.video_on) {
+                    if (!this.videoOn) {
                         return
                     }
 
                     console.log("Starting desktop share")
-                    if (!this.is_desktop_shared) {
-                        start_desktop_sharing()
+                    if (!this.isDesktopShared) {
+                        startDesktopSharing()
                     } else {
-                        stop_desktop_sharing()
+                        startDesktopSharing()
                     }
 
-                    this.is_desktop_shared = !this.is_desktop_shared
+                    this.isDesktopShared = !this.isDesktopShared
                 }
             },
 
@@ -323,16 +323,23 @@
                     messageContent: '',
                     searchUserTextValue: '',
                     searchText: '',
-                    uuid: ''.concat("(%.UUID %)"),
-                    userID: ''.concat('(%.Email %)'),
-                    userName: ''.concat('(%.Name %)'),
+                    uuid: '(%.UUID %)',
+                    userID: '(%.Email %)',
+                    userName: '(%.Name %)',
                 }
             },
 
             methods: {
-                start_class_session: function () {
-                    vueComponent.call_session = true
-                    start_class_video_session(vueComponent.currentViewedRoomID)
+                startClassSession: function () {
+                    vueComponent.callSession = true
+                    vueComponent.isPublisher = true
+                    startClassVideoSession()
+                },
+
+                joinClassSession: function () {
+                    vueComponent.callSession = true
+                    vueComponent.isPublisher = false
+                    joinClassSession()
                 },
 
                 sendMessage: function () {
@@ -582,14 +589,14 @@
                 fileContent: null,
 
                 drawer: false,
-                call_session: false,
                 socketClosed: false,
                 expand: false,
                 mini: true,
 
-                caller_name_initials: "MU",
-                caller_names: "Michael Uti",
-
+                callerNameInitials: "MU",
+                callerNames: "Michael Uti",
+                isPublisher: false,
+                callSession: false,
             },
 
             methods: {
@@ -757,7 +764,7 @@
     </script>
 
     <script>
-        var peer_connection = new RTCPeerConnection({
+        var peerConnection = new RTCPeerConnection({
             iceServers: [
                 {
                     urls: 'stun:stun.l.google.com:19302'
@@ -767,144 +774,143 @@
 
         var stream
 
-        var start_class_video_session = function (publisher, room_ID) {
-            on_ice_connection("Create Session")
+        var startClassVideoSession = function () {
+            onIceConnection("Create Session")
 
-            var media_constraints = { video: { width: { max: 640 }, height: { max: 480 } }, audio: true }
-            get_user_media(media_constraints, function (e) {
+            var mediaConstraints = { video: { width: { max: 640 }, height: { max: 480 } }, audio: true }
+
+            getUserMedia(mediaConstraints, function (e) {
                 stream = e
-                peer_connection.addTransceiver(stream.getAudioTracks()[0], { streams: [stream] })
-                peer_connection.addTransceiver(stream.getVideoTracks()[0], { streams: [stream] })
+                peerConnection.addTransceiver(stream.getAudioTracks()[0], { streams: [stream] })
+                peerConnection.addTransceiver(stream.getVideoTracks()[0], { streams: [stream] })
 
-                stream.removeTrack(stream.getVideoTracks()[0])
+                stream.removeTrack(stream.getAudioTracks()[0])
                 document.getElementById("videoID").srcObject = stream
             })
 
             // ToDo: I passed transceiver so that I can get stream content.
             // We can later add features to both use desktop and webcam sharing at same time.
             // ToDo: Detect if webcam is disable and show caller initials.
-            peer_connection.ontrack = function ({ transceiver, streams: [event] }) {
+            peerConnection.ontrack = function ({ transceiver, streams: [event] }) {
                 console.log(transceiver)
                 document.getElementById('video1').srcObject = event
             }
         }
 
-        var join_class_session = function (room_ID) {
-            on_ice_connection("Join Session")
+        var joinClassSession = function () {
+            onIceConnection("Join Session")
 
-            peer_connection.addTransceiver('video', { direction: "recvonly" })
+            peerConnection.addTransceiver('video', { direction: "recvonly" })
 
-            var on_media = function (e) {
+            var onMedia = function (e) {
                 stream = e
                 console.log(stream)
                 document.getElementById("videoID").srcObject = stream
 
-                peer_connection.addTransceiver(stream.getAudioTracks()[0], { streams: [stream], direction: "sendrecv" })
+                peerConnection.addTransceiver(stream.getAudioTracks()[0], { streams: [stream], direction: "sendrecv" })
 
-                peer_connection.createOffer()
-                    .then(d => peer_connection.setLocalDescription(d))
+                peerConnection.createOffer()
+                    .then(d => peerConnection.setLocalDescription(d))
                     .catch(log => console.log(log))
             }
 
-            var media_constraints = { video: { width: { max: 640 }, height: { max: 480 } }, audio: true }
+            var mediaConstraints = { video: { width: { max: 640 }, height: { max: 480 } }, audio: true }
 
-            get_user_media(media_constraints, on_media)
+            getUserMedia(mediaConstraints, onMedia)
 
-            peer_connection.ontrack = function ({ transceiver, streams: [event] }) {
+            peerConnection.ontrack = function ({ transceiver, streams: [event] }) {
                 console.log(transceiver)
                 document.getElementById('video1').srcObject = event
             }
         }
 
-        var end_class_session = function (room_ID) {
+        var endClassSession = function (room_ID) {
             var tracks = stream.getAudioTracks()
-            remove_track(tracks)
+            removeTrack(tracks)
 
             var tracks = stream.getVideoTracks()
-            remove_track(tracks)
-            peer_connection.close()
+            removeTrack(tracks)
+            peerConnection.close()
         }
 
-        var start_desktop_sharing = function () {
-            var media_constraints = { video: true, audio: true }
+        var startDesktopSharing = function () {
+            var mediaConstraints = { video: true }
 
-            navigator.mediaDevices.getDisplayMedia(media_constraints)
+            navigator.mediaDevices.getDisplayMedia(mediaConstraints)
                 .then(function (e) {
                     var tracks = stream.getVideoTracks()
-                    remove_track(tracks)
+                    removeTrack(tracks)
 
                     tracks = e.getVideoTracks()
-                    add_track(tracks)
+                    addTrack(tracks)
                 })
                 .catch(function (error) {
                     console.log(error)
                 })
         }
 
-        var stop_desktop_sharing = function () {
-            var media_constraints = { video: { width: { max: 640 }, height: { max: 480 } }, audio: true }
+        var stopDesktopSharing = function () {
+            var mediaConstraints = { video: { width: { max: 640 }, height: { max: 480 } }, audio: true }
 
-            var on_media = function (e) {
+            var onMedia = function (e) {
                 var tracks = stream.getAudioTracks()
-                remove_track(tracks)
+                removeTrack(tracks)
 
                 tracks = stream.getVideoTracks()
-                remove_track(tracks)
+                removeTrack(tracks)
 
                 var tracks = e.getAudioTracks()
-                add_track(tracks)
+                addTrack(tracks)
 
                 tracks = e.getVideoTracks()
-                add_track(tracks)
+                addTrack(tracks)
             }
 
-            get_user_media(media_constraints, on_media)
+            getUserMedia(mediaConstraints, onMedia)
         }
 
-        var change_audio = function (start_audio) {
+        var changeAudio = function (start_audio) {
             if (!start_audio) {
                 var tracks = stream.getAudioTracks()
-                remove_track(tracks)
+                removeTrack(tracks)
 
                 return
             }
 
-            var on_media = function (e) {
+            var onMedia = function (e) {
                 var tracks = e.getAudioTracks()
-                add_track(tracks)
+                addTrack(tracks)
             }
 
-            var media_constraints = { audio: true }
-
-            get_user_media({ audio: true, video: false }, on_media)
+            getUserMedia({ audio: true, video: false }, onMedia)
         }
 
-        var change_video = function (start_video) {
-            if (!start_video) {
+        var changeVideo = function (startVideo) {
+            if (!startVideo) {
                 var tracks = stream.getVideoTracks()
-                remove_track(tracks)
+                removeTrack(tracks)
 
                 return
             }
 
-            var on_media = function (e) {
+            var onMedia = function (e) {
                 var tracks = e.getVideoTracks()
-                add_track(tracks)
+                addTrack(tracks)
                 document.getElementById("videoID").srcObject = stream
             }
 
-            get_user_media({ audio: false, video: true }, on_media)
+            getUserMedia({ audio: false, video: true }, onMedia)
         }
 
-        var on_ice_connection = function (session_type) {
-            peer_connection.oniceconnectionstatechange = e => console.log(peer_connection.iceConnectionState)
-            peer_connection.onicecandidate = event => {
+        var onIceConnection = function (sessionType) {
+            peerConnection.oniceconnectionstatechange = e => console.log(peerConnection.iceConnectionState)
+            peerConnection.onicecandidate = event => {
                 if (event.candidate === null) {
-                    console.log(peer_connection.localDescription.sdp);
+                    console.log(peerConnection.localDescription.sdp);
                     var message = {
                         "msgType": "ClassCallSession",
-                        "sdp": peer_connection.localDescription.sdp,
-                        "session_type": session_type,
+                        "sdp": peerConnection.localDescription.sdp,
+                        "session_type": sessionType,
                         "roomID": vueComponent.currentViewedRoomID,
                         "Author": vueComponent.userID,
                     }
@@ -914,25 +920,25 @@
             }
         }
 
-        var get_user_media = function (media_options, on_media) {
-            navigator.mediaDevices.getUserMedia(media_options)
+        var getUserMedia = function (mediaOptions, onMedia) {
+            navigator.mediaDevices.getUserMedia(mediaOptions)
                 .then(function (e) {
                     e.getTracks()
-                    on_media(e)
+                    onMedia(e)
                 })
                 .catch(function (error) {
                     console.log("something bad happened", error);
                 })
         }
 
-        var remove_track = function (tracks) {
+        var removeTrack = function (tracks) {
             for (var i = 0; i < tracks.length; i++) {
                 tracks[0].stop()
                 stream.removeTrack(tracks[i])
             }
         }
 
-        var add_track = function (tracks) {
+        var addTrack = function (tracks) {
             for (var i = 0; i < tracks.length; i++) {
                 stream.addTrack(tracks[i])
             }
