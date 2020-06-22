@@ -1,6 +1,8 @@
 package model
 
 import (
+	"time"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -9,7 +11,14 @@ type CookieDetail struct {
 	Collection string
 	CookieName string
 	Path       string
-	Data       map[string]interface{}
+	Data       CookieData
+}
+
+type CookieData struct {
+	ExitTime time.Time
+	UUID     string
+	Email    string
+	Super    bool
 }
 
 type User struct {
@@ -56,6 +65,8 @@ type Room struct {
 type Message struct {
 	RoomID      string `bson:"-" json:"roomID"`
 	Message     string `bson:"message" json:"message"`
+	FileSize    string `bson:"fileSize,omitempty" json:"fileSize,omitempty"`
+	FileHash    string `bson:"fileHash,omitempty" json:"fileHash,omitempty"`
 	UserID      string `bson:"userID" json:"userID"`
 	Name        string `bson:"name" json:"name"`
 	Index       int    `bson:"index" json:"index"`
@@ -78,10 +89,24 @@ type NewRoomRequest struct {
 	MessageType string `bson:"-" json:"msgType"`
 }
 
-// FileType save files separately and make sure they are distinct
-type FileType struct {
-	Downloaded bool   `bson:"downloaded" json:"downloaded"`
-	Sha256     string `bson:"_id" json:"sha256"`
+// File save files making sure they are distinct
+type File struct {
+	MsgType        string `bson:"-" json:"msgType,omitempty"`
+	UniqueFileHash string `bson:"_id" json:"fileHash"`
+	FileName       string `bson:"fileName" json:"fileName"`
+	User           string `bson:"userID" json:"userID"`
+	FileSize       string `bson:"fileSize" json:"fileSize"`
+	FileType       string `bson:"fileType" json:"fileType"`
+	Chunks         int    `bson:"chunks,omitempty" json:"chunks"`
+}
+
+type FileChunks struct {
+	MsgType            string `bson:"-" json:"msgType,omitempty"`
+	FileName           string `bson:"-" json:"fileName,omitempty"`
+	UniqueFileHash     string `bson:"_id" json:"fileHash,omitempty"`
+	CompressedFileHash string `bson:"compressedFileHash" json:"compressedFileHash,omitempty"`
+	FileBinary         string `bson:"fileChunk" json:"fileChunk,omitempty"`
+	ChunkIndex         int    `bson:"chunkIndex" json:"chunkIndex"`
 }
 
 type WSMessage struct {
@@ -94,16 +119,14 @@ type Subscription struct {
 	User string
 }
 
-// connection is an middleman between the websocket connection and the hub.
+// Connection is an middleman between the websocket connection and the hub.
 type Connection struct {
-	// The websocket connection.
 	WS *websocket.Conn
 
-	// Buffered channel of outbound messages.
 	Send chan []byte
 }
 
-// hub maintains the set of active connections and broadcasts messages to the
+// Hub maintains the set of active connections and broadcasts messages to the
 // connections.
 type Hub struct {
 	// Registered connections.

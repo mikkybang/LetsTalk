@@ -1,16 +1,20 @@
 package model
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 
 	"github.com/metaclips/LetsTalk/values"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type messageBytes []byte
 
+// handleCreateNewRoom creates a new room for user.
 func (msg messageBytes) handleCreateNewRoom() {
 	var newRoom NewRoomRequest
 	if err := json.Unmarshal(msg, &newRoom); err != nil {
@@ -32,14 +36,16 @@ func (msg messageBytes) handleCreateNewRoom() {
 		MessageType: "UserJoinedRoom",
 	}
 
-	jsonByte, err := json.Marshal(userJoinedMessage)
+	jsonContent, err := json.Marshal(userJoinedMessage)
 	if err != nil {
 		log.Println("Could not marshal to jsonByte while creating room", err.Error())
 		return
 	}
 
-	m := WSMessage{jsonByte, newRoom.Email}
-	HubConstruct.Broadcast <- m
+	if HubConstruct.Users[newRoom.Email] != nil {
+		m := WSMessage{jsonContent, newRoom.Email}
+		HubConstruct.Broadcast <- m
+	}
 }
 
 func (msg messageBytes) handleRequestUserToJoinRoom() {
@@ -56,13 +62,16 @@ func (msg messageBytes) handleRequestUserToJoinRoom() {
 			continue
 		}
 
-		data := map[string]interface{}{
-			"requesterID":   request.RequestingUserID,
-			"requesterName": request.RequestingUserName,
-			"userRequested": user,
-			"roomID":        request.RoomID,
-			"roomName":      request.RoomName,
-			"msgType":       "RequestUsersToJoinRoom",
+		data := struct {
+			RequesterID   string `json:"requesterID"`
+			RequesterName string `json:"requesterName"`
+			UserRequested string `json:"userRequested"`
+			RoomID        string `json:"roomID"`
+			RoomName      string `json:"roomName"`
+			MsgType       string `json:"msgType"`
+		}{
+			request.RequestingUserID, request.RequestingUserName,
+			user, request.RoomID, request.RoomName, "RequestUsersToJoinRoom",
 		}
 
 		jsonContent, err := json.Marshal(data)
@@ -79,11 +88,14 @@ func (msg messageBytes) handleRequestUserToJoinRoom() {
 			}
 		}
 
-		m := WSMessage{jsonContent, user}
-		HubConstruct.Broadcast <- m
+		if HubConstruct.Users[user] != nil {
+			m := WSMessage{jsonContent, user}
+			HubConstruct.Broadcast <- m
+		}
 	}
 }
 
+// handleUserAcceptRoomRequest accepts room join request.
 func (msg messageBytes) handleUserAcceptRoomRequest(joiner string) {
 	var roomRequest Joined
 	if err := json.Unmarshal(msg, &roomRequest); err != nil {
@@ -117,7 +129,7 @@ func (msg messageBytes) handleNewMessage(requester string) {
 		return
 	}
 
-	// Do not send if registered WS user is not same and message sender.
+	// Do not send if registered WS user is not same as message sender.
 	if requester != newMessage.UserID {
 		return
 	}
@@ -145,31 +157,24 @@ func (msg messageBytes) handleNewMessage(requester string) {
 	}
 }
 
+// handleExitRoom exits requesters joined room and also notifies all room users.
 func (msg messageBytes) handleExitRoom(requester string) {
-	data := make(map[string]interface{})
+	data := struct {
+		Email  string `json:"email"`
+		RoomID string `json:"roomID"`
+	}{}
+
 	if err := json.Unmarshal(msg, &data); err != nil {
 		log.Println("Could not retrieve json on exit room request", err)
 		return
 	}
 
-	email, ok := data["email"].(string)
-	if !ok {
-		log.Println("Could not retrieve required email to exit room")
+	if requester != data.Email {
 		return
 	}
 
-	roomID, ok := data["roomID"].(string)
-	if !ok {
-		log.Println("Could not retrieve required room ID to exit room")
-		return
-	}
-
-	if requester != email {
-		return
-	}
-
-	user := User{Email: email}
-	registeredUsers, err := user.ExitRoom(roomID)
+	user := User{Email: data.Email}
+	registeredUsers, err := user.ExitRoom(data.RoomID)
 	if err != nil {
 		log.Println("Error exiting room", err)
 		return
@@ -182,9 +187,277 @@ func (msg messageBytes) handleExitRoom(requester string) {
 			HubConstruct.Broadcast <- m
 		}
 	}
+
+	if HubConstruct.Users[requester] != nil {
+		m := WSMessage{msg, requester}
+		HubConstruct.Broadcast <- m
+	}
 }
 
-// handleRequestAllMessages coallates all messages in a particular room
+// handleNewFileUpload creates a new file content in database.
+// If file create is a success, a file upload success is sent to client to send next chunk.
+// next chunk could be the next preceding file chunk if another user has uploaded file content.
+// If file upload error, send back error message to user
+func (msg messageBytes) handleNewFileUpload() {
+	file := File{}
+	if err := json.Unmarshal(msg, &file); err != nil {
+		log.Println(err)
+		return
+	}
+
+	data := struct {
+		MsgType      string `json:"msgType"`
+		ErrorMessage string `json:"errorMsg,omitempty"`
+		RecentHash   string `json:"recentHash"`
+		FileName     string `json:"fileName,omitempty"`
+		Chunk        int    `json:"nextChunk"`
+	}{}
+
+	data.FileName = file.FileName
+	user := file.User
+
+	if err := file.UploadNewFile(); err == mongo.ErrNoDocuments || err == nil {
+		// Send next file chunk and current hash which is a "".
+		data.MsgType = values.UploadFileChunkMsgType
+
+		// Resume file chunk upload if Current chunk is greater than 0.
+		if file.Chunks > 0 {
+			data.Chunk = file.Chunks + 1
+		} else {
+			data.Chunk = file.Chunks
+		}
+
+	} else {
+		log.Println("Error on handle new file upload calling UploadNewFile", err)
+		data.ErrorMessage = values.ErrFileUpload.Error()
+		data.MsgType = values.UploadFileErrorMsgType
+	}
+
+	jsonContent, err := json.Marshal(&data)
+	if err != nil {
+		log.Println("Error sending marshalled ")
+		return
+	}
+
+	if HubConstruct.Users[user] != nil {
+		m := WSMessage{jsonContent, file.User}
+		HubConstruct.Broadcast <- m
+	}
+}
+
+func (msg messageBytes) handleUploadFileChunk() {
+	data := struct {
+		MsgType            string `json:"msgType"`
+		User               string `json:"userID"`
+		FileName           string `json:"fileName"`
+		File               string `json:"file,omitempty"`
+		NewChunkHash       string `json:"newChunkHash,omitempty"`
+		RecentChunkHash    string `json:"recentChunkHash,omitempty"`
+		ChunkIndex         int    `json:"chunkIndex,omitempty"`
+		NextChunk          int    `json:"nextChunk"`
+		CompressedFileHash string `json:"compressedFileHash"`
+	}{}
+
+	if err := json.Unmarshal(msg, &data); err != nil {
+		fmt.Println(string(msg))
+		log.Println(err)
+		return
+	}
+
+	file := FileChunks{
+		UniqueFileHash:     data.NewChunkHash,
+		FileBinary:         data.File,
+		ChunkIndex:         data.ChunkIndex,
+		CompressedFileHash: data.CompressedFileHash,
+	}
+
+	userID := data.User
+	var recentFileExist bool
+	// If file upload is a new file, set recent file exist as true.
+	if data.RecentChunkHash == "" {
+		recentFileExist = true
+	} else {
+		recentFileExist = FileChunks{UniqueFileHash: data.RecentChunkHash}.FileChunkExists()
+	}
+
+	data.RecentChunkHash, data.File, data.NewChunkHash = "", "", ""
+	data.NextChunk, data.ChunkIndex = 0, 0
+
+	fileHash := sha256.Sum256([]byte(file.FileBinary))
+	// Check if client sent file hash is same as server generated Hash.
+	if hex.EncodeToString(fileHash[:]) != file.UniqueFileHash || !recentFileExist {
+		fmt.Println("Invalid unique hash", hex.EncodeToString(fileHash[:]), recentFileExist)
+		data.MsgType = "UploadError"
+
+		// Re-request for current chunk index.
+		jsonContent, err := json.Marshal(&data)
+		if err != nil {
+			log.Println("Could not generate jsonContent to re-request file chunk")
+			return
+		}
+
+		if HubConstruct.Users[data.User] != nil {
+			m := WSMessage{jsonContent, data.User}
+			HubConstruct.Broadcast <- m
+		}
+
+		return
+	}
+
+	if err := file.AddFileChunk(); err != nil {
+		// What could be cases where err is not nil.
+		// File could have already been added to database?.
+		// We still request for next file chunk, if when we receive a new fille chunk,
+		// so that when we notice file corruption, we re-request from corrupted stage.
+		log.Println(err)
+	}
+
+	data.NextChunk = file.ChunkIndex + 1
+
+	jsonContent, err := json.Marshal(&data)
+	if err != nil {
+		log.Println("Error sending marshalled ")
+		return
+	}
+
+	if HubConstruct.Users[userID] != nil {
+		m := WSMessage{jsonContent, userID}
+		HubConstruct.Broadcast <- m
+	}
+}
+
+// handleUploadFileUploadComplete is called when file chunk uploads is complete.
+// File accessibility is broadcasted to other users in the room so as to download
+// file.
+func (msg messageBytes) handleUploadFileUploadComplete() {
+	data := struct {
+		MsgType  string `json:"msgType"`
+		UserID   string `json:"userID"`
+		UserName string `json:"name"`
+		FileName string `json:"fileName"`
+		FileSize string `json:"fileSize"`
+		FileHash string `json:"fileHash"`
+		RoomID   string `json:"roomID"`
+	}{}
+
+	if err := json.Unmarshal(msg, &data); err != nil {
+		log.Println(err)
+		return
+	}
+
+	data.MsgType = values.UploadFileSuccessMsgType
+
+	roomUsers, err := Message{
+		RoomID:   data.RoomID,
+		UserID:   data.UserID,
+		Name:     data.UserName,
+		Message:  data.FileName,
+		Time:     time.Now().Format(values.TimeLayout),
+		Type:     "file",
+		FileSize: data.FileSize,
+		FileHash: data.FileHash,
+	}.SaveMessageContent()
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	jsonContent, err := json.Marshal(&data)
+	if err != nil {
+		log.Println(err)
+	}
+
+	for _, roomUser := range roomUsers {
+		if roomUser == data.UserID {
+			continue
+		}
+
+		if HubConstruct.Users[roomUser] != nil {
+			m := WSMessage{jsonContent, roomUser}
+			HubConstruct.Broadcast <- m
+		}
+	}
+}
+
+func (msg messageBytes) handleRequestDownload(requester string) {
+	file := File{}
+	if err := json.Unmarshal(msg, &file); err != nil {
+		log.Println(err)
+		return
+	}
+
+	fileName := file.FileName
+
+	if err := file.RetrieveFileInformation(); err != nil {
+		file.MsgType = values.DownloadFileErrorMsgType
+	}
+	file.FileName = fileName
+
+	jsonContent, err := json.Marshal(&file)
+	if err != nil {
+		log.Println(err)
+	}
+
+	if HubConstruct.Users[requester] != nil {
+		m := WSMessage{jsonContent, requester}
+		HubConstruct.Broadcast <- m
+	}
+}
+
+func (msg messageBytes) handleFileDownload(requester string) {
+	file := FileChunks{}
+	if err := json.Unmarshal(msg, &file); err != nil {
+		log.Println(err)
+		return
+	}
+
+	fileName := file.FileName
+
+	if err := file.RetrieveFileChunk(); err != nil {
+		log.Println("error retrieving file", err)
+		// Send download file error message to client so as to stop download.
+		file = FileChunks{}
+		file.MsgType = values.DownloadFileErrorMsgType
+	} else {
+		file.MsgType = values.DownloadFileChunkMsgType
+	}
+
+	file.FileName = fileName
+
+	jsonContent, err := json.Marshal(&file)
+	if err != nil {
+		log.Println(err)
+	}
+
+	if HubConstruct.Users[requester] != nil {
+		m := WSMessage{jsonContent, requester}
+		HubConstruct.Broadcast <- m
+	}
+}
+
+// handleSearchUser returns registered users that match searchText.
+func handleSearchUser(searchText, user string) {
+	data := struct {
+		UsersFound []string
+		MsgType    string `json:"msgType"`
+	}{
+		GetUser(searchText, user),
+		"getUsers",
+	}
+
+	jsonContent, err := json.Marshal(&data)
+	if err != nil {
+		log.Println("Error while converting search user result to json", err)
+		return
+	}
+
+	if HubConstruct.Users[user] != nil {
+		m := WSMessage{jsonContent, user}
+		HubConstruct.Broadcast <- m
+	}
+}
+
+// handleRequestAllMessages coallates all messages in a particular room.
 func handleRequestAllMessages(roomID, requester string) {
 	room := Room{RoomID: roomID}
 	if err := room.GetAllMessageInRoom(); err != nil {
@@ -208,18 +481,24 @@ func handleRequestAllMessages(roomID, requester string) {
 		"onlineUsers": onlineUsers,
 	}
 
-	jsonContent, err := json.Marshal(data)
+	jsonContent, err := json.Marshal(&data)
 	if err != nil {
 		log.Println("could not marshal images, err:", err)
 		return
 	}
 
-	m := WSMessage{jsonContent, requester}
-	HubConstruct.Broadcast <- m
+	// TODO: There's a check to see if user is truly online,
+	// before sending broadcast this is to reduce the number
+	// of requests to HUB worker.
+	// We can remove this per if we increase number of worker.
+	if HubConstruct.Users[requester] != nil {
+		m := WSMessage{jsonContent, requester}
+		HubConstruct.Broadcast <- m
+	}
 }
 
 // handleLoadUserContent loads all users contents on page load.
-// All rooms joined and users requests are loaded through WS.å
+// All rooms joined and users requests are loaded through WS.
 func handleLoadUserContent(email string) {
 	userInfo := User{Email: email}
 	if err := userInfo.GetAllUserRooms(); err != nil {
@@ -233,7 +512,7 @@ func handleLoadUserContent(email string) {
 		"requests": userInfo.JoinRequest,
 	}
 
-	if data, err := json.Marshal(request); err == nil {
+	if data, err := json.Marshal(request); err == nil && HubConstruct.Users[email] != nil {
 		m := WSMessage{data, email}
 		HubConstruct.Broadcast <- m
 	}

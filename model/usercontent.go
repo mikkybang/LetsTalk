@@ -11,6 +11,8 @@ import (
 	"github.com/metaclips/LetsTalk/values"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -69,7 +71,7 @@ func (b *User) GetAllUsersAssociates() ([]string, error) {
 	}
 
 	usersChannel := make(chan []string)
-	done := make(chan bool)
+	done := make(chan struct{})
 	users := make([]string, 0)
 	registeredUser := make(map[string]bool)
 
@@ -87,7 +89,7 @@ func (b *User) GetAllUsersAssociates() ([]string, error) {
 				continue
 			}
 
-			done <- true
+			close(done)
 			break
 		}
 	}()
@@ -120,26 +122,20 @@ func (b User) ExitRoom(roomID string) ([]string, error) {
 
 	// Confirm if indeed user is registered to room
 	var roomExist bool
-	for _, roomJoined := range b.RoomsJoined {
+	for i, roomJoined := range b.RoomsJoined {
 		if roomJoined.RoomID == roomID {
 			roomExist = true
-			break
-		}
-	}
-	if !roomExist {
-		return nil, values.ErrUserNotRegisteredToRoom
-	}
 
-	for i, room := range b.RoomsJoined {
-		if room.RoomID == roomID {
 			if len(b.RoomsJoined)-1 > i {
 				b.RoomsJoined = append(b.RoomsJoined[:i], b.RoomsJoined[i+1:]...)
 			} else {
 				b.RoomsJoined = b.RoomsJoined[:i]
 			}
-
 			break
 		}
+	}
+	if !roomExist {
+		return nil, values.ErrUserNotRegisteredToRoom
 	}
 
 	// Update room joined by user in DB.
@@ -161,7 +157,6 @@ func (b User) ExitRoom(roomID string) ([]string, error) {
 		Message: b.Email + " left the room",
 	}
 	room.Messages = append(room.Messages, exitMessage)
-	registeredUsers := room.RegisteredUsers
 
 	for i, user := range room.RegisteredUsers {
 		if user == b.Email {
@@ -179,7 +174,7 @@ func (b User) ExitRoom(roomID string) ([]string, error) {
 		"_id": room.RoomID,
 	}, bson.M{"$set": bson.M{"registeredUsers": room.RegisteredUsers, "messages": room.Messages}})
 
-	return registeredUsers, err
+	return room.RegisteredUsers, err
 }
 
 func (b User) CreateUserLogin(password string, w http.ResponseWriter) error {
@@ -196,9 +191,10 @@ func (b User) CreateUserLogin(password string, w http.ResponseWriter) error {
 		Collection: values.UsersCollectionName,
 		CookieName: values.UserCookieName,
 		Path:       "/",
-		Data: map[string]interface{}{
-			"Email": b.Email,
-		}}.CreateCookie(w)
+		Data: CookieData{
+			Email: b.Email,
+		},
+	}.CreateCookie(w)
 
 	return err
 }
@@ -385,9 +381,61 @@ func (b JoinRequest) RequestUserToJoinRoom(userToJoinEmail string) ([]string, er
 	}
 	room.Messages = append(room.Messages, message)
 
-	_, err = db.Collection(values.RoomsCollectionName).UpdateOne(context.TODO(), bson.M{"_id": b.RoomID},
-		bson.M{"$set": bson.M{"messages": room.Messages}})
+	_, err = db.Collection(values.RoomsCollectionName).
+		UpdateOne(context.TODO(), bson.M{"_id": b.RoomID}, bson.M{"$set": bson.M{"messages": room.Messages}})
 	return room.RegisteredUsers, err
+}
+
+// UploadNewFile create a NewFile content to database and returns file content if one
+// has already been created.
+// Chunks is set to zero so that if user wants to retrieve
+func (b *File) UploadNewFile() error {
+	result := db.Collection(values.FilesCollectionName).FindOne(context.TODO(), bson.M{"_id": b.UniqueFileHash}) //, b, options.FindOneAndReplace().SetUpsert(true))
+
+	if result.Err() == mongo.ErrNoDocuments {
+		_, err := db.Collection(values.FilesCollectionName).InsertOne(context.TODO(), b)
+		return err
+	}
+
+	if err := result.Decode(&b); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *File) RetrieveFileInformation() error {
+	result := db.Collection(values.FilesCollectionName).FindOne(context.TODO(), bson.M{"_id": b.UniqueFileHash})
+	return result.Decode(&b)
+}
+
+func (b FileChunks) FileChunkExists() bool {
+	result := db.Collection(values.FileChunksCollectionName).FindOne(context.TODO(), bson.M{"_id": b.UniqueFileHash})
+	if err := result.Err(); err == nil {
+		return true
+	}
+	return false
+}
+
+func (b FileChunks) AddFileChunk() error {
+	result := db.Collection(values.FileChunksCollectionName).
+		FindOneAndReplace(context.TODO(), bson.M{"_id": b.UniqueFileHash}, b, options.FindOneAndReplace().SetUpsert(true))
+
+	// Update original file index.
+	if err := result.Err(); err == nil || err == mongo.ErrNoDocuments {
+		_, err := db.Collection(values.FilesCollectionName).UpdateOne(context.TODO(),
+			bson.M{"_id": b.CompressedFileHash}, bson.M{"$set": bson.M{"chunks": b.ChunkIndex}})
+		return err
+	}
+
+	return result.Err()
+}
+
+func (b *FileChunks) RetrieveFileChunk() error {
+	result := db.Collection(values.FileChunksCollectionName).
+		FindOne(context.TODO(), bson.M{"compressedFileHash": b.CompressedFileHash, "chunkIndex": b.ChunkIndex})
+
+	return result.Decode(&b)
 }
 
 func getContentType(contentType values.MessageType) string {
@@ -396,6 +444,8 @@ func getContentType(contentType values.MessageType) string {
 		return "info"
 	case values.TXT:
 		return "txt"
+	case values.FILE:
+		return "file"
 	}
 
 	return ""

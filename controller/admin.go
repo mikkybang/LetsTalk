@@ -27,16 +27,12 @@ func AdminLoginPOST(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 
-	data := map[string]interface{}{
-		"SigninError": false,
-		"Login":       "/admin/login/",
-		"Admin":       true,
-	}
+	data := setLoginDetails(false, true, "", "/admin/login/")
 
 	admin := model.Admin{StaffDetails: model.User{Email: email}}
 	if err := admin.CheckAdminDetails(password); err != nil {
-		data["SigninError"] = true
-		data["ErrorDetail"] = values.ErrInvalidDetails.Error()
+		data.SigninError = true
+		data.ErrorDetail = values.ErrInvalidDetails.Error()
 
 		if err := loginTmpl.Execute(w, data); err != nil {
 			log.Println(err)
@@ -50,16 +46,16 @@ func AdminLoginPOST(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 		Collection: values.AdminCollectionName,
 		CookieName: values.AdminCookieName,
 		Path:       "/admin",
-		Data: map[string]interface{}{
-			"Super": admin.Super,
-			"Email": admin.StaffDetails.Email,
+		Data: model.CookieData{
+			Super: admin.Super,
+			Email: admin.StaffDetails.Email,
 		},
 	}
 
 	if err := cookie.CreateCookie(w); err != nil {
 		log.Println(err)
-		data["SigninError"] = true
-		data["ErrorDetail"] = "server error"
+		data.SigninError = true
+		data.ErrorDetail = "server error"
 		loginTmpl.Execute(w, data)
 		return
 	}
@@ -74,12 +70,7 @@ func AdminLoginGET(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 		return
 	}
 
-	data := map[string]interface{}{
-		"SigninError": false,
-		"Login":       "/admin/login/",
-		"Admin":       true,
-	}
-
+	data := setLoginDetails(false, true, "", "/admin/login/")
 	if err := loginTmpl.Execute(w, data); err != nil {
 		log.Println(err)
 	}
@@ -93,8 +84,12 @@ func AdminPage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	data := map[string]interface{}{
-		"UploadSuccess": false,
+	data := struct {
+		UploadSuccess bool
+		Error         bool
+	}{
+		false,
+		false,
 	}
 
 	tmpl, terr := template.New("admin.html").Delims("(%", "%)").ParseFiles("views/admin/admin.html", "views/admin/components/tabs.vue",
@@ -127,14 +122,19 @@ func UploadUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	user := model.User{Email: email, Name: name, DOB: dateOfBirth, Class: usersClass, Faculty: faculty}
 
-	data := map[string]interface{}{
-		"UploadSuccess": true,
-		"Error":         false,
+	data := struct {
+		UploadSuccess bool
+		Error         bool
+	}{
+		true,
+		false,
 	}
 
 	if err := user.UploadUser(r); err != nil {
-		data["UploadSuccess"] = false
-		data["Error"] = true
+		// TODO: we should also show upload error.
+		// Avoid boilerplate code here.
+		data.UploadSuccess = false
+		data.Error = true
 	}
 
 	tmpl, terr := template.New("admin.html").Delims("(%", "%)").ParseFiles("views/admin/admin.html", "views/admin/components/tabs.vue",
