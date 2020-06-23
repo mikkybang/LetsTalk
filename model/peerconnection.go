@@ -51,6 +51,14 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 		return
 	}
 
+	// A single user might login using multiple devices. We close recent peerconnection if there's one.
+	s.peerConnectionMutexes.Lock()
+	if s.peerConnection[sdp.UserID] != nil {
+		// ToDo: Return user already in session error
+		return
+	}
+	s.peerConnectionMutexes.Unlock()
+
 	peerConnection, err := classSessions.api.NewPeerConnection(values.PeerConnectionConfig)
 	if err != nil {
 		// Send back a CreateSessionError
@@ -125,6 +133,7 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 		// For video, resolution is in 480px.
 		// ToDo: How do I confirm this???
 		if remoteTrack.PayloadType() == webrtc.DefaultPayloadTypeVP8 || remoteTrack.PayloadType() == webrtc.DefaultPayloadTypeVP9 || remoteTrack.PayloadType() == webrtc.DefaultPayloadTypeH264 {
+
 			videoTrack, err := peerConnection.NewTrack(remoteTrack.PayloadType(), remoteTrack.SSRC(), sessionID, sdp.UserID)
 			if err != nil {
 				log.Println("unable to generate start session video track", err)
@@ -162,6 +171,7 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 					break
 				}
 			}
+
 			log.Println("Publisher video track exited")
 
 		} else {
@@ -235,6 +245,14 @@ func (s *classSessionPeerConnections) joinClassSession(msg []byte) {
 		// Send back a CreateSessionError
 		return
 	}
+
+	// A single user might login using multiple devices. We close recent peerconnection if there's one.
+	s.peerConnectionMutexes.Lock()
+	if s.peerConnection[sdp.UserID] != nil {
+		// ToDo: Return user already in session error
+		return
+	}
+	s.peerConnectionMutexes.Unlock()
 
 	peerConnection, err := classSessions.api.NewPeerConnection(values.PeerConnectionConfig)
 	if err != nil {
@@ -316,8 +334,7 @@ func (s *classSessionPeerConnections) joinClassSession(msg []byte) {
 		s.peerConnectionMutexes.Lock()
 
 		publisherPeerConnection := s.peerConnection[sdp.Author]
-		if publisherPeerConnection == nil || s.publisherVideoTracks[sdp.ClassSessionID] == nil ||
-			len(s.audioTracks[sdp.ClassSessionID]) == 0 || s.audioTracks[sdp.ClassSessionID][0] == nil {
+		if publisherPeerConnection == nil {
 			// Send back a JoinSessionError. Class session is closed.
 			closePeerConnection(peerConnection)
 
@@ -328,6 +345,13 @@ func (s *classSessionPeerConnections) joinClassSession(msg []byte) {
 		s.peerConnectionMutexes.Unlock()
 
 		s.publisherTrackMutexes.Lock()
+		if s.publisherVideoTracks[sdp.ClassSessionID] == nil {
+			closePeerConnection(peerConnection)
+
+			s.publisherTrackMutexes.Unlock()
+			return
+		}
+
 		_, err = peerConnection.AddTrack(s.publisherVideoTracks[sdp.ClassSessionID])
 		if err != nil {
 			closePeerConnection(peerConnection)

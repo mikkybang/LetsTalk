@@ -761,25 +761,13 @@
                     break
 
                 case "ClassSession":
-                    // Create a session description if you are the author else broadcast in room.
-                    // It is also used to negotiate offer.
-                    if (jsonContent.userID === vueComponent.userID) {
-                        console.log("Accepting remote description")
-                        try {
-                            peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: jsonContent.sdp }))
-                        } catch (e) {
-                            console.log(e)
-                            // ToDo: Have a popup that shows error.
-                        }
-
-                    } else if (jsonContent.roomID === vueComponent.currentViewedRoomID) {
-                        vueComponent.currentChatContent.push({
-                            "type": "classSession",
-                            "name": jsonContent.name,
-                            "userID": jsonContent.userID,
-                            "fileHash": jsonContent.sessionID, // FileHash represents the sdp.
-                        })
-                    }
+                    // Notify users of a class session.
+                    vueComponent.currentChatContent.push({
+                        "type": "classSession",
+                        "name": jsonContent.name,
+                        "userID": jsonContent.userID,
+                        "fileHash": jsonContent.sessionID, // FileHash represents the sdp.
+                    })
 
                     break
 
@@ -793,6 +781,7 @@
                             // ToDo: Have a popup that shows error.
                         }
                     }
+
                     break
 
                 case "Renegotiate":
@@ -856,12 +845,16 @@
                 if (peerConnection.iceConnectionState === "disconnected") {
                     peerConnection.close()
                     vueComponent.callSession = false
+
+                    setTimeout(() => {
+                        scrollChatToBottom()
+                    }, 3000)
                 }
             }
 
             peerConnection.onicecandidate = event => {
                 if (event.candidate === null) {
-                    console.log(peerConnection.localDescription.sdp);
+                    console.log("Initiating class session")
                     var message = {
                         "msgType": "StartClassSession",
                         "sdp": peerConnection.localDescription.sdp,
@@ -885,6 +878,7 @@
 
                 peerConnection.addTransceiver(e.getAudioTracks()[0], { direction: "sendonly" })
                 peerConnection.addTransceiver(e.getVideoTracks()[0], { direction: "sendonly" })
+                peerConnection.addTransceiver('audio', { direction: "recvonly" })
                 var el = document.getElementById("videoID")
 
                 el.srcObject = stream
@@ -958,8 +952,8 @@
                 var audioTracks = e.getAudioTracks()
 
                 peerConnection.addTransceiver(audioTracks[0], { direction: "sendonly" })
-
-                console.log(peerConnection.getTransceivers())
+                peerConnection.addTransceiver('video', { direction: "recvonly" })
+                peerConnection.addTransceiver('audio', { direction: "recvonly" })
 
                 peerConnection.createOffer()
                     .then(d => peerConnection.setLocalDescription(d))
