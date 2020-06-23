@@ -783,26 +783,21 @@
 
                     break
 
-                case "Renegotiate":
+                case "Negotiate":
                     if (peerConnection) {
-                        peerConnection.createOffer().
-                            then(function (sdp) {
-                                peerConnection.setLocalDescription(sdp)
-
-                                var message = {
-                                    "msgType": "NegotiateSDP",
-                                    "sessionID": jsonContent.sessionID,
-                                    "sdp": sdp.sdp,
-                                    "userID": vueComponent.userID,
-                                }
-
-                                socket.send(JSON.stringify(message))
-                            })
-
+                        console.log("Negotiating")
+                        try {
+                            peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: jsonContent.sdp }))
+                        } catch (e) {
+                            console.log(e)
+                            // ToDo: Have a popup that shows error.
+                        }
                     }
+                    break
 
-
-
+                case "Renegotiate":
+                    sessionID = jsonContent.sessionID
+                    renegotiate()
 
                     break
             }
@@ -819,6 +814,25 @@
         })
 
         var stream = new MediaStream()
+        var sessionID = ''
+
+        var renegotiate = function () {
+            if (peerConnection && sessionID !== '') {
+                peerConnection.createOffer().
+                    then(function (sdp) {
+                        peerConnection.setLocalDescription(sdp)
+
+                        var message = {
+                            "msgType": "NegotiateSDP",
+                            "sessionID": sessionID,
+                            "sdp": sdp.sdp,
+                            "userID": vueComponent.userID,
+                        }
+
+                        socket.send(JSON.stringify(message))
+                    })
+            }
+        }
 
         var startClassVideoSession = function () {
             peerConnection = new RTCPeerConnection({
@@ -829,7 +843,6 @@
                 ]
             })
 
-
             vueComponent.callerNameInitials = ''
             vueComponent.callerNames = '(%.Name %)'
             var str = vueComponent.callerNames.split(' ')
@@ -838,7 +851,14 @@
                 if (str[i].length > 0)
                     vueComponent.callerNameInitials += str[i][0]
 
-            peerConnection.oniceconnectionstatechange = e => console.log(peerConnection.iceConnectionState)
+            peerConnection.oniceconnectionstatechange = function () {
+                console.log(peerConnection.iceConnectionState)
+                if (peerConnection.iceConnectionState === "disconnected") {
+                    peerConnection.close()
+                    vueComponent.callSession = false
+                }
+            }
+
             peerConnection.onicecandidate = event => {
                 if (event.candidate === null) {
                     console.log(peerConnection.localDescription.sdp);
@@ -847,7 +867,6 @@
                         "sdp": peerConnection.localDescription.sdp,
                         "roomID": vueComponent.currentViewedRoomID,
                         "userID": vueComponent.userID,
-                        "author": vueComponent.userID,
                         "authorName": vueComponent.callerNames,
                     }
 
@@ -855,7 +874,9 @@
                 }
             }
 
-            peerConnection.onnegotiationneeded = e => console.log("negotiation needed", e)
+            peerConnection.onnegotiationneeded = function (e) {
+                console.log("Negotiation needed", e)
+            }
 
             var mediaConstraints = { video: true, audio: true }
 
@@ -864,7 +885,6 @@
 
                 peerConnection.addTransceiver(e.getAudioTracks()[0], { direction: "sendonly" })
                 peerConnection.addTransceiver(e.getVideoTracks()[0], { direction: "sendonly" })
-                peerConnection.addTransceiver('audio', { direction: "recvonly" })
                 var el = document.getElementById("videoID")
 
                 el.srcObject = stream
@@ -881,8 +901,9 @@
             peerConnection.ontrack = function ({ transceiver, streams: [event] }) {
                 console.log(transceiver)
                 var el = document.getElementById("videoID")
-                stream.addTrack(event)
+                stream.addTrack(transceiver.receiver.track)
 
+                // ToDo: can we instead pass event to srcObject??
                 el.srcObject = stream
                 el.autoplay = true
             }
@@ -905,7 +926,18 @@
                 ]
             })
 
-            peerConnection.oniceconnectionstatechange = e => console.log(peerConnection.iceConnectionState)
+            peerConnection.oniceconnectionstatechange = function () {
+                console.log(peerConnection.iceConnectionState)
+                if (peerConnection.iceConnectionState === "disconnected") {
+                    peerConnection.close()
+                    vueComponent.callSession = false
+                }
+            }
+
+            peerConnection.onnegotiationneeded = event => {
+                console.log("negotiation needed", event)
+            }
+
             peerConnection.onicecandidate = event => {
                 if (event.candidate === null) {
                     console.log(peerConnection.localDescription.sdp);
@@ -925,8 +957,6 @@
             var onMedia = function (e) {
                 var audioTracks = e.getAudioTracks()
 
-                peerConnection.addTransceiver('video', { direction: "recvonly" })
-                peerConnection.addTransceiver('audio', { direction: "recvonly" })
                 peerConnection.addTransceiver(audioTracks[0], { direction: "sendonly" })
 
                 console.log(peerConnection.getTransceivers())
@@ -1028,23 +1058,6 @@
             getUserMedia({ audio: false, video: true }, onMedia)
         }
 
-        var onIceConnection = function (sessionType) {
-            peerConnection.oniceconnectionstatechange = e => console.log(peerConnection.iceConnectionState)
-            peerConnection.onicecandidate = event => {
-                if (event.candidate === null) {
-                    console.log(peerConnection.localDescription.sdp);
-                    var message = {
-                        "msgType": sessionType,
-                        "sdp": peerConnection.localDescription.sdp,
-                        "roomID": vueComponent.currentViewedRoomID,
-                        "userID": vueComponent.userID,
-                    }
-
-                    socket.send(JSON.stringify(message));
-                }
-            }
-        }
-
         var getUserMedia = function (mediaOptions, onMedia) {
             navigator.mediaDevices.getUserMedia(mediaOptions)
                 .then(function (e) {
@@ -1114,6 +1127,10 @@
         var playAudio = new Audio('./assets/notification.mp3');
 
         var scrollChatToBottom = function () {
+            if (vueComponent.callSession === true || vueComponent.removeWelcomePage == false) {
+                return
+            }
+
             setTimeout(() => {
                 var chatcontent = document.getElementById("chatcontent");
                 chatcontent.scrollTop = chatcontent.scrollHeight

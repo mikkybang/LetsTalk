@@ -481,10 +481,6 @@ func broadcastOnlineStatusToAllUserRoom(userEmail string, online bool) {
 	}
 
 	for _, assassociateEmail := range associates {
-		if HubConstruct.Users[assassociateEmail] == nil {
-			continue
-		}
-
 		nameAndEmail := fmt.Sprintf("%s (%s)", values.MapEmailToName[assassociateEmail], userEmail)
 		msg := map[string]interface{}{
 			"msgType":  "OnlineStatus",
