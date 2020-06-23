@@ -15,4 +15,5 @@ var (
 	ErrUserAlreadyRequested    = errors.New("User already requested to join room")
 	ErrUserNotRegisteredToRoom = errors.New("User was not registered to room")
 	ErrFileUpload              = errors.New("Error while uploading file to server")
+	ErrPeerConnectionNotFound  = errors.New("PeerConnection not found")
 )

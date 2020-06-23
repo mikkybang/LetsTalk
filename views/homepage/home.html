@@ -336,10 +336,10 @@
                     startClassVideoSession()
                 },
 
-                joinClassSession: function (sessionID) {
+                joinClassSession: function (sessionData) {
                     vueComponent.callSession = true
                     vueComponent.isPublisher = false
-                    joinClassSession()
+                    joinClassSession(sessionData)
                 },
 
                 sendMessage: function () {
@@ -593,7 +593,7 @@
                 mini: true,
 
                 callerNameInitials: "",
-                callerNames: '(%.Name %)',
+                callerNames: '',
                 videoCallData: {},
                 isPublisher: false,
                 callSession: false,
@@ -760,9 +760,11 @@
                     Vue.set(vueComponent.currentChatContent, 0, vueComponent.currentChatContent[0]);
                     break
 
-                case "StartClassSession":
-                    // Create a session description if you are the author else view in room.
+                case "ClassSession":
+                    // Create a session description if you are the author else broadcast in room.
+                    // It is also used to negotiate offer.
                     if (jsonContent.userID === vueComponent.userID) {
+                        console.log("Accepting remote description")
                         try {
                             peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: jsonContent.sdp }))
                         } catch (e) {
@@ -773,10 +775,34 @@
                     } else if (jsonContent.roomID === vueComponent.currentViewedRoomID) {
                         vueComponent.currentChatContent.push({
                             "type": "classSession",
+                            "name": jsonContent.name,
                             "userID": jsonContent.userID,
                             "fileHash": jsonContent.sessionID, // FileHash represents the sdp.
                         })
                     }
+
+                    break
+
+                case "Renegotiate":
+                    if (peerConnection) {
+                        peerConnection.createOffer().
+                            then(function (sdp) {
+                                peerConnection.setLocalDescription(sdp)
+
+                                var message = {
+                                    "msgType": "NegotiateSDP",
+                                    "sessionID": jsonContent.sessionID,
+                                    "sdp": sdp.sdp,
+                                    "userID": vueComponent.userID,
+                                }
+
+                                socket.send(JSON.stringify(message))
+                            })
+
+                    }
+
+
+
 
                     break
             }
@@ -792,7 +818,7 @@
             ]
         })
 
-        var stream
+        var stream = new MediaStream()
 
         var startClassVideoSession = function () {
             peerConnection = new RTCPeerConnection({
@@ -803,23 +829,47 @@
                 ]
             })
 
-            var str = vueComponent.callerNames.split(' ')
+
             vueComponent.callerNameInitials = ''
+            vueComponent.callerNames = '(%.Name %)'
+            var str = vueComponent.callerNames.split(' ')
+
             for (var i = 0; i < str.length; i++)
                 if (str[i].length > 0)
                     vueComponent.callerNameInitials += str[i][0]
 
-            onIceConnection("StartClassSession")
+            peerConnection.oniceconnectionstatechange = e => console.log(peerConnection.iceConnectionState)
+            peerConnection.onicecandidate = event => {
+                if (event.candidate === null) {
+                    console.log(peerConnection.localDescription.sdp);
+                    var message = {
+                        "msgType": "StartClassSession",
+                        "sdp": peerConnection.localDescription.sdp,
+                        "roomID": vueComponent.currentViewedRoomID,
+                        "userID": vueComponent.userID,
+                        "author": vueComponent.userID,
+                        "authorName": vueComponent.callerNames,
+                    }
 
-            var mediaConstraints = { video: { width: { max: 640 }, height: { max: 480 } }, audio: true }
+                    socket.send(JSON.stringify(message));
+                }
+            }
+
+            peerConnection.onnegotiationneeded = e => console.log("negotiation needed", e)
+
+            var mediaConstraints = { video: true, audio: true }
 
             getUserMedia(mediaConstraints, function (e) {
-                stream = e
-                peerConnection.addTransceiver(stream.getAudioTracks()[0], { streams: [stream] })
-                peerConnection.addTransceiver(stream.getVideoTracks()[0], { streams: [stream] })
+                stream.addTrack(e.getVideoTracks()[0])
 
-                // stream.removeTrack(stream.getAudioTracks()[0])
-                document.getElementById("videoID").srcObject = stream
+                peerConnection.addTransceiver(e.getAudioTracks()[0], { direction: "sendonly" })
+                peerConnection.addTransceiver(e.getVideoTracks()[0], { direction: "sendonly" })
+                peerConnection.addTransceiver('audio', { direction: "recvonly" })
+                var el = document.getElementById("videoID")
+
+                el.srcObject = stream
+                el.autoplay = true
+
                 peerConnection.createOffer()
                     .then(d => peerConnection.setLocalDescription(d))
                     .catch(log => console.log(log))
@@ -830,11 +880,23 @@
             // ToDo: Detect if webcam is disable and show caller initials.
             peerConnection.ontrack = function ({ transceiver, streams: [event] }) {
                 console.log(transceiver)
-                document.getElementById('video1').srcObject = event
+                var el = document.getElementById("videoID")
+                stream.addTrack(event)
+
+                el.srcObject = stream
+                el.autoplay = true
             }
         }
 
-        var joinClassSession = function () {
+        var joinClassSession = function (sessionData) {
+            vueComponent.callerNameInitials = ''
+            vueComponent.callerNames = sessionData.name
+            var str = vueComponent.callerNames.split(' ')
+
+            for (var i = 0; i < str.length; i++)
+                if (str[i].length > 0)
+                    vueComponent.callerNameInitials += str[i][0]
+
             peerConnection = new RTCPeerConnection({
                 iceServers: [
                     {
@@ -843,29 +905,48 @@
                 ]
             })
 
-            onIceConnection("JoinClassSession")
+            peerConnection.oniceconnectionstatechange = e => console.log(peerConnection.iceConnectionState)
+            peerConnection.onicecandidate = event => {
+                if (event.candidate === null) {
+                    console.log(peerConnection.localDescription.sdp);
+                    var message = {
+                        "msgType": "JoinClassSession",
+                        "sdp": peerConnection.localDescription.sdp,
+                        "roomID": vueComponent.currentViewedRoomID,
+                        "userID": vueComponent.userID,
+                        "author": sessionData.userID,
+                        "sessionID": sessionData.fileHash,
+                    }
 
-            peerConnection.addTransceiver('video', { direction: "recvonly" })
+                    socket.send(JSON.stringify(message));
+                }
+            }
 
             var onMedia = function (e) {
-                stream = e
-                console.log(stream)
-                document.getElementById("videoID").srcObject = stream
+                var audioTracks = e.getAudioTracks()
 
-                peerConnection.addTransceiver(stream.getAudioTracks()[0], { streams: [stream], direction: "sendrecv" })
+                peerConnection.addTransceiver('video', { direction: "recvonly" })
+                peerConnection.addTransceiver('audio', { direction: "recvonly" })
+                peerConnection.addTransceiver(audioTracks[0], { direction: "sendonly" })
+
+                console.log(peerConnection.getTransceivers())
 
                 peerConnection.createOffer()
                     .then(d => peerConnection.setLocalDescription(d))
                     .catch(log => console.log(log))
             }
 
-            var mediaConstraints = { video: { width: { max: 640 }, height: { max: 480 } }, audio: true }
+            var mediaConstraints = { audio: true }
 
             getUserMedia(mediaConstraints, onMedia)
 
             peerConnection.ontrack = function ({ transceiver, streams: [event] }) {
                 console.log(transceiver)
-                document.getElementById('video1').srcObject = event
+                var el = document.getElementById("videoID")
+
+                stream.addTrack(transceiver.receiver.track)
+                el.srcObject = stream
+                el.autoplay = true
             }
         }
 
@@ -967,7 +1048,6 @@
         var getUserMedia = function (mediaOptions, onMedia) {
             navigator.mediaDevices.getUserMedia(mediaOptions)
                 .then(function (e) {
-                    e.getTracks()
                     onMedia(e)
                 })
                 .catch(function (error) {

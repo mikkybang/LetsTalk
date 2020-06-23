@@ -33,7 +33,6 @@
       v-else
       style="min-width: 100%; min-height: 100%;right: 0;bottom: 0;position: fixed; "
       id="videoID"
-      muted="muted"
       autoplay
       playsinline
     ></video>

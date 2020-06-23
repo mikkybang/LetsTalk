@@ -199,6 +199,15 @@ func (s Subscription) ReadPump(user string) {
 		case values.StartClassSession:
 			classSessions.startClassSession(msg)
 
+		case values.JoinClassSession:
+			classSessions.joinClassSession(msg)
+
+		case values.NegotiateSDP:
+			var sdp sdpConstruct
+			json.Unmarshal(msg, &sdp)
+
+			classSessions.negotiate(sdp, nil)
+
 		case values.NewMessageMsgType:
 			msg.handleNewMessage(user)
 

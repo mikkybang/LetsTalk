@@ -164,14 +164,16 @@ type classSessionPeerConnections struct {
 	peerConnection        map[string]*webrtc.PeerConnection // peerConnection is mapped user to peerconnection.
 	peerConnectionMutexes *sync.Mutex
 
-	publisher      map[string][]string // publisher is mapped sessionID to all connected users.
-	publisherMutex *sync.Mutex
+	connectedUsers      map[string][]string // publisher is mapped sessionID to all connected users.
+	connectedUsersMutex *sync.Mutex
 }
 
 type sdpConstruct struct {
 	MsgType        string `json:"msgType"`
 	ClassSessionID string `json:"sessionID"`
-	Author         string `json:"userID"`
+	Author         string `json:"author"`
+	AuthorName     string `json:"name"`
+	UserID         string `json:"userID"`
 	RoomID         string `json:"roomID"`
 	SDP            string `json:"sdp"`
 	ErrorDetails   string `json:"errorDetails"`

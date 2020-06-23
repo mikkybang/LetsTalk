@@ -33,6 +33,8 @@ const (
 	DownloadFileSuccessMsgType = "DownloadFileSuccess" // DownloadFileSuccessMsgType is sent to client only.
 
 	StartClassSession = "StartClassSession"
+	JoinClassSession  = "JoinClassSession"
+	NegotiateSDP      = "NegotiateSDP"
 )
 
 var (
