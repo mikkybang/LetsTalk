@@ -55,6 +55,7 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 	s.peerConnectionMutexes.Lock()
 	if s.peerConnection[sdp.UserID] != nil {
 		// ToDo: Return user already in session error
+		s.peerConnectionMutexes.Unlock()
 		return
 	}
 	s.peerConnectionMutexes.Unlock()
@@ -250,6 +251,7 @@ func (s *classSessionPeerConnections) joinClassSession(msg []byte) {
 	s.peerConnectionMutexes.Lock()
 	if s.peerConnection[sdp.UserID] != nil {
 		// ToDo: Return user already in session error
+		s.peerConnectionMutexes.Unlock()
 		return
 	}
 	s.peerConnectionMutexes.Unlock()
@@ -323,6 +325,7 @@ func (s *classSessionPeerConnections) joinClassSession(msg []byte) {
 	})
 
 	peerConnection.OnTrack(func(remoteTrack *webrtc.Track, receiver *webrtc.RTPReceiver) {
+		fmt.Println("OnTrack detect join session to have", remoteTrack.PayloadType())
 		audioTrack, err := peerConnection.NewTrack(remoteTrack.PayloadType(), remoteTrack.SSRC(), sdp.ClassSessionID, sdp.UserID)
 		if err != nil {
 			// ToDo: Close peerconnection and send error message to user.
@@ -368,7 +371,7 @@ func (s *classSessionPeerConnections) joinClassSession(msg []byte) {
 		for _, user := range s.connectedUsers[sdp.ClassSessionID] {
 			pc := s.peerConnection[user]
 			if pc != nil {
-				if _, err := pc.AddTransceiverFromTrack(audioTrack); err != nil {
+				if _, err := pc.AddTrack(audioTrack); err != nil {
 					log.Println("Could not add track to other users", err)
 				}
 			}
@@ -385,7 +388,7 @@ func (s *classSessionPeerConnections) joinClassSession(msg []byte) {
 
 		for _, track := range s.audioTracks[sdp.ClassSessionID] {
 			if track != nil {
-				_, err := peerConnection.AddTransceiverFromTrack(track)
+				_, err := peerConnection.AddTrack(track)
 				if err != nil {
 					log.Println("error adding audio track in join session", err)
 				}

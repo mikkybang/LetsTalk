@@ -785,6 +785,7 @@
                     break
 
                 case "Renegotiate":
+                    console.log("Renegotiating")
                     sessionID = jsonContent.sessionID
                     renegotiate()
 
@@ -874,12 +875,12 @@
             var mediaConstraints = { video: true, audio: true }
 
             getUserMedia(mediaConstraints, function (e) {
-                stream.addTrack(e.getVideoTracks()[0])
-
                 peerConnection.addTransceiver(e.getAudioTracks()[0], { direction: "sendonly" })
                 peerConnection.addTransceiver(e.getVideoTracks()[0], { direction: "sendonly" })
                 peerConnection.addTransceiver('audio', { direction: "recvonly" })
+
                 var el = document.getElementById("videoID")
+                stream = new MediaStream(e.getVideoTracks())
 
                 el.srcObject = stream
                 el.autoplay = true
@@ -893,12 +894,16 @@
             // We can later add features to both use desktop and webcam sharing at same time.
             // ToDo: Detect if webcam is disable and show caller initials.
             peerConnection.ontrack = function ({ transceiver, streams: [event] }) {
-                console.log(transceiver)
                 var el = document.getElementById("videoID")
-                stream.addTrack(transceiver.receiver.track)
 
                 // ToDo: can we instead pass event to srcObject??
-                el.srcObject = stream
+                // var audioStreams = event.streams[0]
+                // audioStreams.addTrack(stream.getVideoTracks[0])
+                // event.getVideoTracks().forEach(function (track) {
+                //     stream.addTrack(track)
+                // })
+
+                el.srcObject = event
                 el.autoplay = true
             }
         }
@@ -951,9 +956,9 @@
             var onMedia = function (e) {
                 var audioTracks = e.getAudioTracks()
 
-                peerConnection.addTransceiver(audioTracks[0], { direction: "sendonly" })
                 peerConnection.addTransceiver('video', { direction: "recvonly" })
                 peerConnection.addTransceiver('audio', { direction: "recvonly" })
+                peerConnection.addTransceiver(audioTracks[0], { direction: "sendonly" })
 
                 peerConnection.createOffer()
                     .then(d => peerConnection.setLocalDescription(d))
@@ -965,11 +970,9 @@
             getUserMedia(mediaConstraints, onMedia)
 
             peerConnection.ontrack = function ({ transceiver, streams: [event] }) {
-                console.log(transceiver)
                 var el = document.getElementById("videoID")
 
-                stream.addTrack(transceiver.receiver.track)
-                el.srcObject = stream
+                el.srcObject = event
                 el.autoplay = true
             }
         }
