@@ -177,4 +177,6 @@ type sdpConstruct struct {
 	RoomID         string `json:"roomID"`
 	SDP            string `json:"sdp"`
 	ErrorDetails   string `json:"errorDetails"`
+
+	peerConnection *webrtc.PeerConnection
 }

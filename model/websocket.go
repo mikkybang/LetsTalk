@@ -201,10 +201,7 @@ func (s Subscription) ReadPump(user string) {
 			classSessions.joinClassSession(msg)
 
 		case values.NegotiateSDP:
-			var sdp sdpConstruct
-			json.Unmarshal(msg, &sdp)
-
-			classSessions.negotiate(sdp, nil)
+			classSessions.acceptRenegotiation(msg)
 
 		case values.NewMessageMsgType:
 			msg.handleNewMessage(user)

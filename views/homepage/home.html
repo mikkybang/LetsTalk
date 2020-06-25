@@ -784,10 +784,27 @@
 
                     break
 
-                case "Renegotiate":
+                case "RenegotiateSDP":
                     console.log("Renegotiating")
-                    sessionID = jsonContent.sessionID
-                    renegotiate()
+
+                    if (peerConnection && jsonContent.sessionID !== '') {
+                        peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: jsonContent.sdp }))
+
+                        peerConnection.createAnswer()
+                            .then(sdp => {
+                                peerConnection.setLocalDescription(sdp)
+                                    .then(function () {
+                                        var message = {
+                                            "msgType": "RenegotiateSDP",
+                                            "sdp": sdp.sdp,
+                                            "userID": vueComponent.userID,
+                                        }
+
+                                        socket.send(JSON.stringify(message))
+                                    })
+                            })
+                            .catch(e => console.log(e))
+                    }
 
                     break
             }
@@ -804,25 +821,6 @@
         })
 
         var stream = new MediaStream()
-        var sessionID = ''
-
-        var renegotiate = function () {
-            if (peerConnection && sessionID !== '') {
-                peerConnection.createOffer().
-                    then(function (sdp) {
-                        peerConnection.setLocalDescription(sdp)
-
-                        var message = {
-                            "msgType": "NegotiateSDP",
-                            "sessionID": sessionID,
-                            "sdp": sdp.sdp,
-                            "userID": vueComponent.userID,
-                        }
-
-                        socket.send(JSON.stringify(message))
-                    })
-            }
-        }
 
         var startClassVideoSession = function () {
             peerConnection = new RTCPeerConnection({
@@ -856,15 +854,7 @@
             peerConnection.onicecandidate = event => {
                 if (event.candidate === null) {
                     console.log("Initiating class session")
-                    var message = {
-                        "msgType": "StartClassSession",
-                        "sdp": peerConnection.localDescription.sdp,
-                        "roomID": vueComponent.currentViewedRoomID,
-                        "userID": vueComponent.userID,
-                        "authorName": vueComponent.callerNames,
-                    }
 
-                    socket.send(JSON.stringify(message));
                 }
             }
 
@@ -875,9 +865,9 @@
             var mediaConstraints = { video: true, audio: true }
 
             getUserMedia(mediaConstraints, function (e) {
-                peerConnection.addTransceiver(e.getAudioTracks()[0], { direction: "sendonly" })
-                peerConnection.addTransceiver(e.getVideoTracks()[0], { direction: "sendonly" })
-                peerConnection.addTransceiver('audio', { direction: "recvonly" })
+                var audioTransceiver = peerConnection.addTransceiver(e.getAudioTracks()[0], { direction: "sendrecv" })
+
+                peerConnection.addTransceiver(e.getVideoTracks()[0], { direction: "sendrecv" })
 
                 var el = document.getElementById("videoID")
                 stream = new MediaStream(e.getVideoTracks())
@@ -886,25 +876,49 @@
                 el.autoplay = true
 
                 peerConnection.createOffer()
-                    .then(d => peerConnection.setLocalDescription(d))
-                    .catch(log => console.log(log))
+                    .then(sdp => {
+                        peerConnection.setLocalDescription(sdp)
+                            .then(function () {
+                                var message = {
+                                    "msgType": "StartClassSession",
+                                    "sdp": sdp.sdp,
+                                    "roomID": vueComponent.currentViewedRoomID,
+                                    "userID": vueComponent.userID,
+                                    "authorName": vueComponent.callerNames,
+                                }
+
+                                socket.send(JSON.stringify(message));
+                            })
+                    })
             })
 
             // ToDo: I passed transceiver so that I can get stream content.
             // We can later add features to both use desktop and webcam sharing at same time.
             // ToDo: Detect if webcam is disable and show caller initials.
             peerConnection.ontrack = function ({ transceiver, streams: [event] }) {
-                var el = document.getElementById("videoID")
-
                 // ToDo: can we instead pass event to srcObject??
                 // var audioStreams = event.streams[0]
                 // audioStreams.addTrack(stream.getVideoTracks[0])
                 // event.getVideoTracks().forEach(function (track) {
                 //     stream.addTrack(track)
                 // })
+                event.onaddtrack = () => console.log("On Add Track called for start video session")
+                event.onremovetrack = (ev) => console.log("On Remove Track called for start video session", ev.track)
 
-                el.srcObject = event
-                el.autoplay = true
+                transceiver.receiver.track.onmute = () => console.log("Track muted for start session")
+                transceiver.receiver.track.onended = () => console.log("Track ended for start session")
+                transceiver.receiver.track.onunmute = () => {
+                    console.log("Track started for start session")
+                    var el = document.getElementById("videoID")
+
+                    var tracks = event.getAudioTracks()
+                    console.log(tracks.length)
+
+                    var allTracks = new MediaStream(tracks.concat(stream.getVideoTracks()[0]))
+                    console.log(allTracks)
+                    el.srcObject = allTracks
+                    el.autoplay = true
+                }
             }
         }
 
@@ -939,29 +953,34 @@
 
             peerConnection.onicecandidate = event => {
                 if (event.candidate === null) {
-                    console.log(peerConnection.localDescription.sdp);
-                    var message = {
-                        "msgType": "JoinClassSession",
-                        "sdp": peerConnection.localDescription.sdp,
-                        "roomID": vueComponent.currentViewedRoomID,
-                        "userID": vueComponent.userID,
-                        "author": sessionData.userID,
-                        "sessionID": sessionData.fileHash,
-                    }
+                    console.log("Calling join class session")
 
-                    socket.send(JSON.stringify(message));
                 }
             }
 
             var onMedia = function (e) {
                 var audioTracks = e.getAudioTracks()
 
-                peerConnection.addTransceiver('video', { direction: "recvonly" })
-                peerConnection.addTransceiver('audio', { direction: "recvonly" })
-                peerConnection.addTransceiver(audioTracks[0], { direction: "sendonly" })
+                var audioTransceiver = peerConnection.addTransceiver(audioTracks[0], { direction: "sendrecv" })
+                audioTransceiver.sender.track.enabled = true
 
                 peerConnection.createOffer()
-                    .then(d => peerConnection.setLocalDescription(d))
+                    .then(sdp => {
+                        peerConnection.setLocalDescription(sdp)
+                            .then(function () {
+                                console.log(sdp.sdp === peerConnection.localDescription.sdp)
+                                var message = {
+                                    "msgType": "JoinClassSession",
+                                    "sdp": sdp.sdp,
+                                    "roomID": vueComponent.currentViewedRoomID,
+                                    "userID": vueComponent.userID,
+                                    "author": sessionData.userID,
+                                    "sessionID": sessionData.fileHash,
+                                }
+
+                                socket.send(JSON.stringify(message));
+                            })
+                    })
                     .catch(log => console.log(log))
             }
 
@@ -970,10 +989,17 @@
             getUserMedia(mediaConstraints, onMedia)
 
             peerConnection.ontrack = function ({ transceiver, streams: [event] }) {
-                var el = document.getElementById("videoID")
+                event.onaddtrack = (e) => console.log("On Add Track called for Join video session", e.track, e.type)
+                event.onremovetrack = (e) => console.log("On Remove Track called for Join video session", e)
 
-                el.srcObject = event
-                el.autoplay = true
+                transceiver.receiver.track.onmute = (track) => console.log("Track muted for Join session", track.enabled, track.kind)
+                transceiver.receiver.track.onended = () => console.log("Track ended for Join session")
+                transceiver.receiver.track.onunmute = () => {
+                    console.log("Track started for Join session")
+                    var el = document.getElementById("videoID")
+                    el.srcObject = event
+                    el.autoplay = true
+                }
             }
         }
 

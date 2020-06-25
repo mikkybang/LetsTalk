@@ -34,7 +34,7 @@ const (
 
 	StartClassSession = "StartClassSession"
 	JoinClassSession  = "JoinClassSession"
-	NegotiateSDP      = "NegotiateSDP"
+	NegotiateSDP      = "RenegotiateSDP"
 )
 
 var (
