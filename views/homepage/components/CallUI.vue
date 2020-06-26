@@ -8,7 +8,7 @@
     @click="showVideoOptions=!showVideoOptions"
   >
     <!-- shown if video is disabled. -->
-    <div v-if="!videoOn" align="center" justify="center" class="mx-auto my-auto">
+    <div v-if="!video_on" align="center" justify="center" class="mx-auto my-auto">
       <v-row>
         <v-col cols="12">
           <svg height="100" width="100">

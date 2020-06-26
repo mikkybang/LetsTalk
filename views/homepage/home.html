@@ -164,7 +164,8 @@
                 </template>
 
                 <template v-else>
-                    <call-ui :caller_names="callerNames" :caller_name_initials="callerNameInitials" />
+                    <call-ui :video_on="videoOn" :caller_names="callerNames"
+                        :caller_name_initials="callerNameInitials" />
                 </template>
             </v-main>
         </v-app>
@@ -178,6 +179,7 @@
     <script>
         Vue.component('call-ui', {
             props: {
+                video_on: Boolean,
                 caller_name_initials: String,
                 caller_names: String,
             },
@@ -186,7 +188,6 @@
                 return {
                     showVideoOptions: true,
                     audioOn: true,
-                    videoOn: true,
                     fullScreen: false,
                     isDesktopShared: false,
 
@@ -201,7 +202,7 @@
                     this.fullScreen = false
                     this.isDesktopShared = false
                     this.audioOn = true
-                    this.videoOn = true
+                    vueComponent.videoOn = true
 
                     this.videoIcon = "mdi-video"
                     this.audioIcon = "mdi-microphone"
@@ -234,20 +235,24 @@
                 },
 
                 changeVideoStatus: function () {
-                    if (this.videoOn) {
+                    if (!vueComponent.isPublisher) {
+                        return
+                    }
+
+                    if (vueComponent.videoOn) {
                         this.videoIcon = 'mdi-video-off'
                         this.isDesktopShared = false
                     } else {
                         this.videoIcon = 'mdi-video'
                     }
 
-                    this.videoOn = !this.videoOn
+                    vueComponent.videoOn = !vueComponent.videoOn
                     changeVideo(this.videoOn)
                 },
 
                 desktopShare: function () {
                     // Do not enable screen share if video is disabled.
-                    if (!this.videoOn) {
+                    if (!vueComponent.videoOn || !vueComponent.isPublisher) {
                         return
                     }
 
@@ -255,7 +260,7 @@
                     if (!this.isDesktopShared) {
                         startDesktopSharing()
                     } else {
-                        startDesktopSharing()
+                        stopDesktopSharing()
                     }
 
                     this.isDesktopShared = !this.isDesktopShared
@@ -597,6 +602,7 @@
                 videoCallData: {},
                 isPublisher: false,
                 callSession: false,
+                videoOn: true,
             },
 
             methods: {
@@ -821,6 +827,8 @@
         })
 
         var stream = new MediaStream()
+        var audioTransceiver
+        var videoTransceiver
 
         var startClassVideoSession = function () {
             peerConnection = new RTCPeerConnection({
@@ -865,9 +873,8 @@
             var mediaConstraints = { video: true, audio: true }
 
             getUserMedia(mediaConstraints, function (e) {
-                var audioTransceiver = peerConnection.addTransceiver(e.getAudioTracks()[0], { direction: "sendrecv" })
-
-                peerConnection.addTransceiver(e.getVideoTracks()[0], { direction: "sendrecv" })
+                audioTransceiver = peerConnection.addTransceiver(e.getAudioTracks()[0], { direction: "sendrecv" })
+                videoTransceiver = peerConnection.addTransceiver(e.getVideoTracks()[0], { direction: "sendrecv" })
 
                 var el = document.getElementById("videoID")
                 stream = new MediaStream(e.getVideoTracks())
@@ -914,9 +921,10 @@
                     var tracks = event.getAudioTracks()
                     console.log(tracks.length)
 
-                    var allTracks = new MediaStream(tracks.concat(stream.getVideoTracks()[0]))
-                    console.log(allTracks)
-                    el.srcObject = allTracks
+                    // Since this is only 1 video and multiple audio, we can fetch out the single video track.
+                    stream = new MediaStream(tracks.concat(stream.getVideoTracks()[0]))
+                    console.log(stream)
+                    el.srcObject = stream
                     el.autoplay = true
                 }
             }
@@ -961,8 +969,7 @@
             var onMedia = function (e) {
                 var audioTracks = e.getAudioTracks()
 
-                var audioTransceiver = peerConnection.addTransceiver(audioTracks[0], { direction: "sendrecv" })
-                audioTransceiver.sender.track.enabled = true
+                audioTransceiver = peerConnection.addTransceiver(audioTracks[0], { direction: "sendrecv" })
 
                 peerConnection.createOffer()
                     .then(sdp => {
@@ -992,7 +999,12 @@
                 event.onaddtrack = (e) => console.log("On Add Track called for Join video session", e.track, e.type)
                 event.onremovetrack = (e) => console.log("On Remove Track called for Join video session", e)
 
-                transceiver.receiver.track.onmute = (track) => console.log("Track muted for Join session", track.enabled, track.kind)
+                transceiver.receiver.track.onmute = () => {
+                    if (transceiver.receiver.track.kind === "video") {
+
+                    }
+                    console.log("Track muted for Join session", track.enabled, track.kind)
+                }
                 transceiver.receiver.track.onended = () => console.log("Track ended for Join session")
                 transceiver.receiver.track.onunmute = () => {
                     console.log("Track started for Join session")
@@ -1022,6 +1034,13 @@
 
                     tracks = e.getVideoTracks()
                     addTrack(tracks)
+
+                    if (tracks.length > 0) {
+                        videoTransceiver.sender.replaceTrack(tracks[0])
+                    } else {
+                        console.log("Could not find any track for desktop sharing")
+                    }
+
                 })
                 .catch(function (error) {
                     console.log(error)
@@ -1029,20 +1048,20 @@
         }
 
         var stopDesktopSharing = function () {
-            var mediaConstraints = { video: { width: { max: 640 }, height: { max: 480 } }, audio: true }
+            var mediaConstraints = { video: { width: { max: 640 }, height: { max: 480 } } }
 
             var onMedia = function (e) {
-                var tracks = stream.getAudioTracks()
+                var tracks = stream.getVideoTracks()
                 removeTrack(tracks)
-
-                tracks = stream.getVideoTracks()
-                removeTrack(tracks)
-
-                var tracks = e.getAudioTracks()
-                addTrack(tracks)
 
                 tracks = e.getVideoTracks()
                 addTrack(tracks)
+
+                if (tracks.length > 0) {
+                    videoTransceiver.sender.replaceTrack(tracks[0])
+                } else {
+                    console.log("Could not find any track for desktop sharing")
+                }
             }
 
             getUserMedia(mediaConstraints, onMedia)
