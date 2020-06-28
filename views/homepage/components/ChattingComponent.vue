@@ -81,7 +81,7 @@
                 </v-card>
               </v-dialog>
 
-              <v-btn @click="startClassSession()" fab depressed>
+              <v-btn @click="startSession()" fab depressed>
                 <v-icon>mdi-phone</v-icon>
               </v-btn>
             </v-col>
@@ -126,7 +126,7 @@
                 <v-card tile class="justify-center" outlined>
                   <v-card-text>
                     {{chat['name']}} ({{chat['userID']}}) wants you to join a class session
-                    <v-btn text color="green" @click="joinClassSession(chat)">Click Here To Join</v-btn>
+                    <v-btn text color="green" @click="joinSession(chat)">Click Here To Join</v-btn>
                   </v-card-text>
                 </v-card>
               </div>

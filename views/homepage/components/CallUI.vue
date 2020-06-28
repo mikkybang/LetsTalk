@@ -8,7 +8,13 @@
     @click="showVideoOptions=!showVideoOptions"
   >
     <!-- shown if video is disabled. -->
-    <div v-if="!video_on" align="center" justify="center" class="mx-auto my-auto">
+    <div
+      v-if="!video_on"
+      style="min-width: 100%; min-height: 100%;right: 0;bottom: 0;position: fixed; "
+      align="center"
+      justify="center"
+      class="mx-auto my-auto"
+    >
       <v-row>
         <v-col cols="12">
           <svg height="100" width="100">
@@ -30,7 +36,6 @@
     </div>
 
     <video
-      v-else
       style="min-width: 100%; min-height: 100%;right: 0;bottom: 0;position: fixed; "
       id="videoID"
       autoplay

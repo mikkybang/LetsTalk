@@ -235,24 +235,23 @@
                 },
 
                 changeVideoStatus: function () {
-                    if (!vueComponent.isPublisher) {
+                    if (!vueComponent.isPublisher || this.isDesktopShared) {
                         return
                     }
 
+                    vueComponent.videoOn = !vueComponent.videoOn
+
                     if (vueComponent.videoOn) {
-                        this.videoIcon = 'mdi-video-off'
-                        this.isDesktopShared = false
-                    } else {
                         this.videoIcon = 'mdi-video'
+                    } else {
+                        this.videoIcon = 'mdi-video-off'
                     }
 
-                    vueComponent.videoOn = !vueComponent.videoOn
-                    changeVideo(this.videoOn)
+                    changeVideo()
                 },
 
                 desktopShare: function () {
-                    // Do not enable screen share if video is disabled.
-                    if (!vueComponent.videoOn || !vueComponent.isPublisher) {
+                    if (!vueComponent.isPublisher) {
                         return
                     }
 
@@ -335,13 +334,13 @@
             },
 
             methods: {
-                startClassSession: function () {
+                startSession: function () {
                     vueComponent.callSession = true
                     vueComponent.isPublisher = true
                     startClassVideoSession()
                 },
 
-                joinClassSession: function (sessionData) {
+                joinSession: function (sessionData) {
                     vueComponent.callSession = true
                     vueComponent.isPublisher = false
                     joinClassSession(sessionData)
@@ -830,6 +829,9 @@
         var audioTransceiver
         var videoTransceiver
 
+        var audioTrack
+        var videoTrack
+
         var startClassVideoSession = function () {
             peerConnection = new RTCPeerConnection({
                 iceServers: [
@@ -873,11 +875,17 @@
             var mediaConstraints = { video: true, audio: true }
 
             getUserMedia(mediaConstraints, function (e) {
-                audioTransceiver = peerConnection.addTransceiver(e.getAudioTracks()[0], { direction: "sendrecv" })
-                videoTransceiver = peerConnection.addTransceiver(e.getVideoTracks()[0], { direction: "sendrecv" })
+                videoTrack = e.getVideoTracks()[0]
+                audioTrack = e.getAudioTracks()[0]
+
+                audioTransceiver = peerConnection.addTransceiver(audioTrack, { direction: "sendrecv" })
+                videoTransceiver = peerConnection.addTransceiver(videoTrack, { direction: "sendrecv" })
 
                 var el = document.getElementById("videoID")
-                stream = new MediaStream(e.getVideoTracks())
+                var mediaStreamTrack = []
+                mediaStreamTrack.push(videoTrack)
+
+                stream = new MediaStream(mediaStreamTrack)
 
                 el.srcObject = stream
                 el.autoplay = true
@@ -903,29 +911,22 @@
             // We can later add features to both use desktop and webcam sharing at same time.
             // ToDo: Detect if webcam is disable and show caller initials.
             peerConnection.ontrack = function ({ transceiver, streams: [event] }) {
-                // ToDo: can we instead pass event to srcObject??
-                // var audioStreams = event.streams[0]
-                // audioStreams.addTrack(stream.getVideoTracks[0])
-                // event.getVideoTracks().forEach(function (track) {
-                //     stream.addTrack(track)
-                // })
-                event.onaddtrack = () => console.log("On Add Track called for start video session")
-                event.onremovetrack = (ev) => console.log("On Remove Track called for start video session", ev.track)
+                event.onaddtrack = (ev) => {
+                    console.log("On Add Track called for start video session")
+                    stream.addTrack(ev.track)
+                }
+
+                event.onremovetrack = (ev) => {
+                    console.log("On Remove Track called for start video session")
+                    stream.removeTrack(ev.track)
+                }
 
                 transceiver.receiver.track.onmute = () => console.log("Track muted for start session")
                 transceiver.receiver.track.onended = () => console.log("Track ended for start session")
+
                 transceiver.receiver.track.onunmute = () => {
                     console.log("Track started for start session")
-                    var el = document.getElementById("videoID")
-
-                    var tracks = event.getAudioTracks()
-                    console.log(tracks.length)
-
-                    // Since this is only 1 video and multiple audio, we can fetch out the single video track.
-                    stream = new MediaStream(tracks.concat(stream.getVideoTracks()[0]))
-                    console.log(stream)
-                    el.srcObject = stream
-                    el.autoplay = true
+                    stream.addTrack(transceiver.receiver.track)
                 }
             }
         }
@@ -960,22 +961,24 @@
             }
 
             peerConnection.onicecandidate = event => {
-                if (event.candidate === null) {
+                if (event.candidate === null)
                     console.log("Calling join class session")
-
-                }
             }
 
             var onMedia = function (e) {
-                var audioTracks = e.getAudioTracks()
+                audioTrack = e.getAudioTracks()[0]
+                audioTrack.enabled = true
 
-                audioTransceiver = peerConnection.addTransceiver(audioTracks[0], { direction: "sendrecv" })
+                audioTransceiver = peerConnection.addTransceiver(audioTrack, { direction: "sendrecv" })
+
+                var el = document.getElementById("videoID")
+                el.srcObject = stream
+                el.autoplay = true
 
                 peerConnection.createOffer()
                     .then(sdp => {
                         peerConnection.setLocalDescription(sdp)
                             .then(function () {
-                                console.log(sdp.sdp === peerConnection.localDescription.sdp)
                                 var message = {
                                     "msgType": "JoinClassSession",
                                     "sdp": sdp.sdp,
@@ -996,31 +999,44 @@
             getUserMedia(mediaConstraints, onMedia)
 
             peerConnection.ontrack = function ({ transceiver, streams: [event] }) {
-                event.onaddtrack = (e) => console.log("On Add Track called for Join video session", e.track, e.type)
-                event.onremovetrack = (e) => console.log("On Remove Track called for Join video session", e)
+                event.onaddtrack = (e) => {
+                    console.log("On Add Track called for Join video session")
+                    stream.addTrack(e.track)
+                }
+
+                event.onremovetrack = (e) => {
+                    console.log("On Remove Track called for Join video session")
+                    stream.removeTrack(e.track)
+                }
 
                 transceiver.receiver.track.onmute = () => {
-                    if (transceiver.receiver.track.kind === "video") {
+                    if (transceiver.receiver.track.kind === "video")
+                        vueComponent.videoOn = false
 
-                    }
                     console.log("Track muted for Join session", track.enabled, track.kind)
                 }
+
                 transceiver.receiver.track.onended = () => console.log("Track ended for Join session")
                 transceiver.receiver.track.onunmute = () => {
                     console.log("Track started for Join session")
-                    var el = document.getElementById("videoID")
-                    el.srcObject = event
-                    el.autoplay = true
+                    stream.addTrack(transceiver.receiver.track)
                 }
             }
         }
 
-        var endClassSession = function (room_ID) {
-            var tracks = stream.getAudioTracks()
-            removeTrack(tracks)
+        var endClassSession = function () {
+            audioTrack.enabled = false
+            audioTrack.stop()
 
-            tracks = stream.getVideoTracks()
-            removeTrack(tracks)
+            if (videoTrack) {
+                videoTrack.enabled = false
+                videoTrack.stop()
+            }
+
+            peerConnection.getReceivers().forEach(receiver => {
+                receiver.track.stop()
+            })
+
             peerConnection.close()
         }
 
@@ -1029,8 +1045,9 @@
 
             navigator.mediaDevices.getDisplayMedia(mediaConstraints)
                 .then(function (e) {
-                    var tracks = stream.getVideoTracks()
-                    removeTrack(tracks)
+
+                    videoTrack.enabled = false
+                    stream.removeTrack(videoTrack)
 
                     tracks = e.getVideoTracks()
                     addTrack(tracks)
@@ -1040,7 +1057,6 @@
                     } else {
                         console.log("Could not find any track for desktop sharing")
                     }
-
                 })
                 .catch(function (error) {
                     console.log(error)
@@ -1048,56 +1064,23 @@
         }
 
         var stopDesktopSharing = function () {
-            var mediaConstraints = { video: { width: { max: 640 }, height: { max: 480 } } }
+            var tracks = stream.getVideoTracks()
+            removeTrack(tracks)
 
-            var onMedia = function (e) {
-                var tracks = stream.getVideoTracks()
-                removeTrack(tracks)
+            videoTrack.enabled = true
+            stream.addTrack(videoTrack)
 
-                tracks = e.getVideoTracks()
-                addTrack(tracks)
-
-                if (tracks.length > 0) {
-                    videoTransceiver.sender.replaceTrack(tracks[0])
-                } else {
-                    console.log("Could not find any track for desktop sharing")
-                }
-            }
-
-            getUserMedia(mediaConstraints, onMedia)
+            videoTransceiver.sender.replaceTrack(videoTrack)
         }
 
-        var changeAudio = function (start_audio) {
-            if (!start_audio) {
-                var tracks = stream.getAudioTracks()
-                removeTrack(tracks)
-
-                return
-            }
-
-            var onMedia = function (e) {
-                var tracks = e.getAudioTracks()
-                addTrack(tracks)
-            }
-
-            getUserMedia({ audio: true, video: false }, onMedia)
+        var changeAudio = function (startAudio) {
+            audioTrack.enabled = !audioTrack.enabled
+            startAudio ? audioTransceiver.sender.replaceTrack(audioTrack) : audioTransceiver.sender.replaceTrack(null)
         }
 
-        var changeVideo = function (startVideo) {
-            if (!startVideo) {
-                var tracks = stream.getVideoTracks()
-                removeTrack(tracks)
-
-                return
-            }
-
-            var onMedia = function (e) {
-                var tracks = e.getVideoTracks()
-                addTrack(tracks)
-                document.getElementById("videoID").srcObject = stream
-            }
-
-            getUserMedia({ audio: false, video: true }, onMedia)
+        var changeVideo = function () {
+            videoTrack.enabled = !videoTrack.enabled
+            vueComponent.videoOn ? videoTransceiver.sender.replaceTrack(videoTrack) : videoTransceiver.sender.replaceTrack(null)
         }
 
         var getUserMedia = function (mediaOptions, onMedia) {
@@ -1112,13 +1095,14 @@
 
         var removeTrack = function (tracks) {
             for (var i = 0; i < tracks.length; i++) {
-                tracks[0].stop()
+                tracks[i].enabled = false
                 stream.removeTrack(tracks[i])
             }
         }
 
         var addTrack = function (tracks) {
             for (var i = 0; i < tracks.length; i++) {
+                console.log(tracks[i])
                 stream.addTrack(tracks[i])
             }
         }
