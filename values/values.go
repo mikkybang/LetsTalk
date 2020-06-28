@@ -45,7 +45,10 @@ var (
 		ICEServers: []webrtc.ICEServer{
 			{
 				// ToDo: Specify url in env config when PR #41 is merged.
-				URLs: []string{"stun:stun.l.google.com:19302"},
+				URLs:           []string{"stun:numb.viagenie.ca:3478", "turn:numb.viagenie.ca:3478"},
+				Username:       "utimichael9@gmail.com",
+				Credential:     "SxkJ4Wd9!UUGCea",
+				CredentialType: webrtc.ICECredentialTypePassword,
 			},
 		},
 		SDPSemantics: webrtc.SDPSemanticsUnifiedPlanWithFallback,
