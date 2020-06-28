@@ -865,6 +865,16 @@
                 if (event.candidate === null) {
                     console.log("Initiating class session")
 
+                    var message = {
+                        "msgType": "StartClassSession",
+                        "sdp": peerConnection.localDescription.sdp,
+                        "roomID": vueComponent.currentViewedRoomID,
+                        "userID": vueComponent.userID,
+                        "authorName": vueComponent.callerNames,
+                    }
+
+                    socket.send(JSON.stringify(message));
+
                 }
             }
 
@@ -893,17 +903,6 @@
                 peerConnection.createOffer()
                     .then(sdp => {
                         peerConnection.setLocalDescription(sdp)
-                            .then(function () {
-                                var message = {
-                                    "msgType": "StartClassSession",
-                                    "sdp": sdp.sdp,
-                                    "roomID": vueComponent.currentViewedRoomID,
-                                    "userID": vueComponent.userID,
-                                    "authorName": vueComponent.callerNames,
-                                }
-
-                                socket.send(JSON.stringify(message));
-                            })
                     })
             })
 
@@ -961,8 +960,20 @@
             }
 
             peerConnection.onicecandidate = event => {
-                if (event.candidate === null)
+                if (event.candidate === null) {
                     console.log("Calling join class session")
+
+                    var message = {
+                        "msgType": "JoinClassSession",
+                        "sdp": peerConnection.localDescription.sdp,
+                        "roomID": vueComponent.currentViewedRoomID,
+                        "userID": vueComponent.userID,
+                        "author": sessionData.userID,
+                        "sessionID": sessionData.fileHash,
+                    }
+
+                    socket.send(JSON.stringify(message));
+                }
             }
 
             var onMedia = function (e) {
@@ -979,16 +990,7 @@
                     .then(sdp => {
                         peerConnection.setLocalDescription(sdp)
                             .then(function () {
-                                var message = {
-                                    "msgType": "JoinClassSession",
-                                    "sdp": sdp.sdp,
-                                    "roomID": vueComponent.currentViewedRoomID,
-                                    "userID": vueComponent.userID,
-                                    "author": sessionData.userID,
-                                    "sessionID": sessionData.fileHash,
-                                }
 
-                                socket.send(JSON.stringify(message));
                             })
                     })
                     .catch(log => console.log(log))
@@ -1045,7 +1047,6 @@
 
             navigator.mediaDevices.getDisplayMedia(mediaConstraints)
                 .then(function (e) {
-
                     videoTrack.enabled = false
                     stream.removeTrack(videoTrack)
 
