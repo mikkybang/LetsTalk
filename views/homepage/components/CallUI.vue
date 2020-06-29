@@ -8,35 +8,29 @@
     @click="showVideoOptions=!showVideoOptions"
   >
     <!-- shown if video is disabled. -->
-    <div
+    <v-row
       v-if="!video_on"
-      style="min-width: 100%; min-height: 100%;right: 0;bottom: 0;position: fixed; "
+      style="width: 100%; height: 100%;right: 0; top: 0; left:0; bottom: 0; position: fixed; z-index: 1; "
       align="center"
       justify="center"
       class="mx-auto my-auto"
     >
-      <v-row>
-        <v-col cols="12">
-          <svg height="100" width="100">
-            <circle cx="50" cy="50" r="40" stroke="black" fill="#56CCF2" />
-            <text
-              x="50%"
-              y="60%"
-              text-anchor="middle"
-              fill="black"
-              font-size="30px"
-              font-family="Arial"
-            >{{caller_name_initials}}</text>
-          </svg>
-        </v-col>
-        <v-col cols="12">
-          <span class="white--text headline">{{caller_names}}</span>
-        </v-col>
-      </v-row>
-    </div>
+      <svg height="100" width="100">
+        <circle cx="50" cy="50" r="40" stroke="black" fill="#56CCF2" />
+        <text
+          x="50%"
+          y="60%"
+          text-anchor="middle"
+          fill="black"
+          font-size="30px"
+          font-family="Arial"
+        >{{caller_name_initials}}</text>
+      </svg>
+      <span class="white--text headline">{{caller_names}}</span>
+    </v-row>
 
     <video
-      style="min-width: 100%; min-height: 100%;right: 0;bottom: 0;position: fixed; object-fit: cover; "
+      style="width: 100%; height: 100%;top: 0; left:0; right: 0; bottom: 0; position: absolute; object-fit: cover; "
       id="videoID"
       autoplay
     ></video>
@@ -45,7 +39,7 @@
       <v-row
         justify="center"
         v-if="showVideoOptions"
-        style="bottom: 1rem; padding: 20px; left: 50%; margin-left: -150px; position: absolute;"
+        style="bottom: 1rem; padding: 20px; left: 50%; margin-left: -150px; position: fixed; z-index: 2;"
       >
         <v-btn
           class="ml-2"
