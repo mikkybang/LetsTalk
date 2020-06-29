@@ -4,8 +4,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/at-wat/ebml-go/webm"
 	"github.com/gorilla/websocket"
 	"github.com/pion/webrtc/v2"
+	"github.com/pion/webrtc/v2/pkg/media/samplebuilder"
 )
 
 type CookieDetail struct {
@@ -166,6 +168,13 @@ type classSessionPeerConnections struct {
 
 	connectedUsers      map[string][]string // publisher is mapped sessionID to all connected users.
 	connectedUsersMutex *sync.Mutex
+}
+
+type webmWriter struct {
+	session                        string
+	audioWriter, videoWriter       webm.BlockWriteCloser
+	audioBuilder, videoBuilder     *samplebuilder.SampleBuilder
+	audioTimestamp, videoTimestamp uint32
 }
 
 type sdpConstruct struct {
