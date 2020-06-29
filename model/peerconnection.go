@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/metaclips/LetsTalk/values"
-	"github.com/pion/logging"
 	"github.com/pion/rtcp"
 	"github.com/pion/webrtc/v2"
 )
@@ -19,10 +18,10 @@ import (
 func init() {
 	var m = webrtc.MediaEngine{}
 
-	// Setup the codecs you want to use.
-	m.RegisterDefaultCodecs()
+	m.RegisterCodec(webrtc.NewRTPVP8Codec(webrtc.DefaultPayloadTypeVP8, 90000))
+	m.RegisterCodec(webrtc.NewRTPOpusCodec(webrtc.DefaultPayloadTypeOpus, 48000))
 
-	classSessions.api = webrtc.NewAPI(webrtc.WithMediaEngine(m), webrtc.WithSettingEngine(webrtc.SettingEngine{LoggerFactory: logging.NewDefaultLoggerFactory()}))
+	classSessions.api = webrtc.NewAPI(webrtc.WithMediaEngine(m))
 }
 
 var (
@@ -47,7 +46,7 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 	sdp := sdpConstruct{}
 
 	if err := json.Unmarshal(msg, &sdp); err != nil {
-		// Send back a CreateSessionError
+		// Send back a CreateSessionError indicating user already in a session.
 		return
 	}
 
@@ -76,6 +75,8 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 	s.connectedUsers[sessionID] = []string{sdp.UserID}
 	s.connectedUsersMutex.Unlock()
 
+	videoAudioWriter := newWebmWriter(sessionID)
+
 	peerConnection.OnConnectionStateChange(func(cc webrtc.PeerConnectionState) {
 		fmt.Printf("PeerConnection State has changed %s \n", cc.String())
 		if cc == webrtc.PeerConnectionStateFailed {
@@ -83,6 +84,8 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 			// should be cleared and all peer connections closed.
 			// Note: We should check if audio track is nil BEFORE creating a peerconnection
 			// when joining session.
+
+			videoAudioWriter.close()
 
 			s.peerConnectionMutexes.Lock()
 			s.connectedUsersMutex.Lock()
@@ -119,8 +122,8 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 		// Publisher <-> Server is to receive both audio and video packets.
 		// Packets are to be broadcasted to other users on the session.
 		// For video, resolution is in 480px.
-		log.Println("On track is being called")
-		if remoteTrack.PayloadType() == webrtc.DefaultPayloadTypeVP8 || remoteTrack.PayloadType() == webrtc.DefaultPayloadTypeVP9 || remoteTrack.PayloadType() == webrtc.DefaultPayloadTypeH264 {
+		if remoteTrack.PayloadType() == webrtc.DefaultPayloadTypeVP8 {
+			log.Println("VP8 track is being called")
 
 			videoTrack, err := peerConnection.NewTrack(remoteTrack.PayloadType(), remoteTrack.SSRC(), sessionID, sdp.UserID)
 			if err != nil {
@@ -145,29 +148,31 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 				}
 			}()
 
-			rtpBuf := make([]byte, 1400)
+			// rtpBuf := make([]byte, 1400)
 			for {
-				i, err := remoteTrack.Read(rtpBuf)
+				rtp, err := remoteTrack.ReadRTP()
+				//	i, err := remoteTrack.Read(rtpBuf)
 				if err != nil {
-					log.Println("bbb", err)
+					log.Println("Publisher video track errored, exiting now.", err)
 					break
 				}
 
-				_, err = videoTrack.Write(rtpBuf[:i])
+				err = videoTrack.WriteRTP(rtp)
 				if err != nil && !errors.Is(err, io.ErrClosedPipe) {
 					log.Println("publisher video packet writed break", err)
 					break
 				}
+
+				videoAudioWriter.pushVP8(rtp)
 			}
 
 			log.Println("Publisher video track exited")
 
-		} else {
+		} else if remoteTrack.PayloadType() == webrtc.DefaultPayloadTypeOpus {
 			audioTrack, err := peerConnection.NewTrack(remoteTrack.PayloadType(), remoteTrack.SSRC(), sessionID, sdp.UserID)
 			if err != nil {
 				log.Println("ccc", err)
 				// Return back a class session creation error back to client.
-				// ToDo: Convert err==nil and see how peerConnectionState reacts.
 				// Also, users might decide to disable video/audio on start.
 				peerConnection.Close()
 				return
@@ -177,22 +182,26 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 			s.audioTracks[sessionID] = []*webrtc.Track{audioTrack}
 			s.audioTrackMutexes.Unlock()
 
-			rtpBuf := make([]byte, 1400)
 			for {
-				i, err := remoteTrack.Read(rtpBuf)
+				rtp, err := remoteTrack.ReadRTP()
 				if err != nil {
-					log.Println("ksks", err)
+					log.Println("Publisher audio track errored, exiting now.", err)
 					break
 				}
 
-				_, err = audioTrack.Write(rtpBuf[:i])
+				err = audioTrack.WriteRTP(rtp)
 				if err != nil && !errors.Is(err, io.ErrClosedPipe) {
 					log.Println("publisher video packet writed break", err)
 					break
 				}
+
+				videoAudioWriter.pushOpus(rtp)
 			}
 
 			log.Println("Publisher audio track exited")
+
+		} else {
+			log.Println("Unsupported track is being played. Video writer might not work", remoteTrack.PayloadType())
 		}
 	})
 
