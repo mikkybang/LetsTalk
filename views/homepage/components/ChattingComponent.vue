@@ -122,7 +122,7 @@
                 </v-card>
               </div>
 
-              <div align="center" justify="center" v-if="chat['type']==='classSession'">
+              <div align="center" justify="center" v-else-if="chat['type']==='classSession'">
                 <v-card tile class="justify-center" outlined>
                   <v-card-text>
                     {{chat['name']}} ({{chat['userID']}}) wants you to join a class session
