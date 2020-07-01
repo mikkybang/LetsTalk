@@ -20,7 +20,7 @@ func TestDatabase(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	_, err := mongo.Connect(ctx, options.Client().ApplyURI(Config.Db_host))
+	_, err := mongo.Connect(ctx, options.Client().ApplyURI(Config.DbHost))
 	if err != nil {
 		t.Errorf(err.Error())
 	}
