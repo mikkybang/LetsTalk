@@ -6,6 +6,12 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+
+type Configuration struct {
+	DB_HOST string
+	Port	string
+}
+
 type CookieDetail struct {
 	Email      string
 	Collection string

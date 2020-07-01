@@ -6,11 +6,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func TestEnvironmentVariable(t *testing.T) {
+	err := godotenv.Load("../.env")
+	if err != nil {
+		t.Error("Error loading .env file")
+	}
 	if os.Getenv("db_host") == "" {
 		t.Error("Environment variable not set")
 	}
