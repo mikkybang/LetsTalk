@@ -6,10 +6,9 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-
 type Configuration struct {
-	DB_HOST string
-	Port	string
+	Db_host string
+	Port    string
 }
 
 type CookieDetail struct {
