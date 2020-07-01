@@ -851,7 +851,7 @@
 
             peerConnection.oniceconnectionstatechange = function () {
                 console.log(peerConnection.iceConnectionState)
-                if (peerConnection.iceConnectionState === "disconnected") {
+                if (peerConnection.iceConnectionState === "failed") {
                     peerConnection.close()
                     vueComponent.callSession = false
 
@@ -949,7 +949,7 @@
 
             peerConnection.oniceconnectionstatechange = function () {
                 console.log(peerConnection.iceConnectionState)
-                if (peerConnection.iceConnectionState === "disconnected") {
+                if (peerConnection.iceConnectionState === "failed") {
                     peerConnection.close()
                     vueComponent.callSession = false
                 }
