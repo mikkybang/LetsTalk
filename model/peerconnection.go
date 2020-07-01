@@ -75,7 +75,7 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 	s.connectedUsers[sessionID] = []string{sdp.UserID}
 	s.connectedUsersMutex.Unlock()
 
-	videoAudioWriter := newWebmWriter(sessionID)
+	// videoAudioWriter := newWebmWriter(sessionID)
 
 	peerConnection.OnConnectionStateChange(func(cc webrtc.PeerConnectionState) {
 		fmt.Printf("PeerConnection State has changed %s \n", cc.String())
@@ -85,7 +85,7 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 			// Note: We should check if audio track is nil BEFORE creating a peerconnection
 			// when joining session.
 
-			videoAudioWriter.close()
+			//	videoAudioWriter.close()
 
 			s.peerConnectionMutexes.Lock()
 			s.connectedUsersMutex.Lock()
@@ -163,7 +163,7 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 					break
 				}
 
-				videoAudioWriter.pushVP8(rtp)
+				//	videoAudioWriter.pushVP8(rtp)
 			}
 
 			log.Println("Publisher video track exited")
@@ -195,7 +195,7 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte) {
 					break
 				}
 
-				videoAudioWriter.pushOpus(rtp)
+				//	videoAudioWriter.pushOpus(rtp)
 			}
 
 			log.Println("Publisher audio track exited")
