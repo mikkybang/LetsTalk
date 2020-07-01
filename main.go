@@ -3,22 +3,23 @@ package main
 import (
 	"encoding/gob"
 	"fmt"
+	"github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
 	"os"
 	"time"
-	"github.com/joho/godotenv"
-	"github.com/julienschmidt/httprouter"
 
 	"github.com/metaclips/LetsTalk/controller"
 	"github.com/metaclips/LetsTalk/model"
 )
 
 func main() {
-	err := godotenv.Load()
+	file, err := os.Open("config.json") // For read access.
 	if err != nil {
-	  log.Fatal("Error loading .env file")
+		log.Fatal("Error loading the config file")
 	}
+	defer file.Close()
+	
 	gob.Register(time.Time{})
 	model.InitDB()
 	router := httprouter.New()
