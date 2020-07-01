@@ -69,7 +69,7 @@ See [go.mod](go.mod) for more information
 ```bash
 git clone https://github.com/metaclips/LetsTalk.git
 cd LetsTalk
-create a .env file to store your environment variables. See the .env.example file for sample
+
 go run .
 ```
 
