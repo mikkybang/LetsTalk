@@ -15,7 +15,10 @@ import (
 )
 
 func main() {
-	model.LoadConfiguration()
+	err := model.LoadConfiguration()
+	if err != nil {
+		log.Fatal("Could not Load Config file")
+	}
 	gob.Register(time.Time{})
 	model.InitDB()
 	router := httprouter.New()
