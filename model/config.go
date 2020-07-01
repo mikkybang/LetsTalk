@@ -1,19 +1,14 @@
 package model
 
-import(
+import (
 	"encoding/json"
-	"os"
 	"log"
+	"os"
 )
 
+var Config Configuration
 
-
-var (
-	Config Configuration
-)
-
-
-func LoadConfiguration(){
+func LoadConfiguration() {
 	file, err := os.Open("config.json") // For read access.
 	if err != nil {
 		log.Fatal("Error loading the config file")
@@ -24,5 +19,4 @@ func LoadConfiguration(){
 	if err != nil {
 		log.Fatal("can't decode config JSON: ", err)
 	}
-	log.Println(Config.DB_HOST)
 }

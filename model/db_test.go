@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func TestEnvironmentVariable(t *testing.T) {
+func TestConfig(t *testing.T) {
 	err := godotenv.Load("../.env")
 	if err != nil {
 		t.Error("Error loading .env file")

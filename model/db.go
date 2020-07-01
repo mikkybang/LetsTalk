@@ -3,7 +3,6 @@ package model
 import (
 	"context"
 	"log"
-	"os"
 	"time"
 
 	"github.com/metaclips/LetsTalk/values"
@@ -18,7 +17,7 @@ import (
 var db *mongo.Database
 
 func InitDB() {
-	dbHost := os.Getenv("db_host")
+	dbHost := Config.DB_HOST
 	mongoDB, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dbHost))
 	if err != nil {
 		log.Fatalln(err)

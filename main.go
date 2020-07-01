@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/gob"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -16,7 +15,7 @@ import (
 )
 
 func main() {
-
+	model.LoadConfiguration()
 	gob.Register(time.Time{})
 	model.InitDB()
 	router := httprouter.New()
@@ -32,7 +31,7 @@ func main() {
 	router.POST("/admin/login", controller.AdminLoginPOST)
 	router.POST("/admin/upload", controller.UploadUser)
 
-	port := Config.Port
+	port := model.Config.Port
 	if port == "" {
 		port = os.Getenv("HTTP_PLATFORM_PORT")
 	}
