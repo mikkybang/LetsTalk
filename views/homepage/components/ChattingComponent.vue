@@ -136,7 +136,7 @@
                 justify="center"
                 v-else-if="chat['type']==='file'"
               >
-                <v-card shaped style="max-width: 70vw;">
+                <v-card shaped style="max-width: 70vw;" class="d-inline-block mx-auto">
                   <v-card-title class="text--secondary">
                     <v-row align="center">
                       <v-col :cols="chat.userID==='(%.Email%)' ? 'auto' : 'mx-auto'">
@@ -163,7 +163,7 @@
 
                   <v-card-text>
                     <v-row align="center">
-                      <v-col cols="mx-auto d-inline-block">{{chat.message}} ({{chat.fileSize}})</v-col>
+                      <v-col cols="mx-auto">{{chat.message}} ({{chat.fileSize}})</v-col>
                       <v-col cols="auto">
                         <v-progress-circular
                           :rotate="360"
