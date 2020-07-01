@@ -9,7 +9,7 @@ import (
 var Config Configuration
 
 func LoadConfiguration() error {
-	file, err := os.Open("config.json") // For read access.
+	file, err := os.Open("../config.json") // For read access.
 	if err != nil {
 		log.Fatal("Error loading the config file", err)
 		return err
