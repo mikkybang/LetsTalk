@@ -209,7 +209,11 @@
                     this.screenMode = "mdi-fullscreen"
 
                     vueComponent.callSession = false
-                    endClassSession(vueComponent.currentViewedRoomID)
+                    endClassSession()
+
+                    setTimeout(() => {
+                        scrollChatToBottom()
+                    }, 3000)
                 },
 
 
@@ -773,6 +777,7 @@
                         "userID": jsonContent.userID,
                         "fileHash": jsonContent.sessionID, // FileHash represents the sdp.
                     })
+                    scrollChatToBottom()
 
                     break
 
@@ -817,12 +822,16 @@
     </script>
 
     <script>
+
         var peerConnection = new RTCPeerConnection({
             iceServers: [
                 {
-                    urls: 'stun:stun.l.google.com:19302'
+                    urls: ["stun:numb.viagenie.ca:3478", "turn:numb.viagenie.ca:3478"],
+                    username: "utimichael9@gmail.com",
+                    credential: "SxkJ4Wd9!UUGCea",
+                    credentialType: "password",
                 }
-            ]
+            ],
         })
 
         var stream = new MediaStream()
@@ -836,7 +845,10 @@
             peerConnection = new RTCPeerConnection({
                 iceServers: [
                     {
-                        urls: 'stun:stun.l.google.com:19302'
+                        urls: ["stun:numb.viagenie.ca:3478", "turn:numb.viagenie.ca:3478"],
+                        username: "utimichael9@gmail.com",
+                        credential: "SxkJ4Wd9!UUGCea",
+                        credentialType: "password",
                     }
                 ]
             })
@@ -852,7 +864,7 @@
             peerConnection.oniceconnectionstatechange = function () {
                 console.log(peerConnection.iceConnectionState)
                 if (peerConnection.iceConnectionState === "failed") {
-                    peerConnection.close()
+                    endClassSession()
                     vueComponent.callSession = false
 
                     setTimeout(() => {
@@ -942,7 +954,10 @@
             peerConnection = new RTCPeerConnection({
                 iceServers: [
                     {
-                        urls: 'stun:stun.l.google.com:19302'
+                        urls: ["stun:numb.viagenie.ca:3478", "turn:numb.viagenie.ca:3478"],
+                        username: "utimichael9@gmail.com",
+                        credential: "SxkJ4Wd9!UUGCea",
+                        credentialType: "password",
                     }
                 ]
             })
@@ -950,8 +965,12 @@
             peerConnection.oniceconnectionstatechange = function () {
                 console.log(peerConnection.iceConnectionState)
                 if (peerConnection.iceConnectionState === "failed") {
-                    peerConnection.close()
+                    endClassSession()
                     vueComponent.callSession = false
+
+                    setTimeout(() => {
+                        scrollChatToBottom()
+                    }, 3000)
                 }
             }
 
@@ -1019,7 +1038,11 @@
                 }
 
                 transceiver.receiver.track.onended = () => console.log("Track ended for Join session")
+
                 transceiver.receiver.track.onunmute = () => {
+                    if (transceiver.receiver.track.kind === "video")
+                        vueComponent.videoOn = true
+
                     console.log("Track started for Join session")
                     stream.addTrack(transceiver.receiver.track)
                 }
@@ -1279,6 +1302,7 @@
             }
 
             playAudio.play();
+            scrollChatToBottom()
             Vue.set(vueComponent.rooms, 0, vueComponent.rooms[0])
         }
 
