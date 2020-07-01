@@ -7,8 +7,8 @@ import (
 )
 
 type Configuration struct {
-	Db_host string
-	Port    string
+	DbHost string
+	Port   string
 }
 
 type CookieDetail struct {
