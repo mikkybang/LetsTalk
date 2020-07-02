@@ -808,7 +808,7 @@
                             peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: jsonContent.sdp }))
                         } catch (e) {
                             console.log(e)
-                            // ToDo: Have a popup that shows error.
+                            vueComponent.classSessionError = e
                         }
                     }
 
@@ -894,9 +894,7 @@
             }
 
             peerConnection.onicecandidate = event => {
-                if (event.candidate === null) {
-                    console.log("Initiating class session")
-
+                if (event.candidate === null && peerConnection.iceConnectionState === "new") {
                     var message = {
                         "msgType": "StartClassSession",
                         "sdp": peerConnection.localDescription.sdp,
@@ -908,6 +906,7 @@
                     socket.send(JSON.stringify(message));
                 }
             }
+
 
             peerConnection.onnegotiationneeded = function (e) {
                 console.log("Negotiation needed", e)
@@ -999,9 +998,8 @@
             }
 
             peerConnection.onicecandidate = event => {
-                if (event.candidate === null) {
+                if (event.candidate === null && peerConnection.iceConnectionState === "new") {
                     console.log("Calling join class session")
-
 
                     var message = {
                         "msgType": "JoinClassSession",
@@ -1107,6 +1105,7 @@
             var tracks = stream.getVideoTracks()
             removeTrack(tracks)
 
+            videoTrack.enabled = vueComponent.videoOn
             stream.addTrack(videoTrack)
 
             videoTransceiver.sender.replaceTrack(videoTrack)
