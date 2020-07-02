@@ -1047,9 +1047,6 @@
                 }
 
                 transceiver.receiver.track.onmute = () => {
-                    if (transceiver.receiver.track.kind === "video")
-                        vueComponent.videoOn = false
-
                     console.log("Track muted for Join session", track.enabled, track.kind)
                 }
 

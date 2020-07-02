@@ -7,28 +7,6 @@
     style="min-width: 100%; min-height: 100%; background-color: black;"
     @click="showVideoOptions=!showVideoOptions"
   >
-    <!-- shown if video is disabled. -->
-    <v-row
-      v-if="!video_on"
-      style="width: 100%; height: 100%;right: 0; top: 0; left:0; bottom: 0; position: fixed; z-index: 1; background-color: black;"
-      align="center"
-      justify="center"
-      class="mx-auto my-auto"
-    >
-      <svg height="100" width="100">
-        <circle cx="50" cy="50" r="40" stroke="black" fill="#56CCF2" />
-        <text
-          x="50%"
-          y="60%"
-          text-anchor="middle"
-          fill="black"
-          font-size="30px"
-          font-family="Arial"
-        >{{caller_name_initials}}</text>
-      </svg>
-      <span class="white--text headline">{{caller_names}}</span>
-    </v-row>
-
     <video
       style="width: 100%; height: 100%;top: 0; left:0; right: 0; bottom: 0; position: absolute; object-fit: cover; "
       id="videoID"
