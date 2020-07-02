@@ -161,6 +161,7 @@ type classSessionPeerConnections struct {
 	publisherTrackMutexes *sync.Mutex
 
 	audioTracks       map[string][]*webrtc.Track // mapped sessionID to track
+	audioTrackSender  map[*webrtc.Track][]rtpSenderData
 	audioTrackMutexes *sync.Mutex
 
 	peerConnection        map[string]*webrtc.PeerConnection // peerConnection is mapped user to peerconnection.
@@ -168,6 +169,14 @@ type classSessionPeerConnections struct {
 
 	connectedUsers      map[string][]string // publisher is mapped sessionID to all connected users.
 	connectedUsersMutex *sync.Mutex
+}
+
+// rtpSenderData saves user RTPSender.
+// On remove track, users can easily map all audio track to its senders.
+// userID maps sender to it's peerconnection.
+type rtpSenderData struct {
+	userID string
+	sender *webrtc.RTPSender
 }
 
 type webmWriter struct {
@@ -185,7 +194,6 @@ type sdpConstruct struct {
 	UserID         string `json:"userID"`
 	RoomID         string `json:"roomID"`
 	SDP            string `json:"sdp"`
-	ErrorDetails   string `json:"errorDetails"`
 
 	peerConnection *webrtc.PeerConnection
 }

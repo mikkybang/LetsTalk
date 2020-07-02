@@ -3,6 +3,7 @@ module github.com/metaclips/LetsTalk
 go 1.14
 
 require (
+	github.com/at-wat/ebml-go v0.11.0
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/websocket v1.4.2

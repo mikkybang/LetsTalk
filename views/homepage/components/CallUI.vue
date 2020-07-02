@@ -10,7 +10,7 @@
     <!-- shown if video is disabled. -->
     <v-row
       v-if="!video_on"
-      style="width: 100%; height: 100%;right: 0; top: 0; left:0; bottom: 0; position: fixed; z-index: 1; "
+      style="width: 100%; height: 100%;right: 0; top: 0; left:0; bottom: 0; position: fixed; z-index: 1; background-color: black;"
       align="center"
       justify="center"
       class="mx-auto my-auto"
@@ -76,6 +76,23 @@
         </v-btn>
       </v-row>
     </v-expand-transition>
+
+    <v-dialog persistent v-model="onClassSessionError" width="300px">
+      <v-card class="d-inline-block mx-auto">
+        <v-card-text class="text--secondary" style="height: 250px;">
+          <v-row>
+            <v-col cols="12"></v-col>
+            <v-col cols="12">{{class_session_error}}</v-col>
+          </v-row>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="green darken-1" text @click="closeDialog">Close Dialog</v-btn>
+          <v-btn color="red darken-1" text @click="endCall">End Call</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 (%end%)

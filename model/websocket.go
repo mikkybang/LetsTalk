@@ -195,13 +195,13 @@ func (s Subscription) ReadPump(user string) {
 			msg.handleFileDownload(user)
 
 		case values.StartClassSession:
-			classSessions.startClassSession(msg)
+			classSessions.startClassSession(msg, user)
 
 		case values.JoinClassSession:
-			classSessions.joinClassSession(msg)
+			classSessions.joinClassSession(msg, user)
 
 		case values.NegotiateSDP:
-			classSessions.acceptRenegotiation(msg)
+			sdpConstruct{}.acceptRenegotiation(msg)
 
 		case values.NewMessageMsgType:
 			msg.handleNewMessage(user)
