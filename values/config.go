@@ -6,7 +6,12 @@ import (
 	"os"
 )
 
-var Config Configuration
+type configuration struct {
+	DbHost string
+	Port   string
+}
+
+var Config configuration
 
 func LoadConfiguration() error {
 	file, err := os.Open("../config.json") // For read access.
