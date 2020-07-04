@@ -12,10 +12,11 @@ import (
 
 	"github.com/metaclips/LetsTalk/controller"
 	"github.com/metaclips/LetsTalk/model"
+	"github.com/metaclips/LetsTalk/values"
 )
 
 func main() {
-	err := model.LoadConfiguration()
+	err := values.LoadConfiguration()
 	if err != nil {
 		log.Fatal("Could not Load Config file")
 	}
@@ -34,7 +35,7 @@ func main() {
 	router.POST("/admin/login", controller.AdminLoginPOST)
 	router.POST("/admin/upload", controller.UploadUser)
 
-	port := model.Config.Port
+	port := values.Config.Port
 	if port == "" {
 		port = os.Getenv("HTTP_PLATFORM_PORT")
 	}
@@ -47,8 +48,4 @@ func main() {
 	if err := http.ListenAndServe(":"+port, router); err != nil {
 		log.Fatalln(err)
 	}
-}
-
-func LoadConfiguraton() {
-
 }

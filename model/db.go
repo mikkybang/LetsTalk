@@ -17,7 +17,7 @@ import (
 var db *mongo.Database
 
 func InitDB() {
-	dbHost := Config.DbHost
+	dbHost := values.Config.DbHost
 	mongoDB, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dbHost))
 	if err != nil {
 		log.Fatalln(err)
