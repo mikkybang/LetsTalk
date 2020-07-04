@@ -13,8 +13,8 @@ type configuration struct {
 
 var Config configuration
 
-func LoadConfiguration() error {
-	file, err := os.Open("./config.json") // For read access.
+func LoadConfiguration(configPath string) error {
+	file, err := os.Open(configPath) // For read access.
 	if err != nil {
 		log.Fatal(err)
 		return err

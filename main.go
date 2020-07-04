@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	err := values.LoadConfiguration()
+	err := values.LoadConfiguration("./config.json")
 	if err != nil {
 		log.Fatal("Could not Load Config file")
 	}

@@ -11,7 +11,7 @@ import (
 )
 
 func TestConfig(t *testing.T) {
-	err := values.LoadConfiguration()
+	err := values.LoadConfiguration("../config.json")
 	if err != nil {
 		t.Error("Could not Load Config file", err)
 	}
