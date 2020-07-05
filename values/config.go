@@ -27,7 +27,7 @@ func init() {
 
 // LoadConfiguration loads all application environment variables.
 func LoadConfiguration() error {
-	file, err := os.Open("./config.json") // For read access.
+	file, err := os.Open("../config.json") // For read access.
 	if err != nil {
 		return err
 	}
