@@ -2,17 +2,18 @@ package model
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
+	"github.com/metaclips/LetsTalk/values"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func TestEnvironmentVariable(t *testing.T) {
-	if os.Getenv("db_host") == "" {
-		t.Error("Environment variable not set")
+func TestConfig(t *testing.T) {
+	err := values.LoadConfiguration("../config.json")
+	if err != nil {
+		t.Error("Could not Load Config file", err)
 	}
 }
 
@@ -20,7 +21,7 @@ func TestDatabase(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	_, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("db_host")))
+	_, err := mongo.Connect(ctx, options.Client().ApplyURI(values.Config.DbHost))
 	if err != nil {
 		t.Errorf(err.Error())
 	}

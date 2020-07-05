@@ -69,7 +69,7 @@ See [go.mod](go.mod) for more information
 ```bash
 git clone https://github.com/metaclips/LetsTalk.git
 cd LetsTalk
-set db_host environment variable for mongo database
+
 go run .
 ```
 
