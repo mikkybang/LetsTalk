@@ -19,15 +19,15 @@ type configuration struct {
 var Config configuration
 
 func init() {
-	err := LoadConfiguration()
+	err := LoadConfiguration("./config.json")
 	if err != nil {
 		log.Fatalln("could not load config", err)
 	}
 }
 
 // LoadConfiguration loads all application environment variables.
-func LoadConfiguration() error {
-	file, err := os.Open("../config.json") // For read access.
+func LoadConfiguration(configPath string) error {
+	file, err := os.Open(configPath) // For read access.
 	if err != nil {
 		return err
 	}
