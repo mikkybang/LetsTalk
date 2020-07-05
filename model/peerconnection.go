@@ -82,15 +82,64 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte, user string)
 	s.connectedUsers[sessionID] = []string{sdp.UserID}
 	s.connectedUsersMutex.Unlock()
 
-	videoAudioWriter := newWebmWriter(sessionID)
+	var videoAudioWriter *webmWriter
+	if values.Config.EnableClassSessionUpload {
+		videoAudioWriter = newWebmWriter(sessionID + ".webm")
+	}
 
 	peerConnection.OnConnectionStateChange(func(cc webrtc.PeerConnectionState) {
 		fmt.Printf("PeerConnection State has changed %s \n", cc.String())
 		if cc == webrtc.PeerConnectionStateFailed {
 			// Since this is the publisher, all video and audio tracks related to the session
 			// should be cleared and all peer connections closed.
-
 			videoAudioWriter.close()
+
+			go func() {
+				if !values.Config.EnableClassSessionUpload {
+					return
+				}
+
+				// If token is not provided and file upload is set to true, file is uploaded to DB.
+				if values.Config.DropboxToken == "" {
+					videoAudioWriter.uploadToDB()
+					return
+				}
+
+				link, err := videoAudioWriter.getVideoFileSharableLink()
+				if err != nil {
+					log.Println("unable to generate sharable link", err)
+					return
+				}
+
+				if len(link) > 0 {
+					link = link[:len(link)-1] + "1"
+				}
+
+				message := Message{
+					RoomID:      sdp.RoomID,
+					Name:        sdp.AuthorName,
+					Message:     link,
+					UserID:      sdp.UserID,
+					Type:        "classSessionLink",
+					MessageType: "ClassSessionLink",
+					FileHash:    sdp.ClassSessionID,
+				}
+
+				roomUsers, err := message.SaveMessageContent()
+				if err != nil {
+					log.Println("unable to save class session link to db", err)
+				}
+
+				content, err := json.Marshal(message)
+				if err != nil {
+					log.Println("unable to marshal json while sending link", err)
+					return
+				}
+
+				for _, roomUser := range roomUsers {
+					HubConstruct.sendMessage(content, roomUser)
+				}
+			}()
 
 			s.peerConnectionMutexes.Lock()
 			s.connectedUsersMutex.Lock()
@@ -102,6 +151,7 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte, user string)
 			}
 
 			delete(s.connectedUsers, sessionID)
+
 			s.connectedUsersMutex.Unlock()
 			s.peerConnectionMutexes.Unlock()
 
@@ -168,7 +218,9 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte, user string)
 					break
 				}
 
-				videoAudioWriter.pushVP8(rtp)
+				if values.Config.EnableClassSessionUpload {
+					videoAudioWriter.pushVP8(rtp)
+				}
 			}
 
 			log.Println("Publisher video track exited")
@@ -203,7 +255,9 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte, user string)
 					break
 				}
 
-				videoAudioWriter.pushOpus(rtp)
+				if values.Config.EnableClassSessionUpload {
+					videoAudioWriter.pushOpus(rtp)
+				}
 			}
 
 			log.Println("Publisher audio track exited")

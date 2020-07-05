@@ -6,21 +6,25 @@ import (
 	"os"
 
 	"github.com/at-wat/ebml-go/webm"
+	"github.com/metaclips/LetsTalk/values"
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v2/pkg/media/samplebuilder"
 )
 
-func newWebmWriter(sessionID string) *webmWriter {
+// newWebmWriter writes video class session to either be upload to a Dropbox drive
+// or if a token is not specified, saved to mongodb using gridFS.
+// ToDo: Allow users access to download from DB if file is saved using gridFS.
+func newWebmWriter(fileName string) *webmWriter {
 	return &webmWriter{
-		session:      sessionID,
+		fileName:     fileName,
 		audioBuilder: samplebuilder.New(10, &codecs.OpusPacket{}),
 		videoBuilder: samplebuilder.New(10, &codecs.VP8Packet{}),
 	}
 }
 
 func (s *webmWriter) initWriter(width, height int) {
-	w, err := os.OpenFile(s.session+".webm", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	w, err := os.OpenFile(s.fileName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		log.Println(err)
 	}
@@ -127,5 +131,43 @@ func (s *webmWriter) close() {
 			log.Println(err)
 		}
 	}
-	log.Println("Video writer closed for session", s.session)
+
+	log.Println("Video writer closed for session, uploading.", s.fileName)
+}
+
+func (s *webmWriter) getVideoFileSharableLink() (string, error) {
+	if values.Config.DropboxToken != "" {
+		dropBoxUploader, err := newDropboxUploader(s.fileName)
+		if err != nil {
+			log.Println("unable to initialize dropbox uploader", err)
+			return "", err
+		}
+
+		link, err := dropBoxUploader.dropboxFileUploader()
+		if err != nil {
+			log.Println("unable to get dropbox sharable link", err)
+			return "", err
+		}
+
+		log.Println("file uploaded to file server")
+
+		return link, nil
+	}
+
+	return "", nil
+}
+
+func (s *webmWriter) uploadToDB() {
+	defer func() {
+		if err := os.Remove(s.fileName); err != nil {
+			log.Println("unable to remove file", err)
+		}
+	}()
+
+	if err := uploadFileGridFS(s.fileName); err != nil {
+		log.Println("error saving file to DB", err)
+		return
+	}
+
+	log.Println("File uploaded to DB")
 }

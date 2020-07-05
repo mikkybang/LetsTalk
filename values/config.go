@@ -7,8 +7,12 @@ import (
 )
 
 type configuration struct {
-	DbHost string
-	Port   string
+	DbHost                   string
+	Port                     string
+	CertPath                 string
+	KeyPath                  string
+	EnableClassSessionUpload bool
+	DropboxToken             string
 }
 
 // Config contains application environment variables.
@@ -23,7 +27,7 @@ func init() {
 
 // LoadConfiguration loads all application environment variables.
 func LoadConfiguration() error {
-	file, err := os.Open("../config.json") // For read access.
+	file, err := os.Open("./config.json") // For read access.
 	if err != nil {
 		return err
 	}

@@ -1,10 +1,13 @@
 package model
 
 import (
+	"os"
 	"sync"
 	"time"
 
 	"github.com/at-wat/ebml-go/webm"
+	"github.com/dropbox/dropbox-sdk-go-unofficial/dropbox/files"
+	"github.com/dropbox/dropbox-sdk-go-unofficial/dropbox/sharing"
 	"github.com/gorilla/websocket"
 	"github.com/pion/webrtc/v2"
 	"github.com/pion/webrtc/v2/pkg/media/samplebuilder"
@@ -67,16 +70,16 @@ type Room struct {
 }
 
 type Message struct {
-	RoomID      string `bson:"-" json:"roomID"`
-	Message     string `bson:"message" json:"message"`
+	RoomID      string `bson:"-" json:"roomID,omitempty"`
+	Message     string `bson:"message" json:"message,omitempty"`
 	FileSize    string `bson:"fileSize,omitempty" json:"fileSize,omitempty"`
 	FileHash    string `bson:"fileHash,omitempty" json:"fileHash,omitempty"`
-	UserID      string `bson:"userID" json:"userID"`
-	Name        string `bson:"name" json:"name"`
-	Index       int    `bson:"index" json:"index"`
-	Time        string `bson:"time" json:"time"`
-	Type        string `bson:"type" json:"type"`
-	MessageType string `bson:"-" json:"msgType"`
+	UserID      string `bson:"userID" json:"userID,omitempty"`
+	Name        string `bson:"name" json:"name,omitempty"`
+	Index       int    `bson:"index" json:"index,omitempty"`
+	Time        string `bson:"time" json:"time,omitempty"`
+	Type        string `bson:"type" json:"type,omitempty"`
+	MessageType string `bson:"-" json:"msgType,omitempty"`
 }
 
 type Joined struct {
@@ -180,7 +183,7 @@ type rtpSenderData struct {
 }
 
 type webmWriter struct {
-	session                        string
+	fileName                       string
 	audioWriter, videoWriter       webm.BlockWriteCloser
 	audioBuilder, videoBuilder     *samplebuilder.SampleBuilder
 	audioTimestamp, videoTimestamp uint32
@@ -196,4 +199,14 @@ type sdpConstruct struct {
 	SDP            string `json:"sdp"`
 
 	peerConnection *webrtc.PeerConnection
+}
+
+type dropboxUploader struct {
+	uploadClient       files.Client
+	sharableLinkClient sharing.Client
+	fileUploadInfo     *files.CommitInfo
+
+	file         *os.File
+	fileFullPath string
+	fileSize     int64
 }

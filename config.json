@@ -1,4 +1,8 @@
 {
     "DbHost": "mongodb://localhost:27017",
-    "Port": "8080"
+    "CertPath": "",
+    "KeyPath": "",
+    "Port": "8080",
+    "EnableClassSessionUpload": true,
+    "DropboxToken": ""
 }

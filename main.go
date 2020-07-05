@@ -41,6 +41,15 @@ func main() {
 
 	router.ServeFiles("/assets/*filepath", http.Dir("./views/assets"))
 	log.Println("Webserver UP")
+
+	// Optional use of TLS due to Heroku serving TLS at low level.
+	if values.Config.CertPath != "" || values.Config.KeyPath != "" {
+		if err := http.ListenAndServeTLS(":"+port, values.Config.CertPath, values.Config.KeyPath, router); err != nil {
+			log.Fatalln(err)
+		}
+		return
+	}
+
 	if err := http.ListenAndServe(":"+port, router); err != nil {
 		log.Fatalln(err)
 	}

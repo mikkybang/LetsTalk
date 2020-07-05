@@ -365,6 +365,10 @@
                     joinClassSession(sessionData)
                 },
 
+                downloadSession: function (link) {
+                    window.open(link, '_blank')
+                },
+
                 sendMessage: function () {
                     if (!this.messageContent.match(/\S/))
                         return
@@ -735,6 +739,8 @@
                             "type": "info",
                             "message": message
                         });
+                        playAudio.play()
+                        scrollChatToBottom()
                     };
                     break
 
@@ -766,7 +772,7 @@
                             "fileHash": jsonContent.fileHash,
                             "userID": jsonContent.userID,
                         })
-
+                        playAudio.play()
                         scrollChatToBottom()
                     }
                     break
@@ -793,7 +799,18 @@
                         "userID": jsonContent.userID,
                         "fileHash": jsonContent.sessionID, // FileHash represents the sdp.
                     })
+                    playAudio.play()
                     scrollChatToBottom()
+
+                    break
+
+                case "ClassSessionLink":
+                    // Notify users of a class session.
+                    if (jsonContent.roomID === vueComponent.currentViewedRoomID) {
+                        vueComponent.currentChatContent.push(jsonContent)
+                        playAudio.play()
+                        scrollChatToBottom()
+                    }
 
                     break
 

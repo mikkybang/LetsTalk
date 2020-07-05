@@ -131,6 +131,19 @@
                 </v-card>
               </div>
 
+              <div align="center" justify="center" v-else-if="chat['type']==='classSessionLink'">
+                <v-card tile class="justify-center" outlined>
+                  <v-card-text>
+                    Recorded session by {{chat['name']}} ({{chat['userID']}}) available.
+                    <v-btn
+                      text
+                      color="green"
+                      @click="downloadSession(chat.message)"
+                    >Click Here To Download</v-btn>
+                  </v-card-text>
+                </v-card>
+              </div>
+
               <div
                 :align="chat.userID==='(%.Email%)' ? 'right' : 'left'"
                 justify="center"
