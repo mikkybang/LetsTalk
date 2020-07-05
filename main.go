@@ -47,7 +47,7 @@ func main() {
 	log.Println("Webserver UP")
 
 	// Optional use of TLS due to Heroku serving TLS at low level.
-	if values.Config.CertPath != "" || values.Config.KeyPath != "" {
+	if values.Config.CertPath != "" && values.Config.KeyPath != "" {
 		if err := http.ListenAndServeTLS(":"+port, values.Config.CertPath, values.Config.KeyPath, router); err != nil {
 			log.Fatalln(err)
 		}
