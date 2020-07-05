@@ -2,7 +2,6 @@ package values
 
 import (
 	"encoding/json"
-	"log"
 	"os"
 )
 
@@ -17,13 +16,6 @@ type configuration struct {
 
 // Config contains application environment variables.
 var Config configuration
-
-func init() {
-	err := LoadConfiguration("./config.json")
-	if err != nil {
-		log.Fatalln("could not load config", err)
-	}
-}
 
 // LoadConfiguration loads all application environment variables.
 func LoadConfiguration(configPath string) error {

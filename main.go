@@ -15,6 +15,10 @@ import (
 )
 
 func main() {
+	if err := values.LoadConfiguration("./config.json"); err != nil {
+		log.Fatalln("unable to load config", err)
+	}
+
 	gob.Register(time.Time{})
 	model.InitDB()
 	go model.HubConstruct.Run()
