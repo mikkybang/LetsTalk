@@ -1,3 +1,4 @@
 {
-    "DbHost": "mongodb://localhost:27017"
+    "DbHost": "mongodb://localhost:27017",
+    "Port": "8080"
 }

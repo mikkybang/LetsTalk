@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/gob"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -16,14 +15,11 @@ import (
 )
 
 func main() {
-	err := values.LoadConfiguration("./config.json")
-	if err != nil {
-		log.Fatal("Could not Load Config file")
-	}
 	gob.Register(time.Time{})
 	model.InitDB()
-	router := httprouter.New()
 	go model.HubConstruct.Run()
+
+	router := httprouter.New()
 
 	router.GET("/", controller.HomePage)
 	router.GET("/ws", controller.ServeWs)
@@ -44,7 +40,7 @@ func main() {
 	}
 
 	router.ServeFiles("/assets/*filepath", http.Dir("./views/assets"))
-	fmt.Println("Webserver UP")
+	log.Println("Webserver UP")
 	if err := http.ListenAndServe(":"+port, router); err != nil {
 		log.Fatalln(err)
 	}

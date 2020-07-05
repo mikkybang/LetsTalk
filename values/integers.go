@@ -1,5 +1,5 @@
 package values
 
-var (
+const (
 	DefaultCost = 10
 )

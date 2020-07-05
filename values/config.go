@@ -11,19 +11,30 @@ type configuration struct {
 	Port   string
 }
 
+// Config contains application environment variables.
 var Config configuration
 
-func LoadConfiguration(configPath string) error {
-	file, err := os.Open(configPath) // For read access.
+func init() {
+	err := LoadConfiguration()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln("could not load config", err)
+	}
+}
+
+// LoadConfiguration loads all application environment variables.
+func LoadConfiguration() error {
+	file, err := os.Open("../config.json") // For read access.
+	if err != nil {
 		return err
 	}
+
 	defer file.Close()
+
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&Config)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
