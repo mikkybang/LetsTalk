@@ -37,7 +37,7 @@ func main() {
 
 	port := values.Config.Port
 	if port == "" {
-		port = os.Getenv("HTTP_PLATFORM_PORT")
+		port = os.Getenv("PORT")
 	}
 	if port == "" {
 		port = "8080"
