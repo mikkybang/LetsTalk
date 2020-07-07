@@ -22,7 +22,7 @@ func (msg messageBytes) handleCreateNewRoom() {
 		return
 	}
 
-	roomID, err := newRoom.CreateNewRoom()
+	roomID, err := newRoom.createNewRoom()
 	if err != nil {
 		log.Println("Unable to create a new room for user:", newRoom.Email, "err:", err.Error())
 		return
@@ -53,7 +53,7 @@ func (msg messageBytes) handleRequestUserToJoinRoom() {
 	}
 
 	for _, user := range request.Users {
-		roomRegisteredUser, err := request.RequestUserToJoinRoom(user)
+		roomRegisteredUser, err := request.requestUserToJoinRoom(user)
 		if err != nil {
 			log.Println("Error while requesting to room", err)
 			continue
@@ -98,7 +98,7 @@ func (msg messageBytes) handleUserAcceptRoomRequest(joiner string) {
 		return
 	}
 
-	users, err := roomRequest.AcceptRoomRequest()
+	users, err := roomRequest.acceptRoomRequest()
 	if err != nil {
 		log.Println("could not join room", err)
 		return
@@ -124,7 +124,7 @@ func (msg messageBytes) handleNewMessage(author string) {
 
 	newMessage.Time = time.Now().Format(values.TimeLayout)
 	// Save message to database ensuring user is registered to room.
-	registeredUsers, err := newMessage.SaveMessageContent()
+	registeredUsers, err := newMessage.saveMessageContent()
 	if err != nil {
 		log.Println("Error saving msg to db", err, author)
 		return
@@ -159,7 +159,7 @@ func (msg messageBytes) handleExitRoom(author string) {
 	}
 
 	user := User{Email: data.Email}
-	registeredUsers, err := user.ExitRoom(data.RoomID)
+	registeredUsers, err := user.exitRoom(data.RoomID)
 	if err != nil {
 		log.Println("Error exiting room", err)
 		return
@@ -195,7 +195,7 @@ func (msg messageBytes) handleNewFileUpload() {
 	data.FileName = file.FileName
 	user := file.User
 
-	if err := file.UploadNewFile(); err == mongo.ErrNoDocuments || err == nil {
+	if err := file.uploadNewFile(); err == mongo.ErrNoDocuments || err == nil {
 		// Send next file chunk and current hash which is a "".
 		data.MsgType = values.UploadFileChunkMsgType
 
@@ -253,7 +253,7 @@ func (msg messageBytes) handleUploadFileChunk() {
 	if data.RecentChunkHash == "" {
 		recentFileExist = true
 	} else {
-		recentFileExist = FileChunks{UniqueFileHash: data.RecentChunkHash}.FileChunkExists()
+		recentFileExist = FileChunks{UniqueFileHash: data.RecentChunkHash}.fileChunkExists()
 	}
 
 	data.RecentChunkHash, data.File, data.NewChunkHash = "", "", ""
@@ -277,7 +277,7 @@ func (msg messageBytes) handleUploadFileChunk() {
 		return
 	}
 
-	if err := file.AddFileChunk(); err != nil {
+	if err := file.addFileChunk(); err != nil {
 		// What could be cases where err is not nil.
 		// File could have already been added to database?.
 		// We still request for next file chunk, if when we receive a new fille chunk,
@@ -326,7 +326,7 @@ func (msg messageBytes) handleUploadFileUploadComplete() {
 		Type:     "file",
 		FileSize: data.FileSize,
 		FileHash: data.FileHash,
-	}.SaveMessageContent()
+	}.saveMessageContent()
 
 	if err != nil {
 		log.Println(err)
@@ -355,7 +355,7 @@ func (msg messageBytes) handleRequestDownload(author string) {
 
 	fileName := file.FileName
 
-	if err := file.RetrieveFileInformation(); err != nil {
+	if err := file.retrieveFileInformation(); err != nil {
 		file.MsgType = values.DownloadFileErrorMsgType
 	}
 	file.FileName = fileName
@@ -377,7 +377,7 @@ func (msg messageBytes) handleFileDownload(author string) {
 
 	fileName := file.FileName
 
-	if err := file.RetrieveFileChunk(); err != nil {
+	if err := file.retrieveFileChunk(); err != nil {
 		log.Println("error retrieving file", err)
 		// Send download file error message to client so as to stop download.
 		file = FileChunks{}
@@ -418,7 +418,7 @@ func handleSearchUser(searchText, user string) {
 // handleRequestAllMessages coallates all messages in a particular room.
 func handleRequestAllMessages(roomID, author string) {
 	room := Room{RoomID: roomID}
-	if err := room.GetAllMessageInRoom(); err != nil {
+	if err := room.getAllMessageInRoom(); err != nil {
 		log.Println("could not get all messages in room, err:", err)
 		return
 	}
@@ -452,7 +452,7 @@ func handleRequestAllMessages(roomID, author string) {
 // All rooms joined and users requests are loaded through WS.
 func handleLoadUserContent(email string) {
 	userInfo := User{Email: email}
-	if err := userInfo.GetAllUserRooms(); err != nil {
+	if err := userInfo.getAllUserRooms(); err != nil {
 		log.Println("Could not fetch users room", email)
 		return
 	}
@@ -474,7 +474,7 @@ func handleLoadUserContent(email string) {
 // not to block the hub channel
 func broadcastOnlineStatusToAllUserRoom(userEmail string, online bool) {
 	user := User{Email: userEmail}
-	associates, err := user.GetAllUsersAssociates()
+	associates, err := user.getAllUsersAssociates()
 	if err != nil {
 		log.Println("could not get users associate", err)
 		return

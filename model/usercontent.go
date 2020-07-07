@@ -1,7 +1,6 @@
 package model
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -19,8 +18,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (b *User) GetAllUserRooms() error {
-	result := db.Collection(values.UsersCollectionName).FindOne(context.TODO(), bson.M{
+func (b *User) getAllUserRooms() error {
+	result := db.Collection(values.UsersCollectionName).FindOne(ctx, bson.M{
 		"_id": b.Email,
 	})
 
@@ -31,7 +30,7 @@ func (b *User) GetAllUserRooms() error {
 	return nil
 }
 
-func (b User) AddUserToRoom(roomID, roomName string) error {
+func (b User) addUserToRoom(roomID, roomName string) error {
 	b.updateRoomsJoinedByUsers(roomID, roomName)
 	var chats Room
 	message := Message{
@@ -39,7 +38,7 @@ func (b User) AddUserToRoom(roomID, roomName string) error {
 		Type:    getContentType(values.INFO),
 	}
 
-	result := db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{
+	result := db.Collection(values.RoomsCollectionName).FindOne(ctx, bson.M{
 		"_id": roomID,
 	})
 
@@ -48,28 +47,28 @@ func (b User) AddUserToRoom(roomID, roomName string) error {
 	}
 
 	chats.Messages = append(chats.Messages, message)
-	_, err := db.Collection(values.RoomsCollectionName).UpdateOne(context.TODO(), bson.M{"_id": roomID},
+	_, err := db.Collection(values.RoomsCollectionName).UpdateOne(ctx, bson.M{"_id": roomID},
 		bson.M{"$set": bson.M{"messages": chats.Messages}})
 
 	return err
 }
 
 func (b *User) updateRoomsJoinedByUsers(roomID, roomName string) error {
-	if err := b.GetAllUserRooms(); err != nil {
+	if err := b.getAllUserRooms(); err != nil {
 		return err
 	}
 
 	var roomJoined = RoomsJoined{RoomID: roomID, RoomName: roomName}
 	b.RoomsJoined = append(b.RoomsJoined, roomJoined)
 
-	_, err := db.Collection(values.UsersCollectionName).UpdateOne(context.TODO(), bson.M{"_id": b.Email},
+	_, err := db.Collection(values.UsersCollectionName).UpdateOne(ctx, bson.M{"_id": b.Email},
 		bson.M{"$set": bson.M{"roomsJoined": b.RoomsJoined}})
 
 	return err
 }
 
-func (b *User) GetAllUsersAssociates() ([]string, error) {
-	if err := b.GetAllUserRooms(); err != nil {
+func (b *User) getAllUsersAssociates() ([]string, error) {
+	if err := b.getAllUserRooms(); err != nil {
 		return nil, err
 	}
 
@@ -99,7 +98,7 @@ func (b *User) GetAllUsersAssociates() ([]string, error) {
 
 	for _, roomJoined := range b.RoomsJoined {
 		var room Room
-		result := db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{
+		result := db.Collection(values.RoomsCollectionName).FindOne(ctx, bson.M{
 			"_id": roomJoined.RoomID,
 		})
 
@@ -118,8 +117,8 @@ func (b *User) GetAllUsersAssociates() ([]string, error) {
 	return users, nil
 }
 
-func (b User) ExitRoom(roomID string) ([]string, error) {
-	if err := b.GetAllUserRooms(); err != nil {
+func (b User) exitRoom(roomID string) ([]string, error) {
+	if err := b.getAllUserRooms(); err != nil {
 		return nil, err
 	}
 
@@ -142,14 +141,14 @@ func (b User) ExitRoom(roomID string) ([]string, error) {
 	}
 
 	// Update room joined by user in DB.
-	_, err := db.Collection(values.UsersCollectionName).UpdateOne(context.TODO(), bson.M{"_id": b.Email},
+	_, err := db.Collection(values.UsersCollectionName).UpdateOne(ctx, bson.M{"_id": b.Email},
 		bson.M{"$set": bson.M{"roomsJoined": b.RoomsJoined}})
 	if err != nil {
 		return nil, err
 	}
 
 	room := Room{RoomID: roomID}
-	result := db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{"_id": room.RoomID})
+	result := db.Collection(values.RoomsCollectionName).FindOne(ctx, bson.M{"_id": room.RoomID})
 
 	if err := result.Decode(&room); err != nil {
 		return nil, err
@@ -173,7 +172,7 @@ func (b User) ExitRoom(roomID string) ([]string, error) {
 		}
 	}
 
-	_, err = db.Collection(values.RoomsCollectionName).UpdateOne(context.TODO(), bson.M{
+	_, err = db.Collection(values.RoomsCollectionName).UpdateOne(ctx, bson.M{
 		"_id": room.RoomID,
 	}, bson.M{"$set": bson.M{"registeredUsers": room.RegisteredUsers, "messages": room.Messages}})
 
@@ -181,7 +180,7 @@ func (b User) ExitRoom(roomID string) ([]string, error) {
 }
 
 func (b User) CreateUserLogin(password string, w http.ResponseWriter) error {
-	if err := b.GetAllUserRooms(); err != nil {
+	if err := b.getAllUserRooms(); err != nil {
 		return err
 	}
 
@@ -202,8 +201,8 @@ func (b User) CreateUserLogin(password string, w http.ResponseWriter) error {
 	return err
 }
 
-func (b User) ValidateUser(uniqueID string) error {
-	if err := b.GetAllUserRooms(); err != nil {
+func (b User) validateUser(uniqueID string) error {
+	if err := b.getAllUserRooms(); err != nil {
 		return err
 	}
 
@@ -213,9 +212,9 @@ func (b User) ValidateUser(uniqueID string) error {
 	return nil
 }
 
-func (b Message) SaveMessageContent() ([]string, error) {
+func (b Message) saveMessageContent() ([]string, error) {
 	var messages Room
-	result := db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{
+	result := db.Collection(values.RoomsCollectionName).FindOne(ctx, bson.M{
 		"_id": b.RoomID,
 	})
 
@@ -236,13 +235,13 @@ func (b Message) SaveMessageContent() ([]string, error) {
 	}
 
 	messages.Messages = append(messages.Messages, b)
-	_, err := db.Collection(values.RoomsCollectionName).UpdateOne(context.TODO(), bson.M{"_id": b.RoomID},
+	_, err := db.Collection(values.RoomsCollectionName).UpdateOne(ctx, bson.M{"_id": b.RoomID},
 		bson.M{"$set": bson.M{"messages": messages.Messages}})
 
 	return messages.RegisteredUsers, err
 }
 
-func (b NewRoomRequest) CreateNewRoom() (string, error) {
+func (b NewRoomRequest) createNewRoom() (string, error) {
 	var chats Room
 	message := Message{
 		Message: b.Email + " Joined",
@@ -254,7 +253,7 @@ func (b NewRoomRequest) CreateNewRoom() (string, error) {
 	chats.RoomName = b.RoomName
 	chats.RegisteredUsers = append(chats.RegisteredUsers, b.Email)
 
-	if _, err := db.Collection(values.RoomsCollectionName).InsertOne(context.TODO(), chats); err != nil {
+	if _, err := db.Collection(values.RoomsCollectionName).InsertOne(ctx, chats); err != nil {
 		return "", err
 	}
 
@@ -266,8 +265,8 @@ func (b NewRoomRequest) CreateNewRoom() (string, error) {
 	return chats.RoomID, nil
 }
 
-func (b *Room) GetAllMessageInRoom() error {
-	result := db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{"_id": b.RoomID})
+func (b *Room) getAllMessageInRoom() error {
+	result := db.Collection(values.RoomsCollectionName).FindOne(ctx, bson.M{"_id": b.RoomID})
 
 	if err := result.Decode(&b); err != nil {
 		return err
@@ -276,8 +275,8 @@ func (b *Room) GetAllMessageInRoom() error {
 	return nil
 }
 
-func (b Joined) AcceptRoomRequest() ([]string, error) {
-	result := db.Collection(values.UsersCollectionName).FindOne(context.TODO(), bson.M{
+func (b Joined) acceptRoomRequest() ([]string, error) {
+	result := db.Collection(values.UsersCollectionName).FindOne(ctx, bson.M{
 		"_id": b.Email,
 	})
 
@@ -303,13 +302,13 @@ func (b Joined) AcceptRoomRequest() ([]string, error) {
 
 	user.RoomsJoined = append(user.RoomsJoined, RoomsJoined{RoomID: b.RoomID, RoomName: b.RoomName})
 
-	_, err = db.Collection(values.UsersCollectionName).UpdateOne(context.TODO(), bson.M{"_id": b.Email},
+	_, err = db.Collection(values.UsersCollectionName).UpdateOne(ctx, bson.M{"_id": b.Email},
 		bson.M{"$set": bson.M{"joinRequest": user.JoinRequest, "roomsJoined": user.RoomsJoined}})
 	if err != nil {
 		return nil, err
 	}
 
-	result = db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{
+	result = db.Collection(values.RoomsCollectionName).FindOne(ctx, bson.M{
 		"_id": b.RoomID,
 	})
 
@@ -326,16 +325,16 @@ func (b Joined) AcceptRoomRequest() ([]string, error) {
 	messages.RegisteredUsers = append(messages.RegisteredUsers, b.Email)
 	messages.Messages = append(messages.Messages, message)
 
-	_, err = db.Collection(values.RoomsCollectionName).UpdateOne(context.TODO(), bson.M{
+	_, err = db.Collection(values.RoomsCollectionName).UpdateOne(ctx, bson.M{
 		"_id": b.RoomID,
 	}, bson.M{"$set": bson.M{"registeredUsers": messages.RegisteredUsers, "messages": messages.Messages}})
 
 	return messages.RegisteredUsers, err
 }
 
-func (b JoinRequest) RequestUserToJoinRoom(userToJoinEmail string) ([]string, error) {
+func (b JoinRequest) requestUserToJoinRoom(userToJoinEmail string) ([]string, error) {
 	var room Room
-	result := db.Collection(values.RoomsCollectionName).FindOne(context.TODO(), bson.M{"_id": b.RoomID})
+	result := db.Collection(values.RoomsCollectionName).FindOne(ctx, bson.M{"_id": b.RoomID})
 
 	if err := result.Decode(&room); err != nil {
 		return nil, err
@@ -356,7 +355,7 @@ func (b JoinRequest) RequestUserToJoinRoom(userToJoinEmail string) ([]string, er
 		return nil, errors.New("Invalid user made a RequestUsersToJoinRoom request Name: " + b.RequestingUserID)
 	}
 
-	result = db.Collection(values.UsersCollectionName).FindOne(context.TODO(), bson.M{"_id": userToJoinEmail})
+	result = db.Collection(values.UsersCollectionName).FindOne(ctx, bson.M{"_id": userToJoinEmail})
 	var user User
 
 	if err := result.Decode(&user); err != nil {
@@ -371,7 +370,7 @@ func (b JoinRequest) RequestUserToJoinRoom(userToJoinEmail string) ([]string, er
 	}
 	user.JoinRequest = append(user.JoinRequest, b)
 
-	_, err := db.Collection(values.UsersCollectionName).UpdateOne(context.TODO(), bson.M{"_id": userToJoinEmail},
+	_, err := db.Collection(values.UsersCollectionName).UpdateOne(ctx, bson.M{"_id": userToJoinEmail},
 		bson.M{"$set": bson.M{"joinRequest": user.JoinRequest}})
 
 	if err != nil {
@@ -385,18 +384,18 @@ func (b JoinRequest) RequestUserToJoinRoom(userToJoinEmail string) ([]string, er
 	room.Messages = append(room.Messages, message)
 
 	_, err = db.Collection(values.RoomsCollectionName).
-		UpdateOne(context.TODO(), bson.M{"_id": b.RoomID}, bson.M{"$set": bson.M{"messages": room.Messages}})
+		UpdateOne(ctx, bson.M{"_id": b.RoomID}, bson.M{"$set": bson.M{"messages": room.Messages}})
 	return room.RegisteredUsers, err
 }
 
 // UploadNewFile create a NewFile content to database and returns file content if one
 // has already been created.
 // Chunks is set to zero so that if user wants to retrieve
-func (b *File) UploadNewFile() error {
-	result := db.Collection(values.FilesCollectionName).FindOne(context.TODO(), bson.M{"_id": b.UniqueFileHash}) //, b, options.FindOneAndReplace().SetUpsert(true))
+func (b *File) uploadNewFile() error {
+	result := db.Collection(values.FilesCollectionName).FindOne(ctx, bson.M{"_id": b.UniqueFileHash}) //, b, options.FindOneAndReplace().SetUpsert(true))
 
 	if result.Err() == mongo.ErrNoDocuments {
-		_, err := db.Collection(values.FilesCollectionName).InsertOne(context.TODO(), b)
+		_, err := db.Collection(values.FilesCollectionName).InsertOne(ctx, b)
 		return err
 	}
 
@@ -407,26 +406,26 @@ func (b *File) UploadNewFile() error {
 	return nil
 }
 
-func (b *File) RetrieveFileInformation() error {
-	result := db.Collection(values.FilesCollectionName).FindOne(context.TODO(), bson.M{"_id": b.UniqueFileHash})
+func (b *File) retrieveFileInformation() error {
+	result := db.Collection(values.FilesCollectionName).FindOne(ctx, bson.M{"_id": b.UniqueFileHash})
 	return result.Decode(&b)
 }
 
-func (b FileChunks) FileChunkExists() bool {
-	result := db.Collection(values.FileChunksCollectionName).FindOne(context.TODO(), bson.M{"_id": b.UniqueFileHash})
+func (b FileChunks) fileChunkExists() bool {
+	result := db.Collection(values.FileChunksCollectionName).FindOne(ctx, bson.M{"_id": b.UniqueFileHash})
 	if err := result.Err(); err == nil {
 		return true
 	}
 	return false
 }
 
-func (b FileChunks) AddFileChunk() error {
+func (b FileChunks) addFileChunk() error {
 	result := db.Collection(values.FileChunksCollectionName).
-		FindOneAndReplace(context.TODO(), bson.M{"_id": b.UniqueFileHash}, b, options.FindOneAndReplace().SetUpsert(true))
+		FindOneAndReplace(ctx, bson.M{"_id": b.UniqueFileHash}, b, options.FindOneAndReplace().SetUpsert(true))
 
 	// Update original file index.
 	if err := result.Err(); err == nil || err == mongo.ErrNoDocuments {
-		_, err := db.Collection(values.FilesCollectionName).UpdateOne(context.TODO(),
+		_, err := db.Collection(values.FilesCollectionName).UpdateOne(ctx,
 			bson.M{"_id": b.CompressedFileHash}, bson.M{"$set": bson.M{"chunks": b.ChunkIndex}})
 		return err
 	}
@@ -434,9 +433,9 @@ func (b FileChunks) AddFileChunk() error {
 	return result.Err()
 }
 
-func (b *FileChunks) RetrieveFileChunk() error {
+func (b *FileChunks) retrieveFileChunk() error {
 	result := db.Collection(values.FileChunksCollectionName).
-		FindOne(context.TODO(), bson.M{"compressedFileHash": b.CompressedFileHash, "chunkIndex": b.ChunkIndex})
+		FindOne(ctx, bson.M{"compressedFileHash": b.CompressedFileHash, "chunkIndex": b.ChunkIndex})
 
 	return result.Decode(&b)
 }

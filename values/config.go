@@ -10,7 +10,7 @@ type configuration struct {
 	Port                     string
 	CertPath                 string
 	KeyPath                  string
-	EnableClassSessionUpload bool
+	EnableClassSessionUpload bool // If EnableClassSessionUpload is set to true and no token is provided, files are saved to DB using GridFS.
 	DropboxToken             string
 }
 

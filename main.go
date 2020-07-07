@@ -51,6 +51,7 @@ func main() {
 		if err := http.ListenAndServeTLS(":"+port, values.Config.CertPath, values.Config.KeyPath, router); err != nil {
 			log.Fatalln(err)
 		}
+
 		return
 	}
 

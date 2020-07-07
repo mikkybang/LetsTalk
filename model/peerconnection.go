@@ -125,7 +125,7 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte, user string)
 					FileHash:    sdp.ClassSessionID,
 				}
 
-				roomUsers, err := message.SaveMessageContent()
+				roomUsers, err := message.saveMessageContent()
 				if err != nil {
 					log.Println("unable to save class session link to db", err)
 				}
@@ -295,7 +295,7 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte, user string)
 		UserID:   sdp.UserID,
 		Type:     "classSession",
 		FileHash: sdp.ClassSessionID,
-	}.SaveMessageContent()
+	}.saveMessageContent()
 
 	if err != nil {
 		closePeerConnection(peerConnection)

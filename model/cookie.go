@@ -1,7 +1,6 @@
 package model
 
 import (
-	"context"
 	"net/http"
 	"time"
 
@@ -18,7 +17,7 @@ func (b CookieDetail) CreateCookie(w http.ResponseWriter) error {
 	b.Data.ExitTime = exitTime.Local()
 	b.Data.UUID = uuid.New().String()
 
-	_, err := db.Collection(b.Collection).UpdateOne(context.TODO(), map[string]interface{}{"_id": b.Email},
+	_, err := db.Collection(b.Collection).UpdateOne(ctx, bson.M{"_id": b.Email},
 		bson.M{"$set": bson.M{"loginUUID": b.Data.UUID, "expires": exitTime}})
 	if err != nil {
 		return err
@@ -58,7 +57,7 @@ func (b *CookieDetail) CheckCookie(r *http.Request, w http.ResponseWriter) error
 	}
 
 	b.Email = b.Data.Email
-	result := db.Collection(b.Collection).FindOne(context.TODO(), map[string]string{"_id": b.Email})
+	result := db.Collection(b.Collection).FindOne(ctx, bson.M{"_id": b.Email})
 
 	if err := result.Err(); err != nil {
 		return err

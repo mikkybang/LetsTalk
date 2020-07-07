@@ -11,7 +11,7 @@ import (
 	"github.com/metaclips/LetsTalk/values"
 )
 
-// TODO: initially parse html template one time only
+// TODO: initially parse all html template one time only
 func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	cookie := model.CookieDetail{CookieName: values.UserCookieName, Collection: values.UsersCollectionName}
 	if err := cookie.CheckCookie(r, w); err != nil {
