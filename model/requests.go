@@ -452,7 +452,7 @@ func handleRequestAllMessages(roomID, author string) {
 // All rooms joined and users requests are loaded through WS.
 func handleLoadUserContent(email string) {
 	userInfo := User{Email: email}
-	if err := userInfo.getAllUserRooms(); err != nil {
+	if err := userInfo.getUser(); err != nil {
 		log.Println("Could not fetch users room", email)
 		return
 	}

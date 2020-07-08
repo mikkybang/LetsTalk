@@ -18,7 +18,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (b *User) getAllUserRooms() error {
+func (b *User) getUser() error {
 	result := db.Collection(values.UsersCollectionName).FindOne(ctx, bson.M{
 		"_id": b.Email,
 	})
@@ -54,7 +54,7 @@ func (b User) addUserToRoom(roomID, roomName string) error {
 }
 
 func (b *User) updateRoomsJoinedByUsers(roomID, roomName string) error {
-	if err := b.getAllUserRooms(); err != nil {
+	if err := b.getUser(); err != nil {
 		return err
 	}
 
@@ -68,7 +68,7 @@ func (b *User) updateRoomsJoinedByUsers(roomID, roomName string) error {
 }
 
 func (b *User) getAllUsersAssociates() ([]string, error) {
-	if err := b.getAllUserRooms(); err != nil {
+	if err := b.getUser(); err != nil {
 		return nil, err
 	}
 
@@ -118,7 +118,7 @@ func (b *User) getAllUsersAssociates() ([]string, error) {
 }
 
 func (b User) exitRoom(roomID string) ([]string, error) {
-	if err := b.getAllUserRooms(); err != nil {
+	if err := b.getUser(); err != nil {
 		return nil, err
 	}
 
@@ -180,7 +180,7 @@ func (b User) exitRoom(roomID string) ([]string, error) {
 }
 
 func (b User) CreateUserLogin(password string, w http.ResponseWriter) error {
-	if err := b.getAllUserRooms(); err != nil {
+	if err := b.getUser(); err != nil {
 		return err
 	}
 
@@ -202,7 +202,7 @@ func (b User) CreateUserLogin(password string, w http.ResponseWriter) error {
 }
 
 func (b User) validateUser(uniqueID string) error {
-	if err := b.getAllUserRooms(); err != nil {
+	if err := b.getUser(); err != nil {
 		return err
 	}
 

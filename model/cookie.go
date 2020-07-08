@@ -27,12 +27,13 @@ func (b CookieDetail) CreateCookie(w http.ResponseWriter) error {
 	if err != nil {
 		return err
 	}
+
 	cookie := &http.Cookie{
 		Name:     b.CookieName,
 		Value:    encoded,
 		Expires:  exitTime,
 		SameSite: http.SameSiteStrictMode,
-		Secure:   true,
+		Secure:   true, // Cookie is set to secure that is https so non-https would be dropped.
 		Path:     b.Path,
 	}
 
@@ -63,12 +64,12 @@ func (b *CookieDetail) CheckCookie(r *http.Request, w http.ResponseWriter) error
 		return err
 	}
 
-	var data map[string]interface{}
+	var data CookieData
 	if err = result.Decode(&data); err != nil {
 		return err
 	}
 
-	if data["loginUUID"] != b.Data.UUID {
+	if data.UUID != b.Data.UUID {
 		return values.ErrIncorrectUUID
 	}
 

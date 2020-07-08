@@ -55,6 +55,7 @@ func main() {
 		return
 	}
 
+	// Note: without HTTPS users wont be able to login as SetCookie uses Secure flag.
 	if err := http.ListenAndServe(":"+port, router); err != nil {
 		log.Fatalln(err)
 	}
