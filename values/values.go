@@ -1,6 +1,10 @@
 package values
 
-import "github.com/pion/webrtc/v2"
+import (
+	"log"
+
+	"github.com/pion/webrtc/v2"
+)
 
 type MessageType int
 
@@ -42,16 +46,39 @@ var (
 	// MapEmailToName maps user email to name
 	MapEmailToName map[string]string
 
+	// PeerConnectionConfig contains peerconnection configuration
 	PeerConnectionConfig = webrtc.Configuration{
-		ICEServers: []webrtc.ICEServer{
-			{
-				// ToDo: Specify url in env config when PR #41 is merged.
-				URLs:           []string{"stun:numb.viagenie.ca:3478", "turn:numb.viagenie.ca:3478"},
-				Username:       "utimichael9@gmail.com",
-				Credential:     "SxkJ4Wd9!UUGCea",
-				CredentialType: webrtc.ICECredentialTypePassword,
-			},
-		},
 		SDPSemantics: webrtc.SDPSemanticsUnifiedPlanWithFallback,
 	}
+
+	credetialType map[string]webrtc.ICECredentialType = map[string]webrtc.ICECredentialType{
+		"Password": webrtc.ICECredentialTypePassword,
+		"Oauth":    webrtc.ICECredentialTypePassword,
+	}
 )
+
+func init() {
+	if len(Config.ICEServers) == 0 {
+		PeerConnectionConfig.ICEServers = []webrtc.ICEServer{
+			{URLs: []string{"stun:stun.l.google.com:19302"}},
+		}
+
+		return
+	}
+
+	for _, config := range Config.ICEServers {
+		credential, ok := credetialType[config.AuthType]
+		if !ok {
+			log.Fatalln("Invalid webrtc credential type", config.AuthType, "only AuthType Password and Oauth are allowed.")
+		}
+
+		iceServer := webrtc.ICEServer{
+			URLs:           config.URLs,
+			Username:       config.Username,
+			Credential:     config.AuthSecret,
+			CredentialType: credential,
+		}
+
+		PeerConnectionConfig.ICEServers = append(PeerConnectionConfig.ICEServers, iceServer)
+	}
+}

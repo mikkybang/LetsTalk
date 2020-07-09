@@ -25,10 +25,10 @@ func InitDB() {
 		log.Fatalln("could not connect to database", err)
 	}
 
-	db = mongoDB.Database(values.DatabaseName)
+	db = mongoDB.Database(values.Config.DbName)
 
 	// Ping mongo database continuously if down.
-	go func(mongoDB *mongo.Client) {
+	go func() {
 		for {
 			if err := mongoDB.Ping(ctx, readpref.Primary()); err != nil {
 				cancel()
@@ -37,7 +37,7 @@ func InitDB() {
 
 			time.Sleep(time.Second * 5)
 		}
-	}(mongoDB)
+	}()
 
 	values.MapEmailToName = make(map[string]string)
 

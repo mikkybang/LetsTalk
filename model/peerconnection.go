@@ -321,7 +321,6 @@ func (s *classSessionPeerConnections) joinClassSession(msg []byte, user string) 
 	// A single user might login using multiple devices. We close recent peerconnection if there's one.
 	s.peerConnectionMutexes.Lock()
 	if s.peerConnection[sdp.UserID] != nil {
-		// ToDo: Return user already in session error
 		log.Println(user, "already in a session")
 		onSessionError(user, "You are already in another session.")
 		s.peerConnectionMutexes.Unlock()

@@ -6,12 +6,23 @@ import (
 )
 
 type configuration struct {
+	TLS struct {
+		CertPath string
+		KeyPath  string
+	}
+
+	ICEServers []struct {
+		URLs       []string
+		Username   string
+		AuthType   string
+		AuthSecret string
+	}
+
 	DbHost                   string
-	Port                     string
-	CertPath                 string
-	KeyPath                  string
-	EnableClassSessionUpload bool // If EnableClassSessionUpload is set to true and no token is provided, files are saved to DB using GridFS.
+	DbName                   string
 	DropboxToken             string
+	EnableClassSessionUpload bool // If EnableClassSessionUpload is set to true and no token is provided, files are saved to DB using GridFS.
+	Port                     string
 }
 
 // Config contains application environment variables.

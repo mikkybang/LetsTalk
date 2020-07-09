@@ -4,6 +4,8 @@ import "errors"
 
 var (
 	ErrIncorrectUUID           = errors.New("incorrect UUID")
+	ErrInvalidExpiryTime       = errors.New("invalid expiry time")
+	ErrCookieExpired           = errors.New("generated cookie has expired")
 	ErrInvalidUser             = errors.New("invalid user")
 	ErrInvalidDetails          = errors.New("invalid signin details")
 	ErrRetrieveUUID            = errors.New("could not retrieve UUID")

@@ -13,8 +13,8 @@ import (
 var cookieHandler = securecookie.New(securecookie.GenerateRandomKey(64), securecookie.GenerateRandomKey(32))
 
 func (b CookieDetail) CreateCookie(w http.ResponseWriter) error {
-	exitTime := time.Now().Add(time.Hour * 2)
-	b.Data.ExitTime = exitTime.Local()
+	exitTime := time.Now().Add(time.Hour * 2).Local()
+	b.Data.ExitTime = exitTime
 	b.Data.UUID = uuid.New().String()
 
 	_, err := db.Collection(b.Collection).UpdateOne(ctx, bson.M{"_id": b.Email},
@@ -57,22 +57,29 @@ func (b *CookieDetail) CheckCookie(r *http.Request, w http.ResponseWriter) error
 		return err
 	}
 
+	if b.Data.ExitTime.Before(time.Now().Local()) {
+		return values.ErrCookieExpired
+	}
+
 	b.Email = b.Data.Email
 	result := db.Collection(b.Collection).FindOne(ctx, bson.M{"_id": b.Email})
 
-	if err := result.Err(); err != nil {
+	cookieUUID := struct {
+		LoginUUID string    `json:"loginUUID"`
+		Expires   time.Time `json:"expires"`
+	}{}
+
+	if err = result.Decode(&cookieUUID); err != nil {
 		return err
 	}
 
-	var data CookieData
-	if err = result.Decode(&data); err != nil {
-		return err
-	}
-
-	if data.UUID != b.Data.UUID {
+	if cookieUUID.LoginUUID != b.Data.UUID {
 		return values.ErrIncorrectUUID
 	}
 
-	// TODO: also check for expiry time.
+	if cookieUUID.Expires.Sub(b.Data.ExitTime).Seconds() > 0 {
+		return values.ErrInvalidExpiryTime
+	}
+
 	return nil
 }

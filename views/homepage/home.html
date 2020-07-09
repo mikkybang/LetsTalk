@@ -954,9 +954,6 @@
                     .catch(log => console.log(log))
             })
 
-            // ToDo: I passed transceiver so that I can get stream content.
-            // We can later add features to both use desktop and webcam sharing at same time.
-            // ToDo: Detect if webcam is disable and show caller initials.
             peerConnection.ontrack = function ({ transceiver, streams: [event] }) {
                 event.onaddtrack = (ev) => {
                     console.log("On Add Track called for start video session")

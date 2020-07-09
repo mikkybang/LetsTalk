@@ -1,8 +1,21 @@
 {
+    "ICEServers": [
+        {
+            "URL": [
+                "stun:stun.l.google.com:19302"
+            ],
+            "Username": "",
+            "AuthType": "",
+            "AuthSecret": ""
+        }
+    ],
+    "TLS": {
+        "CertPath": "cert.pem",
+        "KeyPath": "key.pem"
+    },
     "DbHost": "mongodb://localhost:27017",
-    "CertPath": "",
-    "KeyPath": "",
-    "Port": "8080",
+    "DbName": "LetsTalkDB",
+    "DropboxToken": "",
     "EnableClassSessionUpload": true,
-    "DropboxToken": ""
+    "Port": "8080"
 }
