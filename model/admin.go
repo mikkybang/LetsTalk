@@ -1,7 +1,6 @@
 package model
 
 import (
-	"context"
 	"net/http"
 	"strings"
 
@@ -12,7 +11,7 @@ import (
 )
 
 func (b *Admin) CheckAdminDetails(password string) error {
-	result := db.Collection(values.AdminCollectionName).FindOne(context.TODO(), bson.M{
+	result := db.Collection(values.AdminCollectionName).FindOne(ctx, bson.M{
 		"_id": b.StaffDetails.Email,
 	})
 
@@ -27,7 +26,7 @@ func (b *Admin) CheckAdminDetails(password string) error {
 }
 
 func (b *Admin) CreateAdmin() error {
-	_, err := db.Collection(values.AdminCollectionName).InsertOne(context.TODO(), b)
+	_, err := db.Collection(values.AdminCollectionName).InsertOne(ctx, b)
 	return err
 }
 
@@ -52,6 +51,6 @@ func (b User) UploadUser(r *http.Request) error {
 	}
 
 	values.MapEmailToName[b.Email] = b.Name
-	_, err := db.Collection(values.UsersCollectionName).InsertOne(context.TODO(), b)
+	_, err := db.Collection(values.UsersCollectionName).InsertOne(ctx, b)
 	return err
 }

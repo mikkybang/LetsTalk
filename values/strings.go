@@ -1,8 +1,6 @@
 package values
 
 const (
-	// TODO: Change to database instead
-	DatabaseName             = "unilagDatabase"
 	AdminCollectionName      = "administrators"
 	UsersCollectionName      = "users"
 	RoomsCollectionName      = "Rooms"

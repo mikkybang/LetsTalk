@@ -2,28 +2,35 @@ package values
 
 import (
 	"encoding/json"
-	"log"
 	"os"
 )
 
 type configuration struct {
-	DbHost string
-	Port   string
+	TLS struct {
+		CertPath string
+		KeyPath  string
+	}
+
+	ICEServers []struct {
+		URLs       []string
+		Username   string
+		AuthType   string
+		AuthSecret string
+	}
+
+	DbHost                   string
+	DbName                   string
+	DropboxToken             string
+	EnableClassSessionRecord bool // If EnableClassSessionUpload is set to true and no token is provided, files are saved to DB using GridFS.
+	Port                     string
 }
 
 // Config contains application environment variables.
 var Config configuration
 
-func init() {
-	err := LoadConfiguration()
-	if err != nil {
-		log.Fatalln("could not load config", err)
-	}
-}
-
 // LoadConfiguration loads all application environment variables.
-func LoadConfiguration() error {
-	file, err := os.Open("../config.json") // For read access.
+func LoadConfiguration(configPath string) error {
+	file, err := os.Open(configPath) // For read access.
 	if err != nil {
 		return err
 	}
@@ -35,6 +42,8 @@ func LoadConfiguration() error {
 	if err != nil {
 		return err
 	}
+
+	initIceServers()
 
 	return nil
 }

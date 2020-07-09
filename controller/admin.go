@@ -12,16 +12,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-var loginTmpl *template.Template
-
-func init() {
-	var terr error
-	loginTmpl, terr = template.New("login.html").Delims("(%", "%)").ParseFiles("views/loginpage/login.html")
-	if terr != nil {
-		log.Fatalln(terr)
-	}
-}
-
 func AdminLoginPOST(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	r.ParseForm()
 	email := r.FormValue("email")

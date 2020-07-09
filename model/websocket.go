@@ -79,6 +79,11 @@ func (h *Hub) Run() {
 	}
 }
 
+func (h *Hub) sendMessage(msg []byte, user string) {
+	m := WSMessage{msg, user}
+	HubConstruct.Broadcast <- m
+}
+
 // WritePump pumps messages from the hub to the websocket connection.
 func (s *Subscription) WritePump() {
 	c := s.Conn
@@ -188,6 +193,15 @@ func (s Subscription) ReadPump(user string) {
 
 		case values.DownloadFileChunkMsgType:
 			msg.handleFileDownload(user)
+
+		case values.StartClassSession:
+			classSessions.startClassSession(msg, user)
+
+		case values.JoinClassSession:
+			classSessions.joinClassSession(msg, user)
+
+		case values.NegotiateSDP:
+			sdpConstruct{}.acceptRenegotiation(msg)
 
 		case values.NewMessageMsgType:
 			msg.handleNewMessage(user)

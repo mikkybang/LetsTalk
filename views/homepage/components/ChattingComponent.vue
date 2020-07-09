@@ -81,7 +81,7 @@
                 </v-card>
               </v-dialog>
 
-              <v-btn fab depressed>
+              <v-btn @click="startSession()" fab depressed>
                 <v-icon>mdi-phone</v-icon>
               </v-btn>
             </v-col>
@@ -119,6 +119,28 @@
               <div align="center" justify="center" v-if="chat['type']==='info'">
                 <v-card tile class="justify-center" outlined>
                   <v-card-text>{{chat['message']}}</v-card-text>
+                </v-card>
+              </div>
+
+              <div align="center" justify="center" v-else-if="chat['type']==='classSession'">
+                <v-card tile class="justify-center" outlined>
+                  <v-card-text>
+                    {{chat['name']}} ({{chat['userID']}}) wants you to join a class session
+                    <v-btn text color="green" @click="joinSession(chat)">Click Here To Join</v-btn>
+                  </v-card-text>
+                </v-card>
+              </div>
+
+              <div align="center" justify="center" v-else-if="chat['type']==='classSessionLink'">
+                <v-card tile class="justify-center" outlined>
+                  <v-card-text>
+                    Recorded session by {{chat['name']}} ({{chat['userID']}}) available.
+                    <v-btn
+                      text
+                      color="green"
+                      @click="downloadSession(chat.message)"
+                    >Click Here To Download</v-btn>
+                  </v-card-text>
                 </v-card>
               </div>
 

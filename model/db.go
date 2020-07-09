@@ -15,36 +15,39 @@ import (
 )
 
 var db *mongo.Database
+var ctx, cancel = context.WithCancel(context.Background())
 
 func InitDB() {
 	dbHost := values.Config.DbHost
-	mongoDB, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dbHost))
+	mongoDB, err := mongo.Connect(ctx, options.Client().ApplyURI(dbHost))
 	if err != nil {
-		log.Fatalln(err)
+		cancel()
+		log.Fatalln("could not connect to database", err)
 	}
 
-	db = mongoDB.Database(values.DatabaseName)
+	db = mongoDB.Database(values.Config.DbName)
 
 	// Ping mongo database continuously if down.
-	go func(mongoDB *mongo.Client) {
+	go func() {
 		for {
-			if err := mongoDB.Ping(context.TODO(), readpref.Primary()); err != nil {
-				log.Fatalln(err)
+			if err := mongoDB.Ping(ctx, readpref.Primary()); err != nil {
+				cancel()
+				log.Fatalln("Database down", err)
 			}
 
 			time.Sleep(time.Second * 5)
 		}
-	}(mongoDB)
+	}()
 
 	values.MapEmailToName = make(map[string]string)
 
 	getCollection := func(collection string, content interface{}) {
-		result, err := db.Collection(collection).Find(context.TODO(), bson.D{})
+		result, err := db.Collection(collection).Find(ctx, bson.D{})
 		if err != nil {
 			log.Fatalln("error while getting collection", err)
 		}
 
-		err = result.All(context.TODO(), content)
+		err = result.All(ctx, content)
 		if err != nil {
 			log.Fatalln("error getting collection results", err)
 		}

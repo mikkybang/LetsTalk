@@ -15,6 +15,10 @@ import (
 )
 
 func main() {
+	if err := values.LoadConfiguration("./config.json"); err != nil {
+		log.Fatalln("unable to load config", err)
+	}
+
 	gob.Register(time.Time{})
 	model.InitDB()
 	go model.HubConstruct.Run()
@@ -33,7 +37,7 @@ func main() {
 
 	port := values.Config.Port
 	if port == "" {
-		port = os.Getenv("HTTP_PLATFORM_PORT")
+		port = os.Getenv("PORT")
 	}
 	if port == "" {
 		port = "8080"
@@ -41,6 +45,17 @@ func main() {
 
 	router.ServeFiles("/assets/*filepath", http.Dir("./views/assets"))
 	log.Println("Webserver UP")
+
+	// Optional use of TLS due to Heroku serving TLS at low level.
+	if values.Config.TLS.CertPath != "" && values.Config.TLS.KeyPath != "" {
+		if err := http.ListenAndServeTLS(":"+port, values.Config.TLS.CertPath, values.Config.TLS.KeyPath, router); err != nil {
+			log.Fatalln(err)
+		}
+
+		return
+	}
+
+	// Note: without HTTPS users wont be able to login as SetCookie uses Secure flag.
 	if err := http.ListenAndServe(":"+port, router); err != nil {
 		log.Fatalln(err)
 	}

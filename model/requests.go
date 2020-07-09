@@ -22,7 +22,7 @@ func (msg messageBytes) handleCreateNewRoom() {
 		return
 	}
 
-	roomID, err := newRoom.CreateNewRoom()
+	roomID, err := newRoom.createNewRoom()
 	if err != nil {
 		log.Println("Unable to create a new room for user:", newRoom.Email, "err:", err.Error())
 		return
@@ -42,10 +42,7 @@ func (msg messageBytes) handleCreateNewRoom() {
 		return
 	}
 
-	if HubConstruct.Users[newRoom.Email] != nil {
-		m := WSMessage{jsonContent, newRoom.Email}
-		HubConstruct.Broadcast <- m
-	}
+	HubConstruct.sendMessage(jsonContent, newRoom.Email)
 }
 
 func (msg messageBytes) handleRequestUserToJoinRoom() {
@@ -56,7 +53,7 @@ func (msg messageBytes) handleRequestUserToJoinRoom() {
 	}
 
 	for _, user := range request.Users {
-		roomRegisteredUser, err := request.RequestUserToJoinRoom(user)
+		roomRegisteredUser, err := request.requestUserToJoinRoom(user)
 		if err != nil {
 			log.Println("Error while requesting to room", err)
 			continue
@@ -82,16 +79,10 @@ func (msg messageBytes) handleRequestUserToJoinRoom() {
 
 		// Send back RequestUsersToJoinRoom signal to everyone registered in room.
 		for _, roomRegisteredUser := range roomRegisteredUser {
-			if HubConstruct.Users[roomRegisteredUser] != nil {
-				m := WSMessage{jsonContent, roomRegisteredUser}
-				HubConstruct.Broadcast <- m
-			}
+			HubConstruct.sendMessage(jsonContent, roomRegisteredUser)
 		}
 
-		if HubConstruct.Users[user] != nil {
-			m := WSMessage{jsonContent, user}
-			HubConstruct.Broadcast <- m
-		}
+		HubConstruct.sendMessage(jsonContent, user)
 	}
 }
 
@@ -107,22 +98,19 @@ func (msg messageBytes) handleUserAcceptRoomRequest(joiner string) {
 		return
 	}
 
-	users, err := roomRequest.AcceptRoomRequest()
+	users, err := roomRequest.acceptRoomRequest()
 	if err != nil {
 		log.Println("could not join room", err)
 		return
 	}
 
 	for _, user := range users {
-		if HubConstruct.Users[user] != nil {
-			m := WSMessage{msg, user}
-			HubConstruct.Broadcast <- m
-		}
+		HubConstruct.sendMessage(msg, user)
 	}
 }
 
 // handleNewMessage broadcasts users message to all online users and also saves to database.
-func (msg messageBytes) handleNewMessage(requester string) {
+func (msg messageBytes) handleNewMessage(author string) {
 	var newMessage Message
 	if err := json.Unmarshal(msg, &newMessage); err != nil {
 		log.Println("Could not convert to required New Message struct", err)
@@ -130,15 +118,15 @@ func (msg messageBytes) handleNewMessage(requester string) {
 	}
 
 	// Do not send if registered WS user is not same as message sender.
-	if requester != newMessage.UserID {
+	if author != newMessage.UserID {
 		return
 	}
 
 	newMessage.Time = time.Now().Format(values.TimeLayout)
 	// Save message to database ensuring user is registered to room.
-	registeredUsers, err := newMessage.SaveMessageContent()
+	registeredUsers, err := newMessage.saveMessageContent()
 	if err != nil {
-		log.Println("Error saving msg to db", err, requester)
+		log.Println("Error saving msg to db", err, author)
 		return
 	}
 
@@ -150,15 +138,12 @@ func (msg messageBytes) handleNewMessage(requester string) {
 
 	// Message is sent back to all online users including sender.
 	for _, registeredUser := range registeredUsers {
-		if HubConstruct.Users[registeredUser] != nil {
-			m := WSMessage{jsonContent, registeredUser}
-			HubConstruct.Broadcast <- m
-		}
+		HubConstruct.sendMessage(jsonContent, registeredUser)
 	}
 }
 
 // handleExitRoom exits requesters joined room and also notifies all room users.
-func (msg messageBytes) handleExitRoom(requester string) {
+func (msg messageBytes) handleExitRoom(author string) {
 	data := struct {
 		Email  string `json:"email"`
 		RoomID string `json:"roomID"`
@@ -169,12 +154,12 @@ func (msg messageBytes) handleExitRoom(requester string) {
 		return
 	}
 
-	if requester != data.Email {
+	if author != data.Email {
 		return
 	}
 
 	user := User{Email: data.Email}
-	registeredUsers, err := user.ExitRoom(data.RoomID)
+	registeredUsers, err := user.exitRoom(data.RoomID)
 	if err != nil {
 		log.Println("Error exiting room", err)
 		return
@@ -182,16 +167,10 @@ func (msg messageBytes) handleExitRoom(requester string) {
 
 	// Broadcast to all online users of a room exit.
 	for _, registeredUser := range registeredUsers {
-		if HubConstruct.Users[registeredUser] != nil {
-			m := WSMessage{msg, registeredUser}
-			HubConstruct.Broadcast <- m
-		}
+		HubConstruct.sendMessage(msg, registeredUser)
 	}
 
-	if HubConstruct.Users[requester] != nil {
-		m := WSMessage{msg, requester}
-		HubConstruct.Broadcast <- m
-	}
+	HubConstruct.sendMessage(msg, author)
 }
 
 // handleNewFileUpload creates a new file content in database.
@@ -216,7 +195,7 @@ func (msg messageBytes) handleNewFileUpload() {
 	data.FileName = file.FileName
 	user := file.User
 
-	if err := file.UploadNewFile(); err == mongo.ErrNoDocuments || err == nil {
+	if err := file.uploadNewFile(); err == mongo.ErrNoDocuments || err == nil {
 		// Send next file chunk and current hash which is a "".
 		data.MsgType = values.UploadFileChunkMsgType
 
@@ -239,10 +218,7 @@ func (msg messageBytes) handleNewFileUpload() {
 		return
 	}
 
-	if HubConstruct.Users[user] != nil {
-		m := WSMessage{jsonContent, file.User}
-		HubConstruct.Broadcast <- m
-	}
+	HubConstruct.sendMessage(jsonContent, user)
 }
 
 func (msg messageBytes) handleUploadFileChunk() {
@@ -277,7 +253,7 @@ func (msg messageBytes) handleUploadFileChunk() {
 	if data.RecentChunkHash == "" {
 		recentFileExist = true
 	} else {
-		recentFileExist = FileChunks{UniqueFileHash: data.RecentChunkHash}.FileChunkExists()
+		recentFileExist = FileChunks{UniqueFileHash: data.RecentChunkHash}.fileChunkExists()
 	}
 
 	data.RecentChunkHash, data.File, data.NewChunkHash = "", "", ""
@@ -296,15 +272,12 @@ func (msg messageBytes) handleUploadFileChunk() {
 			return
 		}
 
-		if HubConstruct.Users[data.User] != nil {
-			m := WSMessage{jsonContent, data.User}
-			HubConstruct.Broadcast <- m
-		}
+		HubConstruct.sendMessage(jsonContent, data.User)
 
 		return
 	}
 
-	if err := file.AddFileChunk(); err != nil {
+	if err := file.addFileChunk(); err != nil {
 		// What could be cases where err is not nil.
 		// File could have already been added to database?.
 		// We still request for next file chunk, if when we receive a new fille chunk,
@@ -320,10 +293,7 @@ func (msg messageBytes) handleUploadFileChunk() {
 		return
 	}
 
-	if HubConstruct.Users[userID] != nil {
-		m := WSMessage{jsonContent, userID}
-		HubConstruct.Broadcast <- m
-	}
+	HubConstruct.sendMessage(jsonContent, userID)
 }
 
 // handleUploadFileUploadComplete is called when file chunk uploads is complete.
@@ -356,7 +326,7 @@ func (msg messageBytes) handleUploadFileUploadComplete() {
 		Type:     "file",
 		FileSize: data.FileSize,
 		FileHash: data.FileHash,
-	}.SaveMessageContent()
+	}.saveMessageContent()
 
 	if err != nil {
 		log.Println(err)
@@ -372,14 +342,11 @@ func (msg messageBytes) handleUploadFileUploadComplete() {
 			continue
 		}
 
-		if HubConstruct.Users[roomUser] != nil {
-			m := WSMessage{jsonContent, roomUser}
-			HubConstruct.Broadcast <- m
-		}
+		HubConstruct.sendMessage(jsonContent, roomUser)
 	}
 }
 
-func (msg messageBytes) handleRequestDownload(requester string) {
+func (msg messageBytes) handleRequestDownload(author string) {
 	file := File{}
 	if err := json.Unmarshal(msg, &file); err != nil {
 		log.Println(err)
@@ -388,7 +355,7 @@ func (msg messageBytes) handleRequestDownload(requester string) {
 
 	fileName := file.FileName
 
-	if err := file.RetrieveFileInformation(); err != nil {
+	if err := file.retrieveFileInformation(); err != nil {
 		file.MsgType = values.DownloadFileErrorMsgType
 	}
 	file.FileName = fileName
@@ -398,13 +365,10 @@ func (msg messageBytes) handleRequestDownload(requester string) {
 		log.Println(err)
 	}
 
-	if HubConstruct.Users[requester] != nil {
-		m := WSMessage{jsonContent, requester}
-		HubConstruct.Broadcast <- m
-	}
+	HubConstruct.sendMessage(jsonContent, author)
 }
 
-func (msg messageBytes) handleFileDownload(requester string) {
+func (msg messageBytes) handleFileDownload(author string) {
 	file := FileChunks{}
 	if err := json.Unmarshal(msg, &file); err != nil {
 		log.Println(err)
@@ -413,7 +377,7 @@ func (msg messageBytes) handleFileDownload(requester string) {
 
 	fileName := file.FileName
 
-	if err := file.RetrieveFileChunk(); err != nil {
+	if err := file.retrieveFileChunk(); err != nil {
 		log.Println("error retrieving file", err)
 		// Send download file error message to client so as to stop download.
 		file = FileChunks{}
@@ -429,10 +393,7 @@ func (msg messageBytes) handleFileDownload(requester string) {
 		log.Println(err)
 	}
 
-	if HubConstruct.Users[requester] != nil {
-		m := WSMessage{jsonContent, requester}
-		HubConstruct.Broadcast <- m
-	}
+	HubConstruct.sendMessage(jsonContent, author)
 }
 
 // handleSearchUser returns registered users that match searchText.
@@ -451,16 +412,13 @@ func handleSearchUser(searchText, user string) {
 		return
 	}
 
-	if HubConstruct.Users[user] != nil {
-		m := WSMessage{jsonContent, user}
-		HubConstruct.Broadcast <- m
-	}
+	HubConstruct.sendMessage(jsonContent, user)
 }
 
 // handleRequestAllMessages coallates all messages in a particular room.
-func handleRequestAllMessages(roomID, requester string) {
+func handleRequestAllMessages(roomID, author string) {
 	room := Room{RoomID: roomID}
-	if err := room.GetAllMessageInRoom(); err != nil {
+	if err := room.getAllMessageInRoom(); err != nil {
 		log.Println("could not get all messages in room, err:", err)
 		return
 	}
@@ -487,21 +445,14 @@ func handleRequestAllMessages(roomID, requester string) {
 		return
 	}
 
-	// TODO: There's a check to see if user is truly online,
-	// before sending broadcast this is to reduce the number
-	// of requests to HUB worker.
-	// We can remove this per if we increase number of worker.
-	if HubConstruct.Users[requester] != nil {
-		m := WSMessage{jsonContent, requester}
-		HubConstruct.Broadcast <- m
-	}
+	HubConstruct.sendMessage(jsonContent, author)
 }
 
 // handleLoadUserContent loads all users contents on page load.
 // All rooms joined and users requests are loaded through WS.
 func handleLoadUserContent(email string) {
 	userInfo := User{Email: email}
-	if err := userInfo.GetAllUserRooms(); err != nil {
+	if err := userInfo.getUser(); err != nil {
 		log.Println("Could not fetch users room", email)
 		return
 	}
@@ -513,26 +464,23 @@ func handleLoadUserContent(email string) {
 	}
 
 	if data, err := json.Marshal(request); err == nil && HubConstruct.Users[email] != nil {
-		m := WSMessage{data, email}
-		HubConstruct.Broadcast <- m
+		HubConstruct.sendMessage(data, email)
 	}
 }
 
-// broadcastOnlineStatusToAllUserRoom broadcasts users availability
-// status to all users joined rooms. Status are broadcasted timely.
+// broadcastOnlineStatusToAllUserRoom broadcasts users availability status to all users joined rooms.
+// Status are broadcasted timely.
+// Since we are calling broadcastOnlineStatusToAllUserRoom from HubRun, we should call it in a goroutine so as
+// not to block the hub channel
 func broadcastOnlineStatusToAllUserRoom(userEmail string, online bool) {
 	user := User{Email: userEmail}
-	associates, err := user.GetAllUsersAssociates()
+	associates, err := user.getAllUsersAssociates()
 	if err != nil {
 		log.Println("could not get users associate", err)
 		return
 	}
 
 	for _, assassociateEmail := range associates {
-		if HubConstruct.Users[assassociateEmail] == nil {
-			continue
-		}
-
 		nameAndEmail := fmt.Sprintf("%s (%s)", values.MapEmailToName[assassociateEmail], userEmail)
 		msg := map[string]interface{}{
 			"msgType":  "OnlineStatus",
@@ -541,11 +489,7 @@ func broadcastOnlineStatusToAllUserRoom(userEmail string, online bool) {
 		}
 
 		if data, err := json.Marshal(msg); err == nil {
-			m := WSMessage{data, assassociateEmail}
-			// Since we are calling broadcastOnlineStatusToAllUserRoom
-			// from HubRun, we should call it in a goroutine so as
-			// not to block the hub channel
-			HubConstruct.Broadcast <- m
+			HubConstruct.sendMessage(data, assassociateEmail)
 		}
 	}
 }
