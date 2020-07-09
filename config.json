@@ -1,11 +1,11 @@
 {
     "ICEServers": [
         {
-            "URL": [
+            "URLs": [
                 "stun:stun.l.google.com:19302"
             ],
             "Username": "",
-            "AuthType": "",
+            "AuthType": "Password",
             "AuthSecret": ""
         }
     ],
@@ -16,6 +16,6 @@
     "DbHost": "mongodb://localhost:27017",
     "DbName": "LetsTalkDB",
     "DropboxToken": "",
-    "EnableClassSessionUpload": true,
+    "EnableClassSessionRecord": true,
     "Port": "8080"
 }

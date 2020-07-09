@@ -57,7 +57,7 @@ var (
 	}
 )
 
-func init() {
+func initIceServers() {
 	if len(Config.ICEServers) == 0 {
 		PeerConnectionConfig.ICEServers = []webrtc.ICEServer{
 			{URLs: []string{"stun:stun.l.google.com:19302"}},
@@ -67,6 +67,10 @@ func init() {
 	}
 
 	for _, config := range Config.ICEServers {
+		if len(config.URLs) == 0 {
+			log.Fatalln("User did not specify ICE server.")
+		}
+
 		credential, ok := credetialType[config.AuthType]
 		if !ok {
 			log.Fatalln("Invalid webrtc credential type", config.AuthType, "only AuthType Password and Oauth are allowed.")

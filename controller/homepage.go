@@ -78,7 +78,7 @@ func HomePageLoginPost(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	}.CreateUserLogin(password, w)
 
 	if err != nil {
-		data := setLoginDetails(true, false, "", "/login")
+		data := setLoginDetails(true, false, "Username or password invalid.", "/login")
 
 		if err := loginTmpl.Execute(w, data); err != nil {
 			log.Println(err)

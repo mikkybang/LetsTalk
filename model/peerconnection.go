@@ -83,7 +83,7 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte, user string)
 	s.connectedUsersMutex.Unlock()
 
 	var videoAudioWriter *webmWriter
-	if values.Config.EnableClassSessionUpload {
+	if values.Config.EnableClassSessionRecord {
 		videoAudioWriter = newWebmWriter(sessionID + ".webm")
 	}
 
@@ -95,7 +95,7 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte, user string)
 			videoAudioWriter.close()
 
 			go func() {
-				if !values.Config.EnableClassSessionUpload {
+				if !values.Config.EnableClassSessionRecord {
 					return
 				}
 
@@ -218,7 +218,7 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte, user string)
 					break
 				}
 
-				if values.Config.EnableClassSessionUpload {
+				if values.Config.EnableClassSessionRecord {
 					videoAudioWriter.pushVP8(rtp)
 				}
 			}
@@ -255,7 +255,7 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte, user string)
 					break
 				}
 
-				if values.Config.EnableClassSessionUpload {
+				if values.Config.EnableClassSessionRecord {
 					videoAudioWriter.pushOpus(rtp)
 				}
 			}

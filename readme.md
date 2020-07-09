@@ -5,14 +5,14 @@ A chatting application using Pion webRTC and gorilla websocket for text, video, 
 
 # Preface
 
-Lets Talk is a web chatting platform proposal for the University of Lagos (unilag.edu.ng). Due to the covid-19 pandemic, neccesity of having an online chatting/learning platform between students and lecturers is vivid.
+Lets Talk is a web chatting platform proposal for students. Due to the covid-19 pandemic, neccesity of having an online chatting/learning platform between students and lecturers is vivid.
 
-Lets Talk supports multi-room chats between users, file transfer (over websocket), video and voice calls support with desktop sharing.
+Lets Talk supports multi-room chats between users, file transfer (over websocket), video and voice calls support with desktop sharing. The idea is to allow minimal bandwidth consumption during video calls by allow one video - multiple audio during call session.
 
-Administrator can only register user **tentative**
+Administrator can only register user ***tentative***
 
 
-# v1.0.0 Milestone
+# v0.1.0 Milestone
 
 - [x] Multiple room support for users using gorilla websocket
 
@@ -29,6 +29,8 @@ Administrator can only register user **tentative**
 - [x] Voice and Video call support
 
 - [x] Low bandwidth consumption using selective video call transfer [#31](https://github.com/metaclips/LetsTalk/issues/31)
+
+- [x] Video session upload to cloud platforms or Database.
 
 - [ ] Add logging system.
 
@@ -70,7 +72,15 @@ Users will login through generated email addresses and a password of the first n
 
 # Configuration
 
-- To update when voice call is implemented
+Do check [config](config.json) for supported configurations.
+
+- The default ICE servers in use if none is specified in config is: `stun:stun.l.google.com:19302`
+
+- If no TLS key and cert path is specified, HTTP is used.
+
+- If Class session record is enabled, call sessions are recorded and uploaded to file server if a token is provided or file database.
+
+- To generate a Dropbox token, 
 
 
 # Browser support

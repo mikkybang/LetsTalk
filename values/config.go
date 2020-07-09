@@ -21,7 +21,7 @@ type configuration struct {
 	DbHost                   string
 	DbName                   string
 	DropboxToken             string
-	EnableClassSessionUpload bool // If EnableClassSessionUpload is set to true and no token is provided, files are saved to DB using GridFS.
+	EnableClassSessionRecord bool // If EnableClassSessionUpload is set to true and no token is provided, files are saved to DB using GridFS.
 	Port                     string
 }
 
@@ -42,6 +42,8 @@ func LoadConfiguration(configPath string) error {
 	if err != nil {
 		return err
 	}
+
+	initIceServers()
 
 	return nil
 }
