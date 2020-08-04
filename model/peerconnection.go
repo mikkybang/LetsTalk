@@ -28,17 +28,17 @@ var (
 	// Create a MediaEngine object to configure the supported codec
 	classSessions = classSessionPeerConnections{
 		publisherVideoTracks:  make(map[string]*webrtc.Track),
-		publisherTrackMutexes: &sync.Mutex{},
+		publisherTrackMutexes: &sync.RWMutex{},
 
 		audioTracks:       make(map[string][]*webrtc.Track),
 		audioTrackSender:  make(map[*webrtc.Track][]rtpSenderData),
-		audioTrackMutexes: &sync.Mutex{},
+		audioTrackMutexes: &sync.RWMutex{},
 
 		peerConnection:        make(map[string]*webrtc.PeerConnection),
-		peerConnectionMutexes: &sync.Mutex{},
+		peerConnectionMutexes: &sync.RWMutex{},
 
 		connectedUsers:      make(map[string][]string),
-		connectedUsersMutex: &sync.Mutex{},
+		connectedUsersMutex: &sync.RWMutex{},
 	}
 )
 
@@ -55,14 +55,14 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte, user string)
 	}
 
 	// A single user might login using multiple devices. We close recent peerconnection if there's one.
-	s.peerConnectionMutexes.Lock()
+	s.peerConnectionMutexes.RLock()
 	if s.peerConnection[sdp.UserID] != nil {
 		log.Println(user, "already in a session")
 		onSessionError(user, "You are already in another session.")
-		s.peerConnectionMutexes.Unlock()
+		s.peerConnectionMutexes.RUnlock()
 		return
 	}
-	s.peerConnectionMutexes.Unlock()
+	s.peerConnectionMutexes.RUnlock()
 
 	peerConnection, err := classSessions.api.NewPeerConnection(values.PeerConnectionConfig)
 	if err != nil {
@@ -141,7 +141,7 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte, user string)
 				}
 			}()
 
-			s.peerConnectionMutexes.Lock()
+			s.peerConnectionMutexes.RLock()
 			s.connectedUsersMutex.Lock()
 
 			for _, user := range s.connectedUsers[sessionID] {
@@ -153,7 +153,7 @@ func (s *classSessionPeerConnections) startClassSession(msg []byte, user string)
 			delete(s.connectedUsers, sessionID)
 
 			s.connectedUsersMutex.Unlock()
-			s.peerConnectionMutexes.Unlock()
+			s.peerConnectionMutexes.RUnlock()
 
 			s.audioTrackMutexes.Lock()
 			delete(s.audioTracks, sessionID)
@@ -319,15 +319,15 @@ func (s *classSessionPeerConnections) joinClassSession(msg []byte, user string) 
 	}
 
 	// A single user might login using multiple devices. We close recent peerconnection if there's one.
-	s.peerConnectionMutexes.Lock()
+	s.peerConnectionMutexes.RLock()
 	if s.peerConnection[sdp.UserID] != nil {
 		log.Println(user, "already in a session")
 		onSessionError(user, "You are already in another session.")
-		s.peerConnectionMutexes.Unlock()
+		s.peerConnectionMutexes.RUnlock()
 
 		return
 	}
-	s.peerConnectionMutexes.Unlock()
+	s.peerConnectionMutexes.RUnlock()
 
 	peerConnection, err := classSessions.api.NewPeerConnection(values.PeerConnectionConfig)
 	if err != nil {
@@ -411,7 +411,7 @@ func (s *classSessionPeerConnections) joinClassSession(msg []byte, user string) 
 	})
 
 	peerConnection.OnTrack(func(remoteTrack *webrtc.Track, receiver *webrtc.RTPReceiver) {
-		fmt.Println("OnTrack detect join session to have", remoteTrack.PayloadType())
+		fmt.Println("OnTrack detects join session to have", remoteTrack.PayloadType())
 		audioTrack, err := peerConnection.NewTrack(remoteTrack.PayloadType(), remoteTrack.SSRC(), sdp.ClassSessionID, sdp.UserID)
 		if err != nil {
 			onSessionError(user, "Unable to create an audio track.")
@@ -421,7 +421,7 @@ func (s *classSessionPeerConnections) joinClassSession(msg []byte, user string) 
 
 		go func() {
 			// Confirm both video and audio track from publisher are both enabled and publisher is still up.
-			s.peerConnectionMutexes.Lock()
+			s.peerConnectionMutexes.RLock()
 
 			publisherPeerConnection := s.peerConnection[sdp.Author]
 			if publisherPeerConnection == nil {
@@ -429,18 +429,18 @@ func (s *classSessionPeerConnections) joinClassSession(msg []byte, user string) 
 				closePeerConnection(peerConnection)
 				onSessionError(user, "Class session has ended.")
 
-				s.peerConnectionMutexes.Unlock()
+				s.peerConnectionMutexes.RUnlock()
 				return
 			}
 
-			s.peerConnectionMutexes.Unlock()
+			s.peerConnectionMutexes.RUnlock()
 
-			s.publisherTrackMutexes.Lock()
+			s.publisherTrackMutexes.RLock()
 			if s.publisherVideoTracks[sdp.ClassSessionID] == nil {
 				onSessionError(user, "Publisher has not started call yet.")
 				closePeerConnection(peerConnection)
 
-				s.publisherTrackMutexes.Unlock()
+				s.publisherTrackMutexes.RUnlock()
 				return
 			}
 
@@ -450,10 +450,10 @@ func (s *classSessionPeerConnections) joinClassSession(msg []byte, user string) 
 				closePeerConnection(peerConnection)
 
 				onSessionError(user, "Error adding publishers track.")
-				s.publisherTrackMutexes.Unlock()
+				s.publisherTrackMutexes.RUnlock()
 				return
 			}
-			s.publisherTrackMutexes.Unlock()
+			s.publisherTrackMutexes.RUnlock()
 
 			s.peerConnectionMutexes.Lock()
 			s.connectedUsersMutex.Lock()
@@ -618,7 +618,7 @@ func (sdp sdpConstruct) acceptRenegotiation(msg []byte) {
 		return
 	}
 
-	classSessions.peerConnectionMutexes.Lock()
+	classSessions.peerConnectionMutexes.RLock()
 
 	peerConnection, ok := classSessions.peerConnection[sdp.UserID]
 	if !ok {
@@ -627,7 +627,7 @@ func (sdp sdpConstruct) acceptRenegotiation(msg []byte) {
 		return
 	}
 
-	classSessions.peerConnectionMutexes.Unlock()
+	classSessions.peerConnectionMutexes.RUnlock()
 
 	err := peerConnection.SetRemoteDescription(
 		webrtc.SessionDescription{
