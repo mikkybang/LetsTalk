@@ -161,17 +161,17 @@ type classSessionPeerConnections struct {
 	api *webrtc.API
 
 	publisherVideoTracks  map[string]*webrtc.Track // mapped sessionID to track
-	publisherTrackMutexes *sync.Mutex
+	publisherTrackMutexes *sync.RWMutex
 
 	audioTracks       map[string][]*webrtc.Track // mapped sessionID to track
 	audioTrackSender  map[*webrtc.Track][]rtpSenderData
-	audioTrackMutexes *sync.Mutex
+	audioTrackMutexes *sync.RWMutex
 
 	peerConnection        map[string]*webrtc.PeerConnection // peerConnection is mapped user to peerconnection.
-	peerConnectionMutexes *sync.Mutex
+	peerConnectionMutexes *sync.RWMutex
 
 	connectedUsers      map[string][]string // publisher is mapped sessionID to all connected users.
-	connectedUsersMutex *sync.Mutex
+	connectedUsersMutex *sync.RWMutex
 }
 
 // rtpSenderData saves user RTPSender.
