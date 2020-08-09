@@ -7,14 +7,15 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/metaclips/LetsTalk/values"
 )
 
 const (
 	// Time allowed to write a message to the peer.
-	writeWait = 10 * time.Second
+	writeWait = 30 * time.Second
 
 	// Time allowed to read the next pong message from the peer.
-	pongWait = 60 * time.Second
+	pongWait = 120 * time.Second
 
 	// Send pings to peer with this period. Must be less than pongWait.
 	pingPeriod = (pongWait * 9) / 10
@@ -78,6 +79,11 @@ func (h *Hub) Run() {
 	}
 }
 
+func (h *Hub) sendMessage(msg []byte, user string) {
+	m := WSMessage{msg, user}
+	HubConstruct.Broadcast <- m
+}
+
 // WritePump pumps messages from the hub to the websocket connection.
 func (s *Subscription) WritePump() {
 	c := s.Conn
@@ -136,55 +142,81 @@ func (s Subscription) ReadPump(user string) {
 		var err error
 		var msg messageBytes
 		_, msg, err = c.WS.ReadMessage()
+
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
 				log.Printf("error: %v\n", err)
 			}
 			log.Println(err)
+
 			break
 		}
 
-		var data map[string]interface{}
+		// TODO: Always enquire for userID.
+		data := struct {
+			MsgType    string `json:"msgType"`
+			RoomID     string `json:"roomID"`
+			SearchText string `json:"searchText"`
+		}{}
+
 		err = json.Unmarshal(msg, &data)
 		if err != nil {
 			log.Println("could not unmarshal json")
 		}
 
-		msgType, ok := data["msgType"].(string)
-		if !ok {
-			log.Println("user did not send a valid message type", user, data)
-			return
-		}
-
-		switch msgType {
+		switch data.MsgType {
 		// TODO: add support to remove message.
 		// TODO: users should choose if to join chat.
-		case "NewRoomCreated":
+		case values.NewRoomCreatedMsgType:
 			msg.handleCreateNewRoom()
 
-		case "ExitRoom":
+		case values.ExitRoomMsgType:
 			msg.handleExitRoom(user)
 
-		case "RequestUsersToJoinRoom":
+		case values.RequestUsersToJoinRoomMsgType:
 			msg.handleRequestUserToJoinRoom()
 
-		case "UserJoinedRoom":
+		case values.UserJoinedRoomMsgType:
 			msg.handleUserAcceptRoomRequest(user)
 
-		case "RequestAllMessages":
-			roomID, ok := data["roomID"].(string)
-			if ok {
-				handleRequestAllMessages(roomID, user)
-			}
+		case values.NewFileUploadMsgType:
+			msg.handleNewFileUpload()
 
-		case "NewMessage":
+		case values.UploadFileChunkMsgType:
+			msg.handleUploadFileChunk()
+
+		case values.UploadFileSuccessMsgType:
+			msg.handleUploadFileUploadComplete()
+
+		case values.RequestDownloadMsgType:
+			msg.handleRequestDownload(user)
+
+		case values.DownloadFileChunkMsgType:
+			msg.handleFileDownload(user)
+
+		case values.StartClassSession:
+			classSessions.startClassSession(msg, user)
+
+		case values.JoinClassSession:
+			classSessions.joinClassSession(msg, user)
+
+		case values.NegotiateSDP:
+			sdpConstruct{}.acceptRenegotiation(msg)
+
+		case values.NewMessageMsgType:
 			msg.handleNewMessage(user)
 
-		case "WebsocketOpen":
+		case values.RequestAllMessagesMsgType:
+			handleRequestAllMessages(data.RoomID, user)
+
+		case values.SearchUserMsgType:
+			handleSearchUser(data.SearchText, user)
+
+		case values.WebsocketOpenMsgType:
 			handleLoadUserContent(user)
 
 		default:
-			log.Println("Could not convert required type", msgType)
+			log.Println("Could not convert required type", data.MsgType)
 		}
 	}
 }

@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
 	"html/template"
 	"log"
 	"net/http"
@@ -12,51 +11,59 @@ import (
 	"github.com/metaclips/LetsTalk/values"
 )
 
-// TODO: initially parse html template one time only
-func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	cookie := model.CookieDetail{CookieName: values.UserCookieName, Collection: values.UsersCollectionName}
-	if err := cookie.CheckCookie(r, w); err != nil {
-		http.Redirect(w, r, "/login", 302)
-		return
-	}
+var homepageTmpl, loginTmpl *template.Template
 
-	uuid, ok := cookie.Data["UUID"].(string)
-	if !ok {
-		http.Error(w, values.ErrRetrieveUUID.Error(), 404)
-		log.Println("Could not retrieve UUID/ in homepage")
-		return
-	}
-
-	data := map[string]interface{}{
-		"Email": cookie.Email,
-		"UUID":  uuid,
-		"Name":  values.MapEmailToName[cookie.Email],
-	}
-
+func init() {
+	var terr error
 	// Use (%%) instead of {{}} for templates.
-	tmpl := template.Must(template.New("home.html").Delims("(%", "%)").ParseFiles(
+	homepageTmpl, terr = template.New("home.html").Delims("(%", "%)").ParseFiles(
 		"views/homepage/home.html",
-		"views/homepage/components/SideBar.vue", "views/homepage/components/ChattingComponent.vue"))
+		"views/homepage/components/SideBar.vue", "views/homepage/components/ChattingComponent.vue", "views/homepage/components/CallUI.vue")
 
-	if err := tmpl.Execute(w, data); err != nil {
-		log.Println(err)
+	if terr != nil {
+		log.Fatalln("error parsing homepage templates", terr)
+	}
+
+	loginTmpl, terr = template.New("login.html").Delims("(%", "%)").ParseFiles("views/loginpage/login.html")
+	if terr != nil {
+		log.Fatalln("error parsing login templates", terr)
 	}
 }
 
+// HomePage is a GET request that validates user credentials and load homepage templates.
+func HomePage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	data := validatUser(w, r)
+
+	switch data.(type) {
+	case error:
+		log.Println("could not log user in", data)
+		http.Redirect(w, r, "/login", 302)
+
+	default:
+		if err := homepageTmpl.Execute(w, data); err != nil {
+			log.Println(err)
+		}
+	}
+
+}
+
+// HomePageLoginGet loads login page for users to login. Cookies are initially validated if user is already logged in.
 func HomePageLoginGet(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	data := map[string]interface{}{
-		"SigninError": false,
-		"Login":       "/login",
-		"Admin":       false,
-	}
+	data := validatUser(w, r)
 
-	tmpl, terr := template.New("login.html").Delims("(%", "%)").ParseFiles("views/loginpage/login.html")
-	if terr != nil {
-		log.Fatalln(terr)
-	}
+	// On validate user, if users has initially logged in execute homepage template else execute login template.
+	switch data.(type) {
+	case error:
+		data := setLoginDetails(false, false, "", "/login")
 
-	if err := tmpl.Execute(w, data); err != nil {
-		log.Println(err)
+		if err := loginTmpl.Execute(w, data); err != nil {
+			log.Println(err)
+		}
+
+	default:
+		if err := homepageTmpl.Execute(w, data); err != nil {
+			log.Println(err)
+		}
 	}
 }
 
@@ -71,18 +78,9 @@ func HomePageLoginPost(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	}.CreateUserLogin(password, w)
 
 	if err != nil {
-		data := map[string]interface{}{
-			"SigninError": true,
-			"Login":       "/login",
-			"Admin":       false,
-		}
+		data := setLoginDetails(true, false, "Username or password invalid.", "/login")
 
-		tmpl, terr := template.New("login.html").Delims("(%", "%)").ParseFiles("views/loginpage/login.html")
-		if terr != nil {
-			log.Fatalln(terr)
-		}
-
-		if err := tmpl.Execute(w, data); err != nil {
+		if err := loginTmpl.Execute(w, data); err != nil {
 			log.Println(err)
 		}
 		return
@@ -91,37 +89,34 @@ func HomePageLoginPost(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	http.Redirect(w, r, "/", 302)
 }
 
-// TODO: Use as API instead..
-func SearchUser(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	w.Header().Set("Content-Type", "application/json")
-	id := params.ByName("ID")
-	uniqueID := params.ByName("UUID")
-	key := params.ByName("Key")
-	if id == "" {
-		log.Println("No id was specified while searching for user")
-		http.Error(w, "Not found", 404)
-		return
+func validatUser(w http.ResponseWriter, r *http.Request) interface{} {
+	cookie := model.CookieDetail{CookieName: values.UserCookieName, Collection: values.UsersCollectionName}
+	if err := cookie.CheckCookie(r, w); err != nil {
+		return err
 	}
 
-	err := model.User{Email: id}.ValidateUser(uniqueID)
-	if err != nil {
-		log.Println("No id was specified while searching for user")
-		http.Error(w, "Not found", 404)
-		return
+	data := struct {
+		Email, UUID, Name string
+	}{
+		cookie.Email, cookie.Data.UUID,
+		values.MapEmailToName[cookie.Email],
 	}
 
-	users := model.GetUser(key, id)
-	data := map[string]interface{}{
-		"UsersFound": users,
-	}
-	bytes, err := json.MarshalIndent(&data, "", "\t")
-	if err != nil {
-		http.Error(w, values.ErrMarshal.Error(), 400)
-		return
-	}
-	_, err = w.Write(bytes)
-	if err != nil {
-		http.Error(w, values.ErrWrite.Error(), 400)
-		return
+	return data
+}
+
+func setLoginDetails(errors, isAdmin bool, errorDetail, link string) struct {
+	SigninError, Admin bool
+	Login, ErrorDetail string
+} {
+
+	return struct {
+		SigninError, Admin bool
+		Login, ErrorDetail string
+	}{
+		errors,
+		isAdmin,
+		link,
+		errorDetail,
 	}
 }

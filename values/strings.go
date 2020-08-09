@@ -1,10 +1,11 @@
 package values
 
-var (
-	DatabaseName        = "unilagDatabase"
-	AdminCollectionName = "administrators"
-	UsersCollectionName = "users"
-	RoomsCollectionName = "Rooms"
+const (
+	AdminCollectionName      = "administrators"
+	UsersCollectionName      = "users"
+	RoomsCollectionName      = "Rooms"
+	FilesCollectionName      = "files"
+	FileChunksCollectionName = "fileChunks"
 
 	AdminCookieName = "Admin"
 	UserCookieName  = "User"

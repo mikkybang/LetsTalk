@@ -1,7 +1,6 @@
 package model
 
 import (
-	"context"
 	"net/http"
 	"time"
 
@@ -14,29 +13,31 @@ import (
 var cookieHandler = securecookie.New(securecookie.GenerateRandomKey(64), securecookie.GenerateRandomKey(32))
 
 func (b CookieDetail) CreateCookie(w http.ResponseWriter) error {
-	exitTime := time.Now().Add(time.Hour * 2)
-	b.Data["exitTime"] = exitTime.Local()
-	b.Data["UUID"] = uuid.New().String()
+	exitTime := time.Now().Add(time.Hour * 2).Local()
+	b.Data.ExitTime = exitTime
+	b.Data.UUID = uuid.New().String()
 
-	_, err := db.Collection(b.Collection).UpdateOne(context.TODO(), map[string]interface{}{"_id": b.Email},
-		bson.M{"$set": bson.M{"loginUUID": b.Data["UUID"], "expires": exitTime}})
+	_, err := db.Collection(b.Collection).UpdateOne(ctx, bson.M{"_id": b.Email},
+		bson.M{"$set": bson.M{"loginUUID": b.Data.UUID, "expires": exitTime}})
 	if err != nil {
 		return err
 	}
 
-	if encoded, err := cookieHandler.Encode(b.CookieName, b.Data); err == nil {
-		cookie := &http.Cookie{
-			Name:    b.CookieName,
-			Value:   encoded,
-			Expires: exitTime,
-			Path:    b.Path,
-		}
-
-		http.SetCookie(w, cookie)
-	} else {
+	encoded, err := cookieHandler.Encode(b.CookieName, b.Data)
+	if err != nil {
 		return err
 	}
 
+	cookie := &http.Cookie{
+		Name:     b.CookieName,
+		Value:    encoded,
+		Expires:  exitTime,
+		SameSite: http.SameSiteStrictMode,
+		Secure:   true, // Cookie is set to secure that is https so non-https would be dropped.
+		Path:     b.Path,
+	}
+
+	http.SetCookie(w, cookie)
 	return nil
 }
 
@@ -56,27 +57,29 @@ func (b *CookieDetail) CheckCookie(r *http.Request, w http.ResponseWriter) error
 		return err
 	}
 
-	email, ok := b.Data["Email"].(string)
-	if !ok {
-		email = ""
+	if b.Data.ExitTime.Before(time.Now().Local()) {
+		return values.ErrCookieExpired
 	}
 
-	b.Email = email
-	result := db.Collection(b.Collection).FindOne(context.TODO(), map[string]interface{}{"_id": email})
+	b.Email = b.Data.Email
+	result := db.Collection(b.Collection).FindOne(ctx, bson.M{"_id": b.Email})
 
-	if err := result.Err(); err != nil {
+	cookieUUID := struct {
+		LoginUUID string    `json:"loginUUID"`
+		Expires   time.Time `json:"expires"`
+	}{}
+
+	if err = result.Decode(&cookieUUID); err != nil {
 		return err
 	}
 
-	var data map[string]interface{}
-	if err = result.Decode(&data); err != nil {
-		return err
-	}
-
-	if data["loginUUID"] != b.Data["UUID"] {
+	if cookieUUID.LoginUUID != b.Data.UUID {
 		return values.ErrIncorrectUUID
 	}
 
-	// TODO: also check for expiry time.
+	if cookieUUID.Expires.Sub(b.Data.ExitTime).Seconds() > 0 {
+		return values.ErrInvalidExpiryTime
+	}
+
 	return nil
 }

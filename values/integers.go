@@ -1,5 +1,8 @@
 package values
 
-var (
-	DefaultCost = 10
+import "time"
+
+const (
+	DefaultCost     = 10
+	RtcpPLIInterval = time.Second * 3
 )
