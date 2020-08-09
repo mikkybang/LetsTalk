@@ -9,6 +9,5 @@ COPY controller controller
 COPY config.json .
 COPY main.go .
 RUN go build
-ENTRYPOINT ls
 ENTRYPOINT ./LetsTalk
 EXPOSE 8080
